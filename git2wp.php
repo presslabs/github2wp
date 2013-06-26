@@ -45,13 +45,13 @@ add_filter("plugin_action_links_".plugin_basename(__FILE__), 'git2wp_settings_li
 
 //------------------------------------------------------------------------------
 function git2wp_return_settings_link() {
-	return admin_url('plugins.php?page='.plugin_basename(__FILE__));
+	return admin_url('index.php?page='.plugin_basename(__FILE__));
 }
 
 //------------------------------------------------------------------------------
 // Dashboard integration (Tools)
 function git2wp_menu() {
-	add_plugins_page('Git to WordPress Options Page', 'Git2WP', 
+	add_dashboard_page('Git to WordPress Options Page', 'Git2WP', 
 					 'manage_options', __FILE__, 'git2wp_options_page');
 }
 add_action('admin_menu', 'git2wp_menu');
