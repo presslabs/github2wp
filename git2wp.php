@@ -840,16 +840,41 @@ rv:1.8.1.13)"
 					}
 				}
 				
-				if($unique)
+				if($unique) {
+					if( $httpCode != "200") {
+						$default = $options['default'];
+											  
+						$git = new Git2WP(array(
+									"user" => $resource_owner,
+									"repo" => $resource_repo_name,
+									"access_token" => $default['access_token'],
+									"source" => $default['master_branch']
+								));
+		
+						$sw = $git->store_git_archive();
+						
+						if ($sw) {
+								add_settings_error( 'git2wp_settings_errors', 'repo_private', 
+										   "Repo is private! Fill the required"
+										   ."<a href='" . site_url() . "/wp-admin/plugins.php?page=git2wp/git2wp.php&tab=settings'>"
+										   ."git user details</a> if you haven't done so already!", "error" );
+								$repo_visibility = 'private'; 
+						}else {
+							add_settings_error( 'git2wp_settings_errors', 'repo_invalid', "Repo is invalid or you have insufficient permissions!", "error" );
+							
+							return $initial_options;	
+						}
+					}
+					
 					$resource_list[] = array(
-						'resource_link' => $link,
-						'repo_visibility' => $repo_visibility,
-						'repo_name' => $resource_repo_name,
-						'repo_branch' => $repo_branch,
-						'username' => $resource_owner,
-						'current_version' => 0
-					);
-				else {
+												'resource_link' => $link,
+												'repo_visibility' => $repo_visibility,
+												'repo_name' => $resource_repo_name,
+												'repo_branch' => $repo_branch,
+												'username' => $resource_owner,
+												'current_version' => 0
+											);
+				} else {
 					add_settings_error( 'git2wp_settings_errors', 'duplicate_endpoint', 
 									   "Duplicate resources! Repositories can't be both themes and plugins ", 
 									   "error" );
