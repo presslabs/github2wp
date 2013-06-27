@@ -1,12 +1,12 @@
 <?php
 /*
-* Plugin Name: Git2WP
-* Plugin URI: http://wordpress.org/extend/plugins/git2wp/ 
-* Description: Managing themes and plugins from github.
-* Author: PressLabs
-* Author URI: http://www.presslabs.com/ 
-* Version: 2.0
-*/
+ * Plugin Name: Git2WP
+ * Plugin URI: http://wordpress.org/extend/plugins/git2wp/ 
+ * Description: Managing themes and plugins from github.
+ * Author: PressLabs
+ * Author URI: http://www.presslabs.com/ 
+ * Version: 2.1.0
+ */
 
 require_once('Git2WP.class.php');
 require_once('FileClass.class.php');
@@ -552,7 +552,24 @@ function git2wp_get_repo_type($resource_link) {
 }
 
 //------------------------------------------------------------------------------
-function git2wp_uploadThemeFile($url) {
+function git2wp_rmdir($dir) {
+	if ( ! file_exists($dir) ) return true;
+	
+	if ( ! is_dir($dir) || is_link($dir) ) return unlink($dir);
+
+	foreach ( scandir($dir) as $item ) {
+		if ($item == '.' || $item == '..') continue;
+
+		if ( ! git2wp_rmdir($dir . "/" . $item) ) {
+			chmod($dir . "/" . $item, 0777);
+			if ( ! git2wp_rmdir($dir . "/" . $item) ) return false;
+		}
+	}
+	return rmdir($dir);
+}
+
+//------------------------------------------------------------------------------
+function git2wp_uploadThemeFile($url, $mode = 'install') {
 	require_once(ABSPATH . 'wp-admin/includes/class-wp-upgrader.php');
 	
 	//set destination dir
@@ -562,10 +579,14 @@ function git2wp_uploadThemeFile($url) {
 	$ftw = $destDir . basename($url);
 	$ftr = $url;
 	
+	$theme_dirname = $destDir . str_replace('.zip', '', basename($url)) . '/';
+	if ( $mode == 'update' ) // remove old files
+		git2wp_rmdir($theme_dirname);
+
 	$file = new FileClass($ftr, $ftw);
 	
 	if($file->checkFtr()):
-	$file->writeToFile();
+		$file->writeToFile();
 	endif;
 	
 	git2wp_installTheme($file->pathFtw());
@@ -573,7 +594,7 @@ function git2wp_uploadThemeFile($url) {
 }
 
 //------------------------------------------------------------------------------
-function git2wp_uploadPlguinFile($url) {
+function git2wp_uploadPlguinFile($url, $mode = 'install') {
 	require_once(ABSPATH . 'wp-admin/includes/class-wp-upgrader.php');
 	
 	//set destination dir
@@ -582,11 +603,15 @@ function git2wp_uploadPlguinFile($url) {
 	//set new file name
 	$ftw = $destDir . basename($url);
 	$ftr = $url;
+
+	$plugin_dirname = $destDir . str_replace('.zip', '', basename($url)) . '/';
+	if ( $mode == 'update' ) // remove old files
+		git2wp_rmdir($plugin_dirname);
 	
 	$file = new FileClass($ftr, $ftw);
 	
 	if($file->checkFtr()):
-	$file->writeToFile();
+		$file->writeToFile();
 	endif;
 	
 	git2wp_installPlugin($file->pathFtw());
@@ -847,11 +872,16 @@ rv:1.8.1.13)"
 						$sw = $git->store_git_archive();
 						
 						if ($sw) {
-								add_settings_error( 'git2wp_settings_errors', 'repo_private', 
-										   "Repo is private! But the connection was set.", "updated" );
+								add_settings_error( 'git2wp_settings_errors', 
+									'repo_private', 
+									'Repo is private! But the connection was set.', 
+									'updated' );
 								$repo_visibility = 'private'; 
 						}else {
-							add_settings_error( 'git2wp_settings_errors', 'repo_invalid', "Repo is invalid or you have insufficient permissions!", "error" );
+							add_settings_error( 'git2wp_settings_errors', 
+								'repo_invalid', 
+								'Repo is invalid or you have insufficient permissions!', 
+								'error' );
 							
 							return $initial_options;	
 						}
@@ -881,7 +911,7 @@ rv:1.8.1.13)"
 		}
 	}
 	
-	//install resources
+	// install resources
 	$resource_list = &$options['resource_list'];
 	$k = 0;
 	foreach($resource_list as $key => $resource)
@@ -894,7 +924,20 @@ rv:1.8.1.13)"
 				git2wp_uploadThemeFile($zipball_url);
 		}
 
-	//delete resources
+	// update resources
+	$resource_list = &$options['resource_list'];
+	$k = 0;
+	foreach($resource_list as $key => $resource)
+		if ( isset($_POST['submit_update_resource_'.$k++]) ) {
+			$repo_type = git2wp_get_repo_type($resource['resource_link']);
+			$zipball_url = ABSPATH.'/wp-content/uploads/git2wp/'.$resource['repo_name'].'.zip';
+			if ( $repo_type == 'plugin' )
+				git2wp_uploadPlguinFile($zipball_url, 'update');
+			else
+				git2wp_uploadThemeFile($zipball_url, 'update');
+		}
+
+	// delete resources
 	$resource_list = &$options['resource_list'];
 	$k = 0;
 	foreach($resource_list as $key => $resource)
