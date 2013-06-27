@@ -807,14 +807,7 @@ rv:1.8.1.13)"
 				$response = curl_exec($tuCurl);
 				
 				$httpCode = curl_getinfo($tuCurl, CURLINFO_HTTP_CODE);
-				
-				if( $httpCode != "200") {
-					add_settings_error( 'git2wp_settings_errors', 'repo_private', 
-									   "Repo is private! Fill the required "
-									   ."<a href='https://trypl.plssl.com/wp-admin/plugins.php?page=git2wp/git2wp.php&tab=settings'>"
-									   ."git user details</a>.", "error" );
-					$repo_visibility = 'private';
-				}
+
 				curl_close($tuCurl);
 				
 				
@@ -855,9 +848,7 @@ rv:1.8.1.13)"
 						
 						if ($sw) {
 								add_settings_error( 'git2wp_settings_errors', 'repo_private', 
-										   "Repo is private! Fill the required"
-										   ."<a href='" . site_url() . "/wp-admin/plugins.php?page=git2wp/git2wp.php&tab=settings'>"
-										   ."git user details</a> if you haven't done so already!", "error" );
+										   "Repo is private! But the connection was set.", "updated" );
 								$repo_visibility = 'private'; 
 						}else {
 							add_settings_error( 'git2wp_settings_errors', 'repo_invalid', "Repo is invalid or you have insufficient permissions!", "error" );

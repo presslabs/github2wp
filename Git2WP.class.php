@@ -55,16 +55,20 @@ class Git2WP {
 		if (! is_dir($upload_dir)) 
 		   mkdir( $upload_dir, 0777, true );
 
+		error_log($url);
+
 		$upload_dir .= '/' . $this->config['repo'] . ".zip";	
 		
-		$ch = curl_init();
-		$fp = fopen ($upload_dir, 'w+');
+		$fp = fopen ($upload_dir, 'wb+');
+	
 		$ch = curl_init($url);
+		
 		curl_setopt($ch, CURLOPT_TIMEOUT, 50);
 		curl_setopt($ch, CURLOPT_FILE, $fp);
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 		curl_setopt($ch, CURLOPT_ENCODING, "");
-		
+		curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows;U;Windows NT 5.1;en-US;rv:1.8.1.13)"." Gecko/20080311 Firefox/2.0.0.13');		
+
 		curl_exec($ch);
 		
 		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE); 
