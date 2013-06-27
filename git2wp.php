@@ -45,8 +45,8 @@ function git2wp_settings_link($links) {
 add_filter("plugin_action_links_".plugin_basename(__FILE__), 'git2wp_settings_link' );
 
 //------------------------------------------------------------------------------
-function git2wp_return_settings_link() {
-	return admin_url('index.php?page='.plugin_basename(__FILE__));
+function git2wp_return_settings_link($query_vars = '') {
+	return admin_url('index.php?page=' . plugin_basename(__FILE__) . $query_vars);
 }
 
 //------------------------------------------------------------------------------
@@ -280,9 +280,9 @@ function git2wp_options_page() {
 	
 	<h2 class="nav-tab-wrapper">
 		<a class="nav-tab<?php if($tab=='resources')
-		echo' nav-tab-active';?>" href="plugins.php?page=git2wp/git2wp.php&tab=resources">Github resources</a>
+		echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=resources'); ?>">Github resources</a>
 		<a class="nav-tab<?php if($tab=='settings')
-			echo' nav-tab-active';?>" href="plugins.php?page=git2wp/git2wp.php&tab=settings">Github settings</a>
+			echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=settings'); ?>">Github settings</a>
 	</h2>
 	
 	
