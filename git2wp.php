@@ -283,17 +283,15 @@ function git2wp_options_page() {
 		echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=resources'); ?>">Github resources</a>
 		<a class="nav-tab<?php if($tab=='settings')
 			echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=settings'); ?>">Github settings</a>
-	</h2>
-	
-	
+	</h2>	
+
 	<?php if ( $tab == 'resources' ) {
 	?>
 	
 	<form action="options.php" method="post">
 		<?php 
 				settings_fields('git2wp_options');
-				do_settings_sections('git2wp');
-				
+				do_settings_sections('git2wp');				
 		?>
 		<table class="form-table">
 			<tbody>
@@ -448,8 +446,7 @@ function git2wp_options_page() {
 
 //------------------------------------------------------------------------------
 function git2wp_admin_init() {
-	register_setting( 'git2wp_options', 'git2wp_options', 'git2wp_options_validate' );
-	
+	register_setting( 'git2wp_options', 'git2wp_options', 'git2wp_options_validate' );	
 	//
 	// Resources tab
 	//
@@ -462,6 +459,20 @@ function git2wp_admin_init() {
 	//
 	add_settings_section('git2wp_second_section', 'Git to WordPress - Settings', 
 						 'git2wp_second_section_description', 'git2wp_settings');
+	//
+	// Add Settings notice
+	//
+	$plugin_page = plugin_basename(__FILE__);
+	$plugin_link = git2wp_return_settings_link('&tab=settings');
+
+	$options = get_option('git2wp_options');
+	$default = $options['default'];
+
+	if ( empty($default['master_branch']) || empty($default['client_id']) || empty($default['client_secret']) )
+		add_action('admin_notices', create_function( '', "echo '<div class=\"error\"><p>"
+			.sprintf(__('Git2WP needs configuration information on its <a href="%s">'.__('Settings').'</a> page.', $plugin_page), 
+  					 $plugin_link)."</p></div>';" ) );
+
 }
 add_action('admin_init', 'git2wp_admin_init');
 
@@ -1063,3 +1074,4 @@ function git2wp_init() {
 	}
 }
 add_action('init', 'git2wp_init');
+
