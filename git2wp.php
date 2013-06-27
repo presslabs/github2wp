@@ -750,8 +750,13 @@ function git2wp_setting_resources_list() {
 					&& (git2wp_get_plugin_version($plugin_file) > '') ) {
 					$my_data .= "<strong>Name: </strong>" . git2wp_get_plugin_header($plugin_file, "Name") . "<br />";
 					$my_data .= "<strong>Description: </strong>" . git2wp_get_plugin_header($plugin_file, "Description") . "<br />";
-					$my_data .= "<strong>Author: </strong>" . git2wp_get_plugin_header($plugin_file, "Author") . "<br />";
-					$my_data .= "<strong>AuthorURI: </strong>" . git2wp_get_plugin_header($plugin_file, "AuthorURI") . "<br />";
+
+					$author = git2wp_get_plugin_header($plugin_file, "Author");
+					$author_uri = git2wp_get_plugin_header($plugin_file, "AuthorURI");
+					if ( $author_uri != '-' && $author_uri != '' )
+						$author = '<a href="' . $author_uri . '" target="_blank">' . $author . '</a>';
+					$my_data .= "<strong>Author: </strong>" . $author . "<br />";
+
 					$my_data .= "<strong>Version: </strong>" . git2wp_get_plugin_version($plugin_file) . "<br />";
 					//$zipball = home_url() . '/wp-content/uploads/' . basename(dirname(__FILE__)) . '/' . $resource['repo_name'].'.zip';
 					//$my_data .= "<strong>zipball: </strong>" . $zipball . "<br />";
@@ -769,8 +774,13 @@ function git2wp_setting_resources_list() {
 				$theme_dirname = $resource['repo_name'];
 				$my_data .= "<strong>Name: </strong>" . git2wp_get_theme_header($theme_dirname, "Name") . "<br />";
 				$my_data .= "<strong>Description: </strong>" . git2wp_get_theme_header($theme_dirname, "Description") . "<br />";
-				$my_data .= "<strong>Author: </strong>" . git2wp_get_theme_header($theme_dirname, "Author") . "<br />";
-				$my_data .= "<strong>AuthorURI: </strong>" . git2wp_get_theme_header($theme_dirname, "AuthorURI") . "<br />";
+
+				$author = git2wp_get_theme_header($theme_file, "Author");
+				$author_uri = git2wp_get_theme_header($theme_file, "AuthorURI");
+				if ( $author_uri != '-' && $author_uri != '' )
+					$author = '<a href="' . $author_uri . '" target="_blank">' . $author . '</a>';
+				$my_data .= "<strong>Author: </strong>" . $author . "<br />";
+
 				$my_data .= "<strong>Version: </strong>" . git2wp_get_theme_version($theme_dirname) . "<br />";
 				
 				$new_version = strtotime($resource['git_data']['head_commit']['timestamp']);
@@ -783,8 +793,8 @@ function git2wp_setting_resources_list() {
 					//$alternate = ' style="background-color:#EDC5C0;"';
 				}
 			}
-			
-			echo "<tr".$alternate."><td class='plugin-update colspanchange' colspan='4'><div class='update-message'>" . $my_data . "</div></td></tr>";
+
+			echo "<tr".$alternate."><td></td><td colspan='3'><div class='update-message'>" . $my_data . "</div></td></tr>";
 		}
 		?></tbody></table>
 <p>
