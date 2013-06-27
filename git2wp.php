@@ -141,12 +141,10 @@ function git2wp_toWpFormat($data){
 //------------------------------------------------------------------------------
 function git2wp_get_commits($payload) {
 	$obj = json_decode($payload);
-	$commits = $obj->{"commits"}
-	;
+	$commits = $obj->{"commits"};
 		$out = '<ul>';
 	foreach($commits as $commit)
-		$out .= "<li>" . $commit->{"message"}
-	. "</li>";
+		$out .= "<li>" . $commit->{"message"} . "</li>";
 	$out .= '</ol>';
 	
 	return $out;
@@ -170,12 +168,21 @@ function git2wp_inject_info($result, $action = null, $args = null) {
 				$homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
 				$zipball = home_url() . '/wp-content/uploads/' 
 					. basename(dirname(__FILE__)) . '/' . $resource['repo_name'].'.zip';
-				
-				$changelog_head = $new_version . " - " . date("d/m/Y (h:m)", $new_version);
+
+				$changelog_head = '';
+				if ( $new_version )
+					$changelog_head = $new_version . " - " 
+						. date("d/m/Y (h:m)", $new_version);
+
+				$changelog = 'No changelog found';
+				if ( $git_data['payload'] )
+					$changelog = "<h4>".$changelog_head."</h4>"
+						. git2wp_get_commits($git_data['payload']);
+
 				$sections = array(
 					"description" => git2wp_get_plugin_header($response_index, "Description"),
 					//"installation" => "(Recommended) Installation instructions.",
-					"changelog" => "<h4>".$changelog_head."</h4>".git2wp_get_commits($git_data['payload']),
+					"changelog" => $changelog,
 				);
 				$slug = dirname( $response_index );
 				
