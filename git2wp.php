@@ -9,7 +9,7 @@
  */
 
 require_once('Git2WP.class.php');
-require_once('FileClass.class.php');
+require_once('Git2WpFile.class.php');
 
 //------------------------------------------------------------------------------
 function git2wp_activate() {
@@ -601,7 +601,7 @@ function git2wp_uploadThemeFile($url, $mode = 'install') {
 	if ( $mode == 'update' ) // remove old files
 		git2wp_rmdir($theme_dirname);
 
-	$file = new FileClass($ftr, $ftw);
+	$file = new Git2WpFile($ftr, $ftw);
 	
 	if($file->checkFtr()):
 		$file->writeToFile();
@@ -626,7 +626,7 @@ function git2wp_uploadPlguinFile($url, $mode = 'install') {
 	if ( $mode == 'update' ) // remove old files
 		git2wp_rmdir($plugin_dirname);
 	
-	$file = new FileClass($ftr, $ftw);
+	$file = new Git2WpFile($ftr, $ftw);
 	
 	if($file->checkFtr()):
 		$file->writeToFile();
