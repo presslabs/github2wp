@@ -709,9 +709,13 @@ function git2wp_setting_resources_list() {
 			$resource_path = str_replace( home_url(), ABSPATH, $resource['resource_link'] );
 			$dir_exists = is_dir($resource_path);
 			$wordpress_resource = "<strong>WP:</strong> /wp-content/" . $repo_type . "s/" . $resource['repo_name'];
-			
+			//
+			// Delete resource button
+			//
 			$action = '<p><input name="submit_delete_resource_'.($k-1)
-				.'" type="submit" class="button" value="'.esc_attr('Delete').'" /></p>';
+				.'" type="submit" class="button" value="'.esc_attr('Delete')
+				.'" onclick="return confirm(\'Do you really want to delete: '
+				.$github_resource_url . '?\');"/></p>';
 			
 			$git_data = $resource['git_data'];
 			$my_data = "";
