@@ -847,9 +847,8 @@ rv:1.8.1.13)"
 						$sw = $git->store_git_archive();
 						
 						if ($sw) {
-								add_settings_error( 'git2wp_settings_errors', 'repo_private', 
-										   "Repo is private! But the connection was set.", "updated" );
-								$repo_visibility = 'private'; 
+							add_settings_error( 'git2wp_settings_errors', 'repo_private', "Repo is private! But the connection was set.", "updated" );
+							$repo_visibility = 'private'; 
 						}else {
 							add_settings_error( 'git2wp_settings_errors', 'repo_invalid', "Repo is invalid or you have insufficient permissions!", "error" );
 							
