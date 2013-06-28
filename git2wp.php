@@ -264,12 +264,12 @@ add_filter("pre_set_site_transient_update_plugins","git2wp_update_check_plugins"
 //add_filter('transient_update_plugins', 'git2wp_update_check_plugins'); //WP 2.8+
 
 //-----------------------------------------------------------------------------
-/*function git2wp_add_script() { 
+function git2wp_add_script() { 
 wp_enqueue_script('git2wp', plugins_url('/git2wp/git2wp.js', __FILLE__)); 
 } 
 
 add_action('admin_enqueue_scripts','git2wp_add_script'); 
-*/
+
 //------------------------------------------------------------------------------
 function git2wp_options_page() {
 	if (!current_user_can('manage_options'))  {
@@ -366,6 +366,38 @@ function git2wp_options_page() {
 		settings_fields('git2wp_options');
 		do_settings_sections('git2wp_settings');
 		?>
+		
+		<a class="button-primary clicker" href="#" >Need help?</a>		
+		<div class="slider home-border-center" id="#">
+				<table class="form-table">
+					<tbody>
+						<tr valign="top">
+							<th scope="row">
+								<label>Follow this link and <br />
+											 fill as shown here:</label>
+							</th>
+							<td>
+								<label><a href="https://github.com/settings/applications/new" target="_blank">Create a new git application</a></label>
+								<p class="description"><strong>Application Name</strong> -> git2wp</p>
+								<p class="description"><strong>Main URL </strong>-> <?php echo home_url();?></p>
+								<p class="description"><strong>Callback URL</strong> -> <?php echo home_url() . '/?git2wp_auth=true';?></p>
+							</td>
+						</tr>
+						<tr valign="top">
+							<th scope="row">
+								<label>Go here and select the <br />
+											 newly created application</label>
+							</th>
+							<td>
+								<label><a href="https://github.com/settings/applications" target="_blank">Application list</a></label>
+								<p class="description"><strong>Here you have all the information that you need to fill in the form.</strong></p>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<br /><br /><br />
+		</div>
+				
 		<table class="form-table">
 			<tbody>
 				<tr valign="top">
