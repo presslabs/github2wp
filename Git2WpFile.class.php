@@ -1,6 +1,6 @@
 <?php
-if ( !class_exists('FileClass') ):
-class FileClass {
+if ( ! class_exists('Git2WpFile') ):
+class Git2WpFile {
 	var $ftrHandle;
 	var $ftwHandle;
 	var $ftwPath;

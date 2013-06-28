@@ -1,15 +1,15 @@
 <?php
 /*
-* Plugin Name: Git2WP
-* Plugin URI: http://wordpress.org/extend/plugins/git2wp/ 
-* Description: Managing themes and plugins from github.
-* Author: PressLabs
-* Author URI: http://www.presslabs.com/ 
-* Version: 2.0
-*/
+ * Plugin Name: Git2WP
+ * Plugin URI: http://wordpress.org/extend/plugins/git2wp/ 
+ * Description: Managing themes and plugins from github.
+ * Author: PressLabs
+ * Author URI: http://www.presslabs.com/ 
+ * Version: 2.1.0
+ */
 
 require_once('Git2WP.class.php');
-require_once('FileClass.class.php');
+require_once('Git2WpFile.class.php');
 
 //------------------------------------------------------------------------------
 function git2wp_activate() {
@@ -50,7 +50,7 @@ function git2wp_return_settings_link($query_vars = '') {
 }
 
 //------------------------------------------------------------------------------
-// Dashboard integration (Tools)
+// Dashboard integration
 function git2wp_menu() {
 	add_dashboard_page('Git to WordPress Options Page', 'Git2WP', 
 					   'manage_options', __FILE__, 'git2wp_options_page');
@@ -61,16 +61,16 @@ add_action('admin_menu', 'git2wp_menu');
 function git2wp_update_check_themes($transient) {
 	if ( empty( $transient->checked ) )
 		return $transient;
-	
+
 	$options = get_option('git2wp_options');
 	$resource_list = $options['resource_list'];
-	
+
 	if ( is_array($resource_list)  and  !empty($resource_list)) {
-		foreach($resource_list as $resource) {
+		foreach ($resource_list as $resource) {
 			$git_data = $resource['git_data'];
-			
+
 			$repo_type = git2wp_get_repo_type($resource['resource_link']);
-			
+
 			if ( ($repo_type == 'theme') ) {
 				$response_index = $resource['repo_name'];
 				$current_version = git2wp_get_theme_version($response_index);
@@ -89,7 +89,6 @@ function git2wp_update_check_themes($transient) {
 			}
 		}
 	}
-	
 	return $transient;
 }
 add_filter("pre_set_site_transient_update_themes","git2wp_update_check_themes", 10, 1);
@@ -97,7 +96,6 @@ add_filter("pre_set_site_transient_update_themes","git2wp_update_check_themes", 
 //------------------------------------------------------------------------------
 // Transform plugin info into the format used by the native WordPress.org API
 function git2wp_toWpFormat($data){
-	
 	$info = new StdClass;
 	
 	//The custom update API is built so that many fields have the same name and format
@@ -106,7 +104,7 @@ function git2wp_toWpFormat($data){
 		'name', 'slug', 'version', 'requires', 'tested', 'rating', 'upgrade_notice',
 		'num_ratings', 'downloaded', 'homepage', 'last_updated',
 	);
-	foreach($sameFormat as $field){
+	foreach ($sameFormat as $field) {
 		if ( isset($data[$field]) ) {
 			$info->$field = $data[$field];
 		}
@@ -114,18 +112,18 @@ function git2wp_toWpFormat($data){
 			$info->$field = null;
 		}
 	}
-	
+
 	//Other fields need to be renamed and/or transformed.
 	$info->download_link = $data["download_url"];
 	
-	if ( !empty($data["author_homepage"]) ){
+	if ( !empty($data["author_homepage"]) ) {
 		$info->author = sprintf('<a href="%s">%s</a>', $data["author_homepage"], $data["author"]);
 	}
 	else {
 		$info->author = $data["author"];
 	}
 	
-	if ( is_object($data["sections"]) ){
+	if ( is_object($data["sections"]) ) {
 		$info->sections = get_object_vars($data["sections"]);
 	}
 	elseif ( is_array($data["sections"]) ) {
@@ -134,21 +132,20 @@ function git2wp_toWpFormat($data){
 	else {
 		$info->sections = array('description' => '');
 	}
-	
 	return $info;
 }
 
 //------------------------------------------------------------------------------
 function git2wp_get_commits($payload) {
+	$out = '';
 	$obj = json_decode($payload);
-	$commits = $obj->{"commits"}
-	;
-		$out = '<ul>';
-	foreach($commits as $commit)
-		$out .= "<li>" . $commit->{"message"}
-	. "</li>";
-	$out .= '</ol>';
-	
+	if ( $obj === true ) {
+		$commits = $obj->{"commits"};
+		$out .= '<ul>';
+		foreach($commits as $commit)
+			$out .= "<li>" . $commit->{"message"} . "</li>";
+		$out .= '</ul>';
+	}
 	return $out;
 }
 
@@ -156,13 +153,13 @@ function git2wp_get_commits($payload) {
 function git2wp_inject_info($result, $action = null, $args = null) {
 	$options = get_option('git2wp_options');
 	$resource_list = $options['resource_list'];
-	
+
 	if ( is_array($resource_list)  and  !empty($resource_list)) {
 		foreach($resource_list as $resource) {
 			$git_data = $resource['git_data'];
-			
+
 			$repo_type = git2wp_get_repo_type($resource['resource_link']);
-			
+
 			if ( ($repo_type == 'plugin') ) {
 				$response_index = $resource['repo_name'] . "/" . $resource['repo_name'] . ".php";
 				//$current_version = git2wp_get_plugin_version($response_index);
@@ -170,12 +167,21 @@ function git2wp_inject_info($result, $action = null, $args = null) {
 				$homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
 				$zipball = home_url() . '/wp-content/uploads/' 
 					. basename(dirname(__FILE__)) . '/' . $resource['repo_name'].'.zip';
-				
-				$changelog_head = $new_version . " - " . date("d/m/Y (h:m)", $new_version);
+
+				$changelog_head = '';
+				if ( $new_version )
+					$changelog_head = $new_version . " - " 
+						. date("d/m/Y (h:m)", $new_version);
+
+				$changelog = 'No changelog found';
+				if ( $git_data['payload'] )
+					$changelog = "<h4>".$changelog_head."</h4>"
+						. git2wp_get_commits($git_data['payload']);
+
 				$sections = array(
 					"description" => git2wp_get_plugin_header($response_index, "Description"),
 					//"installation" => "(Recommended) Installation instructions.",
-					"changelog" => "<h4>".$changelog_head."</h4>".git2wp_get_commits($git_data['payload']),
+					"changelog" => $changelog,
 				);
 				$slug = dirname( $response_index );
 				
@@ -211,7 +217,6 @@ function git2wp_inject_info($result, $action = null, $args = null) {
 					return $pluginInfo;
 				}
 				return $result;
-				
 			}
 		}
 	}
@@ -223,10 +228,10 @@ add_filter('plugins_api', 'git2wp_inject_info', 20, 3);
 function git2wp_update_check_plugins($transient) {
 	if ( empty( $transient->checked ) )
 		return $transient;
-	
+
 	$options = get_option('git2wp_options');
 	$resource_list = $options['resource_list'];
-	
+
 	if ( is_array($resource_list)  and  !empty($resource_list)) {
 		foreach($resource_list as $resource) {
 			$git_data = $resource['git_data'];			
@@ -282,18 +287,15 @@ function git2wp_options_page() {
 		<a class="nav-tab<?php if($tab=='resources')
 		echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=resources'); ?>">Github resources</a>
 		<a class="nav-tab<?php if($tab=='settings')
-			echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=settings'); ?>">Github settings</a>
-	</h2>
-	
-	
-	<?php if ( $tab == 'resources' ) {
-	?>
+		echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=settings'); ?>">Github settings</a>
+	</h2>	
+
+	<?php if ( $tab == 'resources' ) { ?>
 	
 	<form action="options.php" method="post">
 		<?php 
 				settings_fields('git2wp_options');
-				do_settings_sections('git2wp');
-				
+				do_settings_sections('git2wp');				
 		?>
 		<table class="form-table">
 			<tbody>
@@ -348,8 +350,7 @@ function git2wp_options_page() {
 				git2wp_setting_resources_list();
 		?>
 	</form>
-	<?php }
-	?>
+	<?php } ?>
 	
 	
 	
@@ -404,9 +405,7 @@ function git2wp_options_page() {
 						<p class="description">Notice: These two should be valid because they are used to authentificate us on behalf of yourself. </p>
 					</td>
 				</tr>
-				<?php
-		
-		if($default['changed']) 
+<?php	if($default['changed']) 
 			echo "<tr valign='top' class='plugin-update-tr'>"
 			. "<th scope='row'>"
 			. "<label>Generate Token:</label>"
@@ -437,8 +436,7 @@ function git2wp_options_page() {
 		<input name="submit_settings" type="submit" class="button button-primary" value="<?php esc_attr_e('Save changes'); ?>" />
 		<input name="submit_test" type="submit" class="button button-primary" value="<?php esc_attr_e('GET'); ?>" />
 	</form>
-	<?php }
-	?>
+	<?php } ?>
 	
 </div><!-- .wrap -->
 
@@ -448,8 +446,7 @@ function git2wp_options_page() {
 
 //------------------------------------------------------------------------------
 function git2wp_admin_init() {
-	register_setting( 'git2wp_options', 'git2wp_options', 'git2wp_options_validate' );
-	
+	register_setting( 'git2wp_options', 'git2wp_options', 'git2wp_options_validate' );	
 	//
 	// Resources tab
 	//
@@ -462,6 +459,19 @@ function git2wp_admin_init() {
 	//
 	add_settings_section('git2wp_second_section', 'Git to WordPress - Settings', 
 						 'git2wp_second_section_description', 'git2wp_settings');
+	//
+	// Add Settings notice
+	//
+	$plugin_page = plugin_basename(__FILE__);
+	$plugin_link = git2wp_return_settings_link('&tab=settings');
+
+	$options = get_option('git2wp_options');
+	$default = $options['default'];
+
+	if ( empty($default['master_branch']) || empty($default['client_id']) || empty($default['client_secret']) )
+		add_action('admin_notices', create_function( '', "echo '<div class=\"error\"><p>"
+			.sprintf(__('Git2WP needs configuration information on its <a href="%s">'.__('Settings').'</a> page.', $plugin_page), 
+  					 $plugin_link)."</p></div>';" ) );
 }
 add_action('admin_init', 'git2wp_admin_init');
 
@@ -484,11 +494,10 @@ function git2wp_main_section_description() {
 function git2wp_str_between( $start, $end, $content ) {
 	$r = explode($start, $content);
 	
-	if (isset($r[1])) {
+	if ( isset($r[1]) ) {
 		$r = explode($end, $r[1]);
 		return $r[0];
 	}
-	
 	return '';
 }
 
@@ -497,7 +506,7 @@ function git2wp_str_between( $start, $end, $content ) {
 // Get the header of the plugin.
 //
 function git2wp_get_plugin_header($pluginFile, $header = 'Version') {
-	if ( !function_exists('get_plugins') ){
+	if ( !function_exists('get_plugins') ) {
 		require_once( ABSPATH . '/wp-admin/includes/plugin.php' );
 	}
 	$allPlugins = get_plugins();
@@ -526,10 +535,10 @@ function git2wp_get_plugin_version($pluginFile) {
 function git2wp_get_theme_header($theme_name, $header = 'Version') {
 	if ( function_exists('wp_get_theme') ) {
 		$theme = wp_get_theme($theme_name);
-		
+
 		if ( $header == 'ALL' )
 			return serialize($theme);
-		
+
 		return $theme->get($header);
 	}
 	return "-";
@@ -552,7 +561,24 @@ function git2wp_get_repo_type($resource_link) {
 }
 
 //------------------------------------------------------------------------------
-function git2wp_uploadThemeFile($url) {
+function git2wp_rmdir($dir) {
+	if ( ! file_exists($dir) ) return true;
+	
+	if ( ! is_dir($dir) || is_link($dir) ) return unlink($dir);
+
+	foreach ( scandir($dir) as $item ) {
+		if ($item == '.' || $item == '..') continue;
+
+		if ( ! git2wp_rmdir($dir . "/" . $item) ) {
+			chmod($dir . "/" . $item, 0777);
+			if ( ! git2wp_rmdir($dir . "/" . $item) ) return false;
+		}
+	}
+	return rmdir($dir);
+}
+
+//------------------------------------------------------------------------------
+function git2wp_uploadThemeFile($url, $mode = 'install') {
 	require_once(ABSPATH . 'wp-admin/includes/class-wp-upgrader.php');
 	
 	//set destination dir
@@ -562,18 +588,21 @@ function git2wp_uploadThemeFile($url) {
 	$ftw = $destDir . basename($url);
 	$ftr = $url;
 	
-	$file = new FileClass($ftr, $ftw);
+	$theme_dirname = $destDir . str_replace('.zip', '', basename($url)) . '/';
+	if ( $mode == 'update' ) // remove old files
+		git2wp_rmdir($theme_dirname);
+
+	$file = new Git2WpFile($ftr, $ftw);
 	
 	if($file->checkFtr()):
-	$file->writeToFile();
+		$file->writeToFile();
 	endif;
 	
 	git2wp_installTheme($file->pathFtw());
-	
 }
 
 //------------------------------------------------------------------------------
-function git2wp_uploadPlguinFile($url) {
+function git2wp_uploadPlguinFile($url, $mode = 'install') {
 	require_once(ABSPATH . 'wp-admin/includes/class-wp-upgrader.php');
 	
 	//set destination dir
@@ -582,21 +611,23 @@ function git2wp_uploadPlguinFile($url) {
 	//set new file name
 	$ftw = $destDir . basename($url);
 	$ftr = $url;
+
+	$plugin_dirname = $destDir . str_replace('.zip', '', basename($url)) . '/';
+	if ( $mode == 'update' ) // remove old files
+		git2wp_rmdir($plugin_dirname);
 	
-	$file = new FileClass($ftr, $ftw);
+	$file = new Git2WpFile($ftr, $ftw);
 	
 	if($file->checkFtr()):
-	$file->writeToFile();
+		$file->writeToFile();
 	endif;
 	
 	git2wp_installPlugin($file->pathFtw());
-	
 }
 
 
 //------------------------------------------------------------------------------
 function git2wp_installTheme($file) {
-	
 	$title = __('Upload Theme');
 	$parent_file = 'themes.php';
 	$submenu_file = 'theme-install.php';
@@ -604,7 +635,7 @@ function git2wp_installTheme($file) {
 	wp_enqueue_script('theme-preview');
 	require_once(ABSPATH . 'wp-admin/admin-header.php');
 	
-	$title = sprintf( __('Installing Theme from: /wp-content/uploads/git2wp/%s'), basename( $file ) );
+	$title = sprintf( __('Installing Theme from file: %s'), basename( $file ) );
 	$nonce = 'theme-upload';
 	//$url = add_query_arg(array('package' => $file_upload->id), 'update.php?action=upload-theme');
 	$type = 'upload';
@@ -616,18 +647,16 @@ function git2wp_installTheme($file) {
 		git2wp_cleanup($file);
 	
 	include(ABSPATH . 'wp-admin/admin-footer.php');
-	
 }
 
 //------------------------------------------------------------------------------
 function git2wp_installPlugin($file) {
-	
 	$title = __('Upload Plugin');
 	$parent_file = 'plugins.php';
 	$submenu_file = 'plugin-install.php';
 	require_once(ABSPATH . 'wp-admin/admin-header.php');
 	
-	$title = sprintf( __('Installing Plugin from: /wp-content/uploads/git2wp/%s'), basename( $file ) );
+	$title = sprintf( __('Installing Plugin from file: %s'), basename( $file ) );
 	$nonce = 'plugin-upload';
 	//$url = add_query_arg(array('package' => $file_upload->id), 'update.php?action=upload-plugin');
 	$type = 'upload'; //Install plugin type, From Web or an Upload.
@@ -639,14 +668,12 @@ function git2wp_installPlugin($file) {
 		git2wp_cleanup($file);
 	
 	include(ABSPATH . 'wp-admin/admin-footer.php');
-	
 }
 
 //------------------------------------------------------------------------------
 function git2wp_cleanup($file) {
-	
-	if(file_exists($file)):
-	return unlink( $file );
+	if ( file_exists($file) ):
+		return unlink( $file );
 	endif;
 }
 
@@ -654,7 +681,7 @@ function git2wp_cleanup($file) {
 function git2wp_setting_resources_list() {
 	$options = get_option('git2wp_options');
 	$resource_list = $options['resource_list'];
-	
+
 	if ( is_array($resource_list)  and  !empty($resource_list)) {
 ?>  
 <br />
@@ -663,8 +690,7 @@ function git2wp_setting_resources_list() {
 		<tr><th></th><th>Resource</th><th>Endpoint</th><th>Options</th></tr>
 	</thead>
 	<tbody>
-		<?php
-		foreach($resource_list as $resource) {
+<?php foreach($resource_list as $resource) {
 			$endpoint = home_url() . '/' . '?git2wp=' . md5( str_replace(home_url(), '', $resource['resource_link']) );
 			$repo_type = git2wp_get_repo_type($resource['resource_link']);
 			
@@ -684,9 +710,13 @@ function git2wp_setting_resources_list() {
 			$resource_path = str_replace( home_url(), ABSPATH, $resource['resource_link'] );
 			$dir_exists = is_dir($resource_path);
 			$wordpress_resource = "<strong>WP:</strong> /wp-content/" . $repo_type . "s/" . $resource['repo_name'];
-			
+			//
+			// Delete resource button
+			//
 			$action = '<p><input name="submit_delete_resource_'.($k-1)
-				.'" type="submit" class="button" value="'.esc_attr('Delete').'" /></p>';
+				.'" type="submit" class="button" value="'.esc_attr('Delete')
+				.'" onclick="return confirm(\'Do you really want to delete: '
+				.$github_resource_url . '?\');"/></p>';
 			
 			$git_data = $resource['git_data'];
 			$my_data = "";
@@ -725,8 +755,13 @@ function git2wp_setting_resources_list() {
 					&& (git2wp_get_plugin_version($plugin_file) > '') ) {
 					$my_data .= "<strong>Name: </strong>" . git2wp_get_plugin_header($plugin_file, "Name") . "<br />";
 					$my_data .= "<strong>Description: </strong>" . git2wp_get_plugin_header($plugin_file, "Description") . "<br />";
-					$my_data .= "<strong>Author: </strong>" . git2wp_get_plugin_header($plugin_file, "Author") . "<br />";
-					$my_data .= "<strong>AuthorURI: </strong>" . git2wp_get_plugin_header($plugin_file, "AuthorURI") . "<br />";
+
+					$author = git2wp_get_plugin_header($plugin_file, "Author");
+					$author_uri = git2wp_get_plugin_header($plugin_file, "AuthorURI");
+					if ( $author_uri != '-' && $author_uri != '' )
+						$author = '<a href="' . $author_uri . '" target="_blank">' . $author . '</a>';
+					$my_data .= "<strong>Author: </strong>" . $author . "<br />";
+
 					$my_data .= "<strong>Version: </strong>" . git2wp_get_plugin_version($plugin_file) . "<br />";
 					//$zipball = home_url() . '/wp-content/uploads/' . basename(dirname(__FILE__)) . '/' . $resource['repo_name'].'.zip';
 					//$my_data .= "<strong>zipball: </strong>" . $zipball . "<br />";
@@ -744,8 +779,13 @@ function git2wp_setting_resources_list() {
 				$theme_dirname = $resource['repo_name'];
 				$my_data .= "<strong>Name: </strong>" . git2wp_get_theme_header($theme_dirname, "Name") . "<br />";
 				$my_data .= "<strong>Description: </strong>" . git2wp_get_theme_header($theme_dirname, "Description") . "<br />";
-				$my_data .= "<strong>Author: </strong>" . git2wp_get_theme_header($theme_dirname, "Author") . "<br />";
-				$my_data .= "<strong>AuthorURI: </strong>" . git2wp_get_theme_header($theme_dirname, "AuthorURI") . "<br />";
+
+				$author = git2wp_get_theme_header($theme_file, "Author");
+				$author_uri = git2wp_get_theme_header($theme_file, "AuthorURI");
+				if ( $author_uri != '-' && $author_uri != '' )
+					$author = '<a href="' . $author_uri . '" target="_blank">' . $author . '</a>';
+				$my_data .= "<strong>Author: </strong>" . $author . "<br />";
+
 				$my_data .= "<strong>Version: </strong>" . git2wp_get_theme_version($theme_dirname) . "<br />";
 				
 				$new_version = strtotime($resource['git_data']['head_commit']['timestamp']);
@@ -758,14 +798,10 @@ function git2wp_setting_resources_list() {
 					//$alternate = ' style="background-color:#EDC5C0;"';
 				}
 			}
-			
-			echo "<tr".$alternate."><td class='plugin-update colspanchange' colspan='4'><div class='update-message'>" . $my_data . "</div></td></tr>";
+
+			echo "<tr".$alternate."><td></td><td colspan='3'><div class='update-message'>" . $my_data . "</div></td></tr>";
 		}
 		?></tbody></table>
-<p>
-	
-</p>
-
 <?php
 	}
 }
@@ -847,10 +883,15 @@ rv:1.8.1.13)"
 						$sw = $git->store_git_archive();
 						
 						if ($sw) {
+
 							add_settings_error( 'git2wp_settings_errors', 'repo_private', "Repo is private! But the connection was set.", "updated" );
 							$repo_visibility = 'private'; 
+							
 						}else {
-							add_settings_error( 'git2wp_settings_errors', 'repo_invalid', "Repo is invalid or you have insufficient permissions!", "error" );
+							add_settings_error( 'git2wp_settings_errors', 
+								'repo_invalid', 
+								'Repo is invalid or you have insufficient permissions!', 
+								'error' );
 							
 							return $initial_options;	
 						}
@@ -880,7 +921,7 @@ rv:1.8.1.13)"
 		}
 	}
 	
-	//install resources
+	// install resources
 	$resource_list = &$options['resource_list'];
 	$k = 0;
 	foreach($resource_list as $key => $resource)
@@ -893,7 +934,20 @@ rv:1.8.1.13)"
 				git2wp_uploadThemeFile($zipball_url);
 		}
 
-	//delete resources
+	// update resources
+	$resource_list = &$options['resource_list'];
+	$k = 0;
+	foreach($resource_list as $key => $resource)
+		if ( isset($_POST['submit_update_resource_'.$k++]) ) {
+			$repo_type = git2wp_get_repo_type($resource['resource_link']);
+			$zipball_url = ABSPATH.'/wp-content/uploads/git2wp/'.$resource['repo_name'].'.zip';
+			if ( $repo_type == 'plugin' )
+				git2wp_uploadPlguinFile($zipball_url, 'update');
+			else
+				git2wp_uploadThemeFile($zipball_url, 'update');
+		}
+
+	// delete resources
 	$resource_list = &$options['resource_list'];
 	$k = 0;
 	foreach($resource_list as $key => $resource)
@@ -933,7 +987,7 @@ rv:1.8.1.13)"
 			}
 		}
 	
-	//TEST ARCHIVE
+	// TEST ARCHIVE
 	if(isset($_POST['submit_test'])) { 
 		$default = $options['default'];
 		
@@ -1005,3 +1059,4 @@ function git2wp_init() {
 	}
 }
 add_action('init', 'git2wp_init');
+
