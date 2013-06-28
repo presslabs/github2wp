@@ -578,17 +578,17 @@ function git2wp_rmdir($dir) {
 }
 
 //------------------------------------------------------------------------------
-function git2wp_uploadThemeFile($url, $mode = 'install') {
+function git2wp_uploadThemeFile($path, $mode = 'install') {
 	require_once(ABSPATH . 'wp-admin/includes/class-wp-upgrader.php');
 	
 	//set destination dir
 	$destDir = ABSPATH.'wp-content/themes/';
 	
 	//set new file name
-	$ftw = $destDir . basename($url);
-	$ftr = $url;
+	$ftw = $destDir . basename($path);
+	$ftr = $path;
 	
-	$theme_dirname = $destDir . str_replace('.zip', '', basename($url)) . '/';
+	$theme_dirname = $destDir . str_replace('.zip', '', basename($path)) . '/';
 	if ( $mode == 'update' ) // remove old files
 		git2wp_rmdir($theme_dirname);
 
@@ -602,17 +602,17 @@ function git2wp_uploadThemeFile($url, $mode = 'install') {
 }
 
 //------------------------------------------------------------------------------
-function git2wp_uploadPlguinFile($url, $mode = 'install') {
+function git2wp_uploadPlguinFile($path, $mode = 'install') {
 	require_once(ABSPATH . 'wp-admin/includes/class-wp-upgrader.php');
 	
 	//set destination dir
 	$destDir = ABSPATH.'wp-content/plugins/';
 	
 	//set new file name
-	$ftw = $destDir . basename($url);
-	$ftr = $url;
+	$ftw = $destDir . basename($path);
+	$ftr = $path;
 
-	$plugin_dirname = $destDir . str_replace('.zip', '', basename($url)) . '/';
+	$plugin_dirname = $destDir . str_replace('.zip', '', basename($path)) . '/';
 	if ( $mode == 'update' ) // remove old files
 		git2wp_rmdir($plugin_dirname);
 	
@@ -637,7 +637,7 @@ function git2wp_installTheme($file) {
 	
 	$title = sprintf( __('Installing Theme from file: %s'), basename( $file ) );
 	$nonce = 'theme-upload';
-	//$url = add_query_arg(array('package' => $file_upload->id), 'update.php?action=upload-theme');
+	//path$url = add_query_arg(array('package' => $file_upload->id), 'update.php?action=upload-theme');
 	$type = 'upload';
 	
 	$upgrader = new Theme_Upgrader( new Theme_Installer_Skin( compact('type', 'title', 'nonce') ) );
@@ -668,7 +668,7 @@ function git2wp_installPlugin($file) {
 		git2wp_cleanup($file);
 	
 	include(ABSPATH . 'wp-admin/admin-footer.php');
-}
+} 
 
 //------------------------------------------------------------------------------
 function git2wp_cleanup($file) {
@@ -824,29 +824,9 @@ function git2wp_options_validate($input) {
 		
 		if ($repo_link != '') {
 			$repo_link = trim($repo_link);
-			if(strpos($repo_link, $git_base) === 0) {
-				
-				$tuCurl = curl_init();
-				
-				curl_setopt($tuCurl, CURLOPT_URL, $repo_link);
-				
-				curl_setopt($tuCurl, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows;
-U;
-Windows NT 5.1;
-en-US;
-rv:1.8.1.13)"
-." Gecko/20080311 Firefox/2.0.0.13');
-				curl_setopt($tuCurl, CURLOPT_RETURNTRANSFER, true);
-				
-				curl_setopt($tuCurl, CURLOPT_FOLLOWLOCATION, true);
-				
-				$response = curl_exec($tuCurl);
-				
-				$httpCode = curl_getinfo($tuCurl, CURLINFO_HTTP_CODE);
 
-				curl_close($tuCurl);
-				
-				
+			if(strpos($repo_link, $git_base) === 0) {
+
 				$repo_link = trim($repo_link);
 				$repo_link = substr($repo_link, strlen($git_base));
 				
@@ -870,32 +850,31 @@ rv:1.8.1.13)"
 				}
 				
 				if($unique) {
-					if( $httpCode != "200") {
-						$default = $options['default'];
-											  
-						$git = new Git2WP(array(
+					$default = $options['default'];
+					
+					$git = new Git2WP(array(
 									"user" => $resource_owner,
 									"repo" => $resource_repo_name,
 									"access_token" => $default['access_token'],
-									"source" => $default['master_branch']
+									"source" => $repo_branch 
 								));
-		
-						$sw = $git->store_git_archive();
-						
-						if ($sw) {
+					
+					$sw = $git->store_git_archive();
+					
+					if ($sw) {
 
-							add_settings_error( 'git2wp_settings_errors', 'repo_private', "Repo is private! But the connection was set.", "updated" );
-							$repo_visibility = 'private'; 
-							
-						}else {
-							add_settings_error( 'git2wp_settings_errors', 
-								'repo_invalid', 
-								'Repo is invalid or you have insufficient permissions!', 
-								'error' );
-							
-							return $initial_options;	
-						}
+						add_settings_error( 'git2wp_settings_errors', 'repo_private', "Connection was established.", "updated" );
+						$repo_visibility = 'private'; 
+						
+					}else {
+						add_settings_error( 'git2wp_settings_errors', 
+							'repo_invalid', 
+							'Repo is nonexistent or you have insufficient permissions!', 
+							'error' );
+						
+						return $initial_options;	
 					}
+					
 					
 					$resource_list[] = array(
 												'resource_link' => $link,
@@ -927,11 +906,11 @@ rv:1.8.1.13)"
 	foreach($resource_list as $key => $resource)
 		if ( isset($_POST['submit_install_resource_'.$k++]) ) {
 			$repo_type = git2wp_get_repo_type($resource['resource_link']);
-			$zipball_url = ABSPATH.'/wp-content/uploads/git2wp/'.$resource['repo_name'].'.zip';
+			$zipball_path = ABSPATH.'/wp-content/uploads/git2wp/'. wp_hash($resource['repo_name']).'.zip';
 			if ( $repo_type == 'plugin' )
-				git2wp_uploadPlguinFile($zipball_url);
+				git2wp_uploadPlguinFile($zipball_path);
 			else
-				git2wp_uploadThemeFile($zipball_url);
+				git2wp_uploadThemeFile($zipball_path);
 		}
 
 	// update resources
@@ -940,11 +919,11 @@ rv:1.8.1.13)"
 	foreach($resource_list as $key => $resource)
 		if ( isset($_POST['submit_update_resource_'.$k++]) ) {
 			$repo_type = git2wp_get_repo_type($resource['resource_link']);
-			$zipball_url = ABSPATH.'/wp-content/uploads/git2wp/'.$resource['repo_name'].'.zip';
+			$zipball_path = ABSPATH.'/wp-content/uploads/git2wp/'. wp_hash($resource['repo_name']).'.zip';
 			if ( $repo_type == 'plugin' )
-				git2wp_uploadPlguinFile($zipball_url, 'update');
+				git2wp_uploadPlguinFile($zipball_path, 'update');
 			else
-				git2wp_uploadThemeFile($zipball_url, 'update');
+				git2wp_uploadThemeFile($zipball_path, 'update');
 		}
 
 	// delete resources
