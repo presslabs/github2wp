@@ -36,15 +36,14 @@ class Git2WP {
 	
 	
 	public function create_zip_url() {
-		if($this->config['user'] != '' and $this->config['repo'] != '' and $this->config['access_token'] != NULL and $this->config['source'] != '') {
+		if ($this->config['user'] != '' and $this->config['repo'] != '' and $this->config['access_token'] != NULL and $this->config['source'] != '') {
 			$this->config['zip_url'] = $this->config['git_api_base_url'] 
 			. sprintf("/repos/%s/%s/zipball/%s?access_token=%s", $this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token']);
 		}
 	}
 	
 	
-	public function store_git_archive() {
-		
+	public function store_git_archive($unlink=true) {
 		$url = $this->config['zip_url'];
 		
 		$upload = wp_upload_dir();
@@ -55,9 +54,7 @@ class Git2WP {
 		if (! is_dir($upload_dir)) 
 		   mkdir( $upload_dir, 0777, true );
 
-		error_log($url);
-
-		$upload_dir .= '/' . $this->config['repo'] . ".zip";	
+		$upload_dir .= '/' . wp_hash($this->config['repo']) . ".zip";	
 		
 		$fp = fopen ($upload_dir, 'wb+');
 	
@@ -76,10 +73,19 @@ class Git2WP {
 		curl_close($ch);
 		fclose($fp);
 		
-		if($httpCode == 404)
+		if ($httpCode == 404 or $httpCode == 403) {
+			if ($unlink) unlink($upload_dir);
+			
 			return false;
+		}
 		
-		return filesize($upload_dir) > 0;
+		if (filesize($upload_dir) > 0) {
+			if ($unlink) unlink($upload_dir);
+			
+			return true;
+		}
+		
+		return false;
 	}
 }
 
