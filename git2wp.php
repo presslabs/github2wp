@@ -138,8 +138,8 @@ function git2wp_toWpFormat($data){
 //------------------------------------------------------------------------------
 function git2wp_get_commits($payload) {
 	$out = '';
-	$obj = json_decode($payload);
-	if ( $obj === true ) {
+	if ( $payload != null ) {
+		$obj = json_decode($payload);
 		$commits = $obj->{"commits"};
 		$out .= '<ul>';
 		foreach($commits as $commit)
