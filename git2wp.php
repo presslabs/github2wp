@@ -8,6 +8,8 @@
  * Version: 2.1.0
  */
 
+define('MAX_COMMIT_HIST_COUNT', 5);
+
 require_once('Git2WP.class.php');
 require_once('Git2WpFile.class.php');
 
@@ -847,7 +849,6 @@ function git2wp_options_validate($input) {
 		$resource_list = &$options['resource_list'];
 		$git_base = 'https://github.com/';
 		
-		$repo_visibility = "public";
 		$repo_link = $_POST['resource_link'];
 		$repo_branch = $_POST['master_branch'];
 		
@@ -893,12 +894,9 @@ function git2wp_options_validate($input) {
 					
 					$sw = $git->store_git_archive();
 					
-					if ($sw) {
-
+					if ($sw)
 						add_settings_error( 'git2wp_settings_errors', 'repo_private', "Connection was established.", "updated" );
-						$repo_visibility = 'private'; 
-						
-					}else {
+					else {
 						add_settings_error( 'git2wp_settings_errors', 
 							'repo_invalid', 
 							'Repo is nonexistent or you have insufficient permissions!', 
@@ -910,7 +908,6 @@ function git2wp_options_validate($input) {
 					
 					$resource_list[] = array(
 												'resource_link' => $link,
-												'repo_visibility' => $repo_visibility,
 												'repo_name' => $resource_repo_name,
 												'repo_branch' => $repo_branch,
 												'username' => $resource_owner,
@@ -1013,7 +1010,6 @@ function git2wp_options_validate($input) {
 		));
 		
 		$sw = $git->store_git_archive();
-		error_log($sw);
 	}
 	
 	return $options;
@@ -1038,6 +1034,32 @@ function git2wp_init() {
 					
 					if($resource['repo_branch'] == substr ($obj['ref'], strlen("refs/heads/"))){
 						$git_data['head_commit'] = $obj["head_commit"];
+						
+						$commits = $obj['commits'];
+						
+						if(count($commits) > MAX_COMMIT_HIST_COUNT)
+							$commits = array_slice($obj['commits'], -MAX_COMMIT_HIST_COUNT);
+						
+						foreach($commits as $key => $data)	{
+							$unique = true;
+							foreach($git_data['commit_history'] as $key2 => $data2)
+								if($data['id'] === $data2['sha']) {
+									$unique = false;
+									break;
+								}
+								
+								if($unique)
+									$git_data['commit_history'][] = array('sha' => $data['id'],
+																												'message' => $data['message'],
+																												'timestamp' => $data['timestamp'],
+																												'git_url' => $data['url']
+																											 );
+						}
+							
+						if(count($git_data['commit_history']) > MAX_COMMIT_HIST_COUNT)
+							$git_data['commit_history'] = array_slice($git_data['commit_history'], -MAX_COMMIT_HIST_COUNT);
+
+						
 						$git_data['payload'] = $raw;
 					}
 				}
