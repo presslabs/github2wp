@@ -895,15 +895,10 @@ function git2wp_options_validate($input) {
 					$sw = $git->store_git_archive();
 					
 					if ($sw)
-						add_settings_error( 'git2wp_settings_errors', 'repo_private', "Connection was established.", "updated" );
-					else {
-						add_settings_error( 'git2wp_settings_errors', 
-							'repo_invalid', 
-							'Repo is nonexistent or you have insufficient permissions!', 
-							'error' );
-						
+						add_settings_error( 'git2wp_settings_errors', 'repo_connected', "Connection was established.", "updated" );
+					else
 						return $initial_options;	
-					}
+
 					
 					
 					$resource_list[] = array(

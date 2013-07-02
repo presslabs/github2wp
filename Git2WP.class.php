@@ -73,9 +73,19 @@ class Git2WP {
 		curl_close($ch);
 		fclose($fp);
 		
+		if($httpCode == 503 or $httpCode == 500) {
+			add_settings_error( 'git2wp_settings_errors', 'git_busy', 
+								   "Git is currently unreachable. Try again later.", 
+								   "error" );
+			return false;
+		}
+		
 		if ($httpCode == 404 or $httpCode == 403) {
 			if ($unlink) unlink($upload_dir);
-			
+				add_settings_error( 'git2wp_settings_errors', 
+							'repo_no_perm', 
+							'You have insufficient permissions or repo does not exist!', 
+							'error' );
 			return false;
 		}
 		
