@@ -68,12 +68,27 @@ class Git2WP {
 
 		curl_exec($ch);
 		
+		if(curl_errno($ch))
+			$curl_error_sw = true; 
+		
 		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE); 
 		
 		curl_close($ch);
 		fclose($fp);
 		
-		if($httpCode == 503 or $httpCode == 500) {
+		
+		if($curl_error_sw) {
+			if ($unlink) unlink($upload_dir);
+
+			add_settings_error( 'git2wp_settings_errors', 'git_curl_error', 
+								   "Connection Error. Try again later.", 
+								   "error" );
+			return false;
+		}
+			
+		if($httpCode == 503 or $httpCode == 500 or $httpCode == 502) {
+			if ($unlink) unlink($upload_dir);
+
 			add_settings_error( 'git2wp_settings_errors', 'git_busy', 
 								   "Git is currently unreachable. Try again later.", 
 								   "error" );
@@ -82,7 +97,8 @@ class Git2WP {
 		
 		if ($httpCode == 404 or $httpCode == 403) {
 			if ($unlink) unlink($upload_dir);
-				add_settings_error( 'git2wp_settings_errors', 
+			
+			add_settings_error( 'git2wp_settings_errors', 
 							'repo_no_perm', 
 							'You have insufficient permissions or repo does not exist!', 
 							'error' );
@@ -91,7 +107,7 @@ class Git2WP {
 		
 		if (filesize($upload_dir) > 0) {
 			if ($unlink) unlink($upload_dir);
-			
+
 			return true;
 		}
 		
