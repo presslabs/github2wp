@@ -724,11 +724,13 @@ function git2wp_setting_resources_list() {
 		<tr><th></th><th>Resource</th><th>Endpoint</th><th>Options</th></tr>
 	</thead>
 	<tbody>
-<?php foreach($resource_list as $resource) {
+<?php 
+		foreach($resource_list as $resource) {
+			$k++;
+			
 			$endpoint = home_url() . '/' . '?git2wp=' . md5( str_replace(home_url(), '', $resource['resource_link']) );
 			$repo_type = git2wp_get_repo_type($resource['resource_link']);
 			
-			$k++;
 			$alternate = '';
 			if ( ($k % 2) == 0 )
 				$alternate = ' class="inactive"';
@@ -756,7 +758,7 @@ function git2wp_setting_resources_list() {
 			$my_data = "";
 			
 			if ( ! $dir_exists ) {
-				$zipball_url = ABSPATH.'/wp-content/uploads/git2wp/'.$resource['repo_name'].'.zip';
+				$zipball_url = ABSPATH.'/wp-content/uploads/git2wp/'. wp_hash($resource['repo_name']) .'.zip';
 				$my_data .= "<p><strong>The resource does not exist on WordPress!</strong></p>";
 				if ( file_exists($zipball_url) ) {
 					//
