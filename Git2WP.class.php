@@ -14,7 +14,7 @@ class Git2WP {
 		"client_id" => "",
 		"access_token" => "",
 		"zip_url" => "",
-		"git_api_base_url" => "https://api.github.com",
+		"git_api_base_url" => "https://api.github.com/",
 		"git_endpoint" => "",
 		"source" => ""
 	);
@@ -38,7 +38,7 @@ class Git2WP {
 	public function create_zip_url() {
 		if ($this->config['user'] != '' and $this->config['repo'] != '' and $this->config['access_token'] != NULL and $this->config['source'] != '') {
 			$this->config['zip_url'] = $this->config['git_api_base_url'] 
-			. sprintf("/repos/%s/%s/zipball/%s?access_token=%s", $this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token']);
+			. sprintf("repos/%s/%s/zipball/%s?access_token=%s", $this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token']);
 		}
 	}
 	
@@ -112,6 +112,64 @@ class Git2WP {
 		}
 		
 		return false;
+	}
+	
+	public function check_repo_availability() {
+		$url = $this->config['git_api_base_url']."repos/".$this->config['user']
+					 ."/".$this->config['repo']."/branches"."?access_token=".$this->config['access_token'];
+		
+		$ch = curl_init($url);
+		
+		curl_setopt($ch, CURLOPT_TIMEOUT, 50);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows;U;Windows NT 5.1;en-US;rv:1.8.1.13)"." Gecko/20080311 Firefox/2.0.0.13');		
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		$result = curl_exec($ch);
+		
+		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE); 
+		
+		curl_close($ch);
+		
+		$result = json_decode($result, true);
+		
+		if($result['message'] == 'Not Found'){
+			add_settings_error( 'git2wp_settings_errors', 
+							'repo_no_perm', 
+							'You have insufficient permissions or repo does not exist!', 
+							'error' );
+			
+			return false;
+		}
+		
+		return true;
+	}
+	
+	public function fetch_branches() {
+		$url = $this->config['git_api_base_url']."repos/".$this->config['user']
+					 ."/".$this->config['repo']."/branches"."?access_token=".$this->config['access_token'];
+		
+		$branches = null;
+		
+		$ch = curl_init($url);
+		
+		curl_setopt($ch, CURLOPT_TIMEOUT, 50);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+		curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows;U;Windows NT 5.1;en-US;rv:1.8.1.13)"." Gecko/20080311 Firefox/2.0.0.13');		
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		$result = curl_exec($ch);
+		
+		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE); 
+		
+		curl_close($ch);
+		
+		$result = json_decode($result, true);
+		
+		if(empty($result['message'])){
+			foreach($result as $branch)
+				$branches[] = $branch['name'];
+		}
+		
+		return $branches;
 	}
 }
 

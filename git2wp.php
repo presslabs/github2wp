@@ -997,8 +997,8 @@ function git2wp_options_validate($input) {
 		$default = $options['default'];
 		
 		$git = new Git2WP(array(
-			"user" => "krodyrobi",
-			"repo" => "pl-templates",
+			"user" => "PressLabs",
+			"repo" => "git2wp",
 			"client_id" => $default['client_id'],
 			"client_secret" => $default['client_secret'],
 			"access_token" => $default['access_token'],
@@ -1006,7 +1006,11 @@ function git2wp_options_validate($input) {
 			"source" => $default['master_branch']
 		));
 		
-		$sw = $git->store_git_archive();
+		$branches = $git->fetch_branches();
+		
+		$sw = $git->check_repo_availability();
+		
+		error_log(print_r($branches, true));
 	}
 	
 	return $options;
@@ -1065,7 +1069,7 @@ function git2wp_init() {
 		}
 		update_option("git2wp_options", $options);
 	}
-	
+
 	// get token from GitHub
 	if ( isset($_GET['code']) and  isset($_GET['git2wp_auth']) and $_GET['git2wp_auth'] == 'true' ) {
 		
