@@ -500,6 +500,7 @@ function git2wp_admin_init() {
 	$plugin_link = git2wp_return_settings_link('&tab=settings');
 
 	$options = get_option('git2wp_options');
+	$resource_list = $options['resource_list'];
 	$default = $options['default'];
 
 	if ( empty($default['master_branch']) || empty($default['client_id']) || empty($default['client_secret']) )
@@ -757,6 +758,10 @@ function git2wp_setting_resources_list() {
 			$git_data = $resource['git_data'];
 			$my_data = "";
 			
+			$branch_dropdown = "<select class='resource_fetch_branch' resource_id='".($k-1)."'>"
+											 . "<option value=".$resource['repo_branch'].">".$resource['repo_branch']."</option>"
+											 . "</select>";
+			
 			if ( ! $dir_exists ) {
 				$zipball_url = ABSPATH.'/wp-content/uploads/git2wp/'. wp_hash($resource['repo_name']) .'.zip';
 				$my_data .= "<p><strong>The resource does not exist on WordPress!</strong></p>";
@@ -779,7 +784,7 @@ function git2wp_setting_resources_list() {
 			}
 			
 			echo "<tr".$alternate."><td>".$k."</td>"
-				."<td>".$github_resource."<br />".$wordpress_resource."</td>"
+				."<td>".$github_resource."<br />".$wordpress_resource."<br />".$branch_dropdown."</td>"
 				."<td>".$endpoint."</td>"
 				."<td>".$action."</td></tr>";
 			
@@ -894,7 +899,7 @@ function git2wp_options_validate($input) {
 									"source" => $repo_branch 
 								));
 					
-					$sw = $git->store_git_archive();
+					$sw = $git->check_repo_availability();
 					
 					if ($sw)
 						add_settings_error( 'git2wp_settings_errors', 'repo_connected', "Connection was established.", "updated" );
