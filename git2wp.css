@@ -1,0 +1,21 @@
+.ajax-loader {
+	background-image: url('./resources/ajax-loader.gif');
+	background-repeat: no-repeat;
+	background-size: 16px 16px;
+	height: 16px;
+	width: 16px;
+	display: inline-block;
+	margin-left: 10px;
+	vertical-align: middle;
+}
+
+.ajax-success {
+	background-image: url('./resources/ajax-success.jpg');
+	background-repeat: no-repeat;
+	background-size: 16px 16px;
+	height: 16px;
+	width: 16px;
+	display: inline-block;
+	margin-left: 10px;
+	vertical-align: middle;
+}
