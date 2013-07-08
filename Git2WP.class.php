@@ -168,7 +168,7 @@ class Git2WP {
 			foreach($result as $branch)
 				$branches[] = $branch['name'];
 		}
-		
+
 		return $branches;
 	}
 }

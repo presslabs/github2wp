@@ -10,22 +10,32 @@ j(document).ready(function() {
     		});
     });
     
- 		j(".resource_fetch_branch").mousedown(function() {
+    
+    j(".resource_set_branch").change(function() {
     	var id = j(this).attr("resource_id");
+    	var branch = j(this).val();
     	
-
+    	j(this).after('<div class="ajax-loader"></div>');
+			
     	j.ajax({
-    		type:'GET',
+    		type:'post',
   			url: "/wp-content/plugins/git2wp/ajax-handler.php",
-  			data: {'id': id, 'git2wp_action': 'fetch_branches'},
+  			data: {'id': id, 'branch': branch, 'git2wp_action': 'set_branch'},
+  			
   			success: function(result){
-  								var obj = j("select.resource_fetch_branch[resource_id='" + id + "']");
-  								obj.html(result);
+  							 	var div = j("select.resource_set_branch[resource_id='"
+  							 							+ id + "'] + div.ajax-loader"
+  							 	 						).removeClass('ajax-loader').addClass('ajax-success');
+  							  
+  							  setTimeout(function() { div.fadeOut(1000, function() { div.remove(); });
+  							  											}, 3000);
   							 },
+  			
   			error: function(request, error) {
  												alert ( " Can't do because: " + error );
 											},
   			dataType: 'html'
 			});
 		})
+		
 });

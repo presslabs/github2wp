@@ -3,13 +3,14 @@
 	require_once('./Git2WP.class.php');
 	
 	$options = get_option('git2wp_options');
-	$resource_list = $options['resource_list'];
+	$resource_list = &$options['resource_list'];
 	$default = $options['default'];
 
-	if( isset($_GET['id']) and isset($_GET['git2wp_action']))
-		if( $_GET['git2wp_action'] == 'fetch_branches' ) {
-			$resource = $resource_list[$_GET['id']];
-			
+	if( isset($_POST['id']) and isset($_POST['branch']) and isset($_POST['git2wp_action'])){
+		
+		if( $_POST['git2wp_action'] == 'set_branch' ) {
+			$resource = &$resource_list[$_POST['id']];
+			error_log("req ok". print_r($resource, true));
 			$response = '';
 			
 			$git = new Git2WP(array(
@@ -20,12 +21,16 @@
 									));
 					
 			$branches = $git->fetch_branches();
-			error_log(print_r($branches, true));
 			
 			if(count($branches) > 0) {
-				foreach($branches as $d)
-					$response .= "<option value='$d'>$d</option>";
-
-				echo $response;
+				error_log("is array");
+				foreach($branches as $br)
+					if($br == $_POST['branch']) {
+						error_log("branch $br");
+						$resource['repo_branch'] = $br;
+						update_option('git2wp_options', $options);
+						break;
+					}
 			}
 		}
+	}
