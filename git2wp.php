@@ -5,7 +5,7 @@
  * Description: Managing themes and plugins from github.
  * Author: PressLabs
  * Author URI: http://www.presslabs.com/ 
- * Version: 2.1.1
+ * Version: 1.3
  */
 
 define('GIT2WP_MAX_COMMIT_HIST_COUNT', 5);
@@ -738,8 +738,6 @@ function git2wp_installPlugin($file) {
 	$filename = str_replace('.zip', '', basename( $file ));
 	$repo_name = git2wp_get_plugin_repo_name_from_hash($filename);
 	$new_filename = $repo_name . '.zip';
-	//error_log(time().': INSTALL >>>>> '.$repo_name.' - ' . $filename);
-	error_log(time().': UPDATE >>>>> '.$repo_name.' - ' . $filename);
 	$title = sprintf( __('Installing Plugin from file: %s'), $new_filename );
 		$nonce = 'plugin-upload';
 	//$url = add_query_arg(array('package' => $file_upload->id), 'update.php?action=upload-plugin');
@@ -784,11 +782,11 @@ function git2wp_setting_resources_list() {
 			$k++;
 			
 			$git = new Git2WP(array(
-										"user" => $resource['username'],
-										"repo" => $resource['repo_name'],
-										"access_token" => $default['access_token'],
-										"source" => $resource['repo_branch'] 
-									));
+				"user" => $resource['username'],
+				"repo" => $resource['repo_name'],
+				"access_token" => $default['access_token'],
+				"source" => $resource['repo_branch'] 
+			));
 			
 									
 			if(false === $transient){
@@ -846,7 +844,7 @@ function git2wp_setting_resources_list() {
 			if ( ! $dir_exists ) {
 				$zipball_url = GIT2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']) .'.zip';
 				$my_data .= "<p><strong>The resource does not exist on WordPress!</strong></p>";
-				if ( file_exists($zipball_url) ) {
+				//if ( file_exists($zipball_url) ) {
 					//
 					// Install resource button
 					//
@@ -854,7 +852,7 @@ function git2wp_setting_resources_list() {
 					$action .= '<p><input name="submit_install_resource_'.($k-1)
 						.'" type="submit" class="button button-primary" value="'
 						.esc_attr('Install') . '" /></p>';
-				}
+				//}
 			} else {
 				//
 				// Update resource button
@@ -1028,10 +1026,36 @@ function git2wp_options_validate($input) {
 		if ( isset($_POST['submit_install_resource_'.$k++]) ) {
 			$repo_type = git2wp_get_repo_type($resource['resource_link']);
 			$zipball_path = GIT2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']).'.zip';
+
+			$default = $options['default'];
+			$git = new Git2WP(array(
+				"user" => $resource['username'],
+				"repo" => $resource['repo_name'],
+				"client_id" => $default['client_id'],
+				"client_secret" => $default['client_secret'],
+				"access_token" => $default['access_token'],
+				"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
+				"source" => $resource['repo_branch']
+			));
+			$sw = $git->store_git_archive(false);
+
 			if ( $repo_type == 'plugin' )
 				git2wp_uploadPlguinFile($zipball_path);
 			else
 				git2wp_uploadThemeFile($zipball_path);
+
+			if ( file_exists($zipball_path) ) unlink($zipball_path);
+
+			$dir = plugin_dir_path( __FILE__ ) . '/../';
+			$scandir_files = scandir($dir, 1);
+			foreach($scandir_files as $sc_file) {
+				$file_name_array = explode('-', $sc_file);
+				$file_name = $resource['username'] . '-' 
+					. $resource['repo_name'] . '-' 
+					. $file_name_array[count($file_name_array)-1];
+				if ( $sc_file == $file_name )
+					rename($dir . '/' . $sc_file, $dir . '/' . $resource['repo_name']);
+			}
 		}
 
 	// update resources
@@ -1041,10 +1065,25 @@ function git2wp_options_validate($input) {
 		if ( isset($_POST['submit_update_resource_'.$k++]) ) {
 			$repo_type = git2wp_get_repo_type($resource['resource_link']);
 			$zipball_path = GIT2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']).'.zip';
+
+			$default = $options['default'];
+			$git = new Git2WP(array(
+				"user" => $resource['username'],
+				"repo" => $resource['repo_name'],
+				"client_id" => $default['client_id'],
+				"client_secret" => $default['client_secret'],
+				"access_token" => $default['access_token'],
+				"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
+				"source" => $resource['repo_branch']
+			));
+			$sw = $git->store_git_archive(false);
+
 			if ( $repo_type == 'plugin' )
 				git2wp_uploadPlguinFile($zipball_path, 'update');
 			else
 				git2wp_uploadThemeFile($zipball_path, 'update');
+
+			if ( file_exists($zipball_path) ) unlink($zipball_path);
 		}
 
 	// delete resources
@@ -1188,4 +1227,5 @@ function git2wp_init() {
 	}
 }
 add_action('init', 'git2wp_init');
+
 
