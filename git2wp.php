@@ -942,9 +942,10 @@ function git2wp_options_validate($input) {
 					
 					$sw = $git->check_repo_availability();
 					
-					if ($sw)
+					if ($sw) {
 						add_settings_error( 'git2wp_settings_errors', 'repo_connected', "Connection was established.", "updated" );
-					else
+						delete_transient('git2wp_branches');
+					}else
 						return $initial_options;	
 
 					
