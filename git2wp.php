@@ -266,9 +266,15 @@ add_filter("pre_set_site_transient_update_plugins","git2wp_update_check_plugins"
 
 //-----------------------------------------------------------------------------
 function git2wp_add_script() { 
-	wp_enqueue_script('git2wp', plugins_url('/git2wp/git2wp.js', __FILLE__)); 
-}
+	wp_enqueue_script('git2wp_js', plugins_url('/git2wp/git2wp.js', __FILLE__)); 
+} 
 add_action('admin_enqueue_scripts','git2wp_add_script'); 
+
+//------------------------------------------------------------------------------
+function git2wp_add_style() {
+	wp_enqueue_style('git2wp_css', plugins_url('/git2wp/git2wp.css', __FILLE__) );
+}
+add_action('admin_enqueue_scripts','git2wp_add_style'); 
 
 //------------------------------------------------------------------------------
 function git2wp_options_page() {
@@ -498,6 +504,7 @@ function git2wp_admin_init() {
 	$plugin_link = git2wp_return_settings_link('&tab=settings');
 
 	$options = get_option('git2wp_options');
+	$resource_list = $options['resource_list'];
 	$default = $options['default'];
 
 	if ( empty($default['master_branch']) || empty($default['client_id']) || empty($default['client_secret']) )
@@ -758,8 +765,44 @@ function git2wp_setting_resources_list() {
 	</thead>
 	<tbody>
 <?php 
+
+		$new_transient = array();
+		$transient = get_transient('git2wp_branches');
+		$default = $options['default'];
+				
 		foreach($resource_list as $resource) {
 			$k++;
+			
+			$git = new Git2WP(array(
+										"user" => $resource['username'],
+										"repo" => $resource['repo_name'],
+										"access_token" => $default['access_token'],
+										"source" => $resource['repo_branch'] 
+									));
+			
+									
+			if(false === $transient){
+				$branches = $git->fetch_branches();
+				$new_transient[] = array('repo_name' => $resource['repo_name'],
+														     'branches' => $branches);
+			}else
+				foreach($transient as $tran_res)
+					if($tran_res['repo_name'] == $resource['repo_name']){
+						$branches = $tran_res['branches'];
+						break;
+					}
+			
+			$branch_dropdown = "<strong>Branch: </strong><select style='width: 125px;'class='resource_set_branch' resource_id='".($k-1)."'>";
+			
+			if(is_array($branches) and count($branches) > 0) {
+				foreach($branches as $branch)
+					if($resource['repo_branch'] == $branch)
+						$branch_dropdown .= "<option value=".$branch." selected>".$branch."</option>";
+					else
+						$branch_dropdown .= "<option value=".$branch.">".$branch."</option>";
+			}
+			$branch_dropdown .= "</select>";
+			
 			
 			$endpoint = home_url() . '/' . '?git2wp=' . md5( str_replace(home_url(), '', $resource['resource_link']) );
 			$repo_type = git2wp_get_repo_type($resource['resource_link']);
@@ -812,7 +855,7 @@ function git2wp_setting_resources_list() {
 			}
 			
 			echo "<tr".$alternate."><td>".$k."</td>"
-				."<td>".$github_resource."<br />".$wordpress_resource."</td>"
+				."<td>".$github_resource."<br />".$wordpress_resource."<br />".$branch_dropdown."</td>"
 				."<td>".$endpoint."</td>"
 				."<td>".$action."</td></tr>";
 			
@@ -870,6 +913,10 @@ function git2wp_setting_resources_list() {
 
 			echo "<tr".$alternate."><td></td><td colspan='3'><div class='update-message'>" . $my_data . "</div></td></tr>";
 		}
+		
+		if($transient === false)
+			set_transient('git2wp_branches', $new_transient, 5*60);
+		
 		?></tbody></table>
 <?php
 	}
@@ -927,11 +974,12 @@ function git2wp_options_validate($input) {
 									"source" => $repo_branch 
 								));
 					
-					$sw = $git->store_git_archive();
+					$sw = $git->check_repo_availability();
 					
-					if ($sw)
+					if ($sw) {
 						add_settings_error( 'git2wp_settings_errors', 'repo_connected', "Connection was established.", "updated" );
-					else
+						delete_transient('git2wp_branches');
+					}else
 						return $initial_options;	
 
 					
@@ -1030,8 +1078,8 @@ function git2wp_options_validate($input) {
 		$default = $options['default'];
 		
 		$git = new Git2WP(array(
-			"user" => "krodyrobi",
-			"repo" => "pl-templates",
+			"user" => "PressLabs",
+			"repo" => "git2wp",
 			"client_id" => $default['client_id'],
 			"client_secret" => $default['client_secret'],
 			"access_token" => $default['access_token'],
@@ -1039,7 +1087,11 @@ function git2wp_options_validate($input) {
 			"source" => $default['master_branch']
 		));
 		
-		$sw = $git->store_git_archive();
+		$branches = $git->fetch_branches();
+		
+		$sw = $git->check_repo_availability();
+		
+		error_log(print_r($branches, true));
 	}
 	
 	return $options;
@@ -1098,7 +1150,7 @@ function git2wp_init() {
 		}
 		update_option("git2wp_options", $options);
 	}
-	
+
 	// get token from GitHub
 	if ( isset($_GET['code']) and  isset($_GET['git2wp_auth']) and $_GET['git2wp_auth'] == 'true' ) {
 		
