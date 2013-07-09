@@ -540,11 +540,18 @@ function git2wp_get_plugin_repo_name_from_hash( $hash ) {
 	$allPlugins = get_plugins();
 	foreach($allPlugins as $plugin_index => $plugin_value) {
 		$pluginFile = $plugin_index;
-		$repo_name = substr(basename($plugin_index), 0, -4);
+		$repo_name = substr( basename($plugin_index), 0, -4 );
 		if ( ($repo_name == $hash) || ($pluginFile == $hash) || (wp_hash($repo_name) == $hash) )
 			return $repo_name;
 	}
-	return $hash;
+	$options = get_option('git2wp_options');
+	$resource_list = $options['resource_list'];
+	foreach( $resource_list as $res ) {
+		$repo_name = $res['repo_name'];
+		if ( ($repo_name == $hash) || (wp_hash($repo_name) == $hash) )
+			return $repo_name;
+	}
+	return $repo_name;
 }
 
 //------------------------------------------------------------------------------
@@ -722,8 +729,11 @@ function git2wp_installPlugin($file) {
 	require_once(ABSPATH . 'wp-admin/admin-header.php');
 	
 	$filename = str_replace('.zip', '', basename( $file ));
-	$filename = git2wp_get_plugin_repo_name_from_hash($filename) . '.zip';
-	$title = sprintf( __('Installing Plugin from file: %s'), $filename );
+	$repo_name = git2wp_get_plugin_repo_name_from_hash($filename);
+	$new_filename = $repo_name . '.zip';
+	//error_log(time().': INSTALL >>>>> '.$repo_name.' - ' . $filename);
+	error_log(time().': UPDATE >>>>> '.$repo_name.' - ' . $filename);
+	$title = sprintf( __('Installing Plugin from file: %s'), $new_filename );
 	$nonce = 'plugin-upload';
 	//$url = add_query_arg(array('package' => $file_upload->id), 'update.php?action=upload-plugin');
 	$type = 'upload'; //Install plugin type, From Web or an Upload.
@@ -920,14 +930,18 @@ function git2wp_options_validate($input) {
 				if($unique) {
 					$default = $options['default'];
 					
-					$git = new Git2WP(array(
-									"user" => $resource_owner,
-									"repo" => $resource_repo_name,
-									"access_token" => $default['access_token'],
-									"source" => $repo_branch 
-								));
+					$args = array(
+						"user" => $resource_owner,
+						"repo" => $resource_repo_name,
+						"access_token" => $default['access_token'],
+						"source" => $repo_branch 
+					);
+
+					error_log('args: ' . print_r($args,true));
+
+					$git = new Git2WP($args);
 					
-					$sw = $git->store_git_archive();
+					$sw = $git->store_git_archive(false);
 					
 					if ($sw)
 						add_settings_error( 'git2wp_settings_errors', 'repo_connected', "Connection was established.", "updated" );
