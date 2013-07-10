@@ -770,7 +770,7 @@ function git2wp_setting_resources_list() {
 		$transient = get_transient('git2wp_branches');
 		$default = $options['default'];
 				
-		foreach($resource_list as $resource) {
+		foreach($resource_list as $index => $resource) {
 			$k++;
 			
 			$git = new Git2WP(array(
@@ -792,7 +792,7 @@ function git2wp_setting_resources_list() {
 						break;
 					}
 			
-			$branch_dropdown = "<strong>Branch: </strong><select style='width: 125px;'class='resource_set_branch' resource_id='".($k-1)."'>";
+			$branch_dropdown = "<strong>Branch: </strong><select style='width: 125px;'class='resource_set_branch' resource_id='$index'>";
 			
 			if(is_array($branches) and count($branches) > 0) {
 				foreach($branches as $branch)
@@ -826,7 +826,7 @@ function git2wp_setting_resources_list() {
 			// Delete resource button
 			//
 			$action = '<p><input name="submit_delete_resource_'.($k-1)
-				.'" type="submit" class="button" value="'.esc_attr('Delete')
+				.'" type="submit" class="button button-red" value="'.esc_attr('Delete')
 				.'" onclick="return confirm(\'Do you really want to delete: '
 				.$github_resource_url . '?\');"/></p>';
 			
@@ -1078,20 +1078,20 @@ function git2wp_options_validate($input) {
 		$default = $options['default'];
 		
 		$git = new Git2WP(array(
-			"user" => "PressLabs",
-			"repo" => "git2wp",
+			"user" => "Marius786",
+			"repo" => "plugin-for-debug",
 			"client_id" => $default['client_id'],
 			"client_secret" => $default['client_secret'],
 			"access_token" => $default['access_token'],
 			"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
-			"source" => $default['master_branch']
+			"source" => 'master'
 		));
 		
 		$branches = $git->fetch_branches();
 		
 		$sw = $git->check_repo_availability();
+		$sw = $git->store_git_archive(false);
 		
-		error_log(print_r($branches, true));
 	}
 	
 	return $options;
