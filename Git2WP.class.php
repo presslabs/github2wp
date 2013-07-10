@@ -42,18 +42,18 @@ class Git2WP {
 		}
 	}
 	
-public function store_git_archive() {
+	public function store_git_archive() {
 		$url = $this->config['zip_url'];
 		
 		$upload = wp_upload_dir();
 		
 		$upload_dir = $upload['basedir'];
-		$upload_dir = $upload_dir . '/git2wp';
+		$upload_dir = $upload_dir . '/git2wp/';
 		
 		if (! is_dir($upload_dir)) 
 		   mkdir( $upload_dir, 0777, true );
 
-		$upload_dir .= '/' . wp_hash($this->config['repo']) . ".zip";	
+		$upload_dir_zip .= $upload_dir . wp_hash($this->config['repo']) . ".zip";	
 		
 		$args = array(
 				'method'      =>    'GET',
@@ -80,25 +80,55 @@ public function store_git_archive() {
 		
 		$code = wp_remote_retrieve_response_code($response);
 		
-		
 		if($code == 200) {
-			file_put_contents($upload_dir, 'abc');
-			$bit_count = file_put_contents($upload_dir, wp_remote_retrieve_body( $response ));
-		
-			if($bit_count)
-				return true;
-		}else {
-			$error_message = wp_remote_retrieve_response_message($response);
-			add_settings_error( 'git2wp_settings_errors', 
-						'repo_archive_error', 
-						"An error has occured: $code - $error_message", 
-						'error' );
+			$bit_count = file_put_contents($upload_dir_zip, wp_remote_retrieve_body( $response ));
+			
+			if($bit_count) {
+				$zip = new ZipArchive;
+				$res = $zip->open($upload_dir_zip);
+				
+				$folder_name = $this->config['user']."-".$this->config['repo']."-" ;
+				
+				if ($res === TRUE) {
+					for($i = 0; $i < $zip->numFiles; $i++) {   
+        		$name = $zip->getNameIndex($i);
 						
+						if(strpos($folder_name, $name) == 0) {
+							$name = substr($name, 0, -1);
+							break;
+						}
+					}
+    			
+    			$zip->extractTo($upload_dir);
+    			$zip->close();
+    			unlink($upload_dir_zip);
+
+    			if( is_dir($upload_dir.$name))
+    				rename($upload_dir.$name, $upload_dir.$this->config['repo']);
+    			
+    			$created = $zip->open( $upload_dir_zip, ZIPARCHIVE::CREATE );
+    			
+    			if($created)
+    				$this->addDirectoryToZip($zip, $upload_dir.$this->config['repo'], strlen($upload_dir));
+   				
+   				$zip->close();
+   				git2wp_rmdir($upload_dir.$this->config['repo']);
+    			
+    			return true;
+    		}
+			}else {
+				$error_message = wp_remote_retrieve_response_message($response);
+				add_settings_error( 'git2wp_settings_errors', 
+							'repo_archive_error', 
+							"An error has occured: $code - $error_message", 
+							'error' );
+						
+				return false;
+			}
 			return false;
 		}
-		return false;
 	}
-
+		
 	public function check_repo_availability() {
 		$url = $this->config['git_api_base_url']."repos/".$this->config['user']
 					 ."/".$this->config['repo']."/branches"."?access_token=".$this->config['access_token'];
@@ -156,6 +186,15 @@ public function store_git_archive() {
 
 		return $branches;
 	}
+	
+	public static function addDirectoryToZip(&$zip, $dir, $base = 0) {
+    foreach(glob($dir . '/*') as $file) {
+      if(is_dir($file))
+        addDirectoryToZip($zip, $file, $base);
+      else
+        $zip->addFile($file, substr($file, $base));
+    }
+  }
 }
 
 endif;
