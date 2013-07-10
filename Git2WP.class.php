@@ -42,8 +42,7 @@ class Git2WP {
 		}
 	}
 	
-	
-	public function store_git_archive($unlink=true) {
+public function store_git_archive() {
 		$url = $this->config['zip_url'];
 		
 		$upload = wp_upload_dir();
@@ -56,64 +55,50 @@ class Git2WP {
 
 		$upload_dir .= '/' . wp_hash($this->config['repo']) . ".zip";	
 		
-		$fp = fopen ($upload_dir, 'wb+');
-	
-		$ch = curl_init($url);
+		$args = array(
+				'method'      =>    'GET',
+    			'timeout'     =>    50,
+    			'redirection' =>    5,
+    			'httpversion' =>    '1.0',
+    			'blocking'    =>    true,
+    			'headers'     =>    array(),
+    			'body'        =>    null,
+    			'cookies'     =>    array()
+				);
 		
-		curl_setopt($ch, CURLOPT_TIMEOUT, 50);
-		curl_setopt($ch, CURLOPT_FILE, $fp);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-		curl_setopt($ch, CURLOPT_ENCODING, "");
-		curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows;U;Windows NT 5.1;en-US;rv:1.8.1.13)"." Gecko/20080311 Firefox/2.0.0.13');		
-
-		curl_exec($ch);
+		$response = wp_remote_get( $url, $args );
 		
-		if(curl_errno($ch))
-			$curl_error_sw = true; 
-		
-		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE); 
-		
-		curl_close($ch);
-		fclose($fp);
-		
-		
-		if($curl_error_sw) {
-			if ($unlink) unlink($upload_dir);
-
-			add_settings_error( 'git2wp_settings_errors', 'git_curl_error', 
-								   "Connection Error. Try again later.", 
-								   "error" );
-			return false;
-		}
-			
-		if($httpCode == 503 or $httpCode == 500 or $httpCode == 502) {
-			if ($unlink) unlink($upload_dir);
-
-			add_settings_error( 'git2wp_settings_errors', 'git_busy', 
-								   "Git is currently unreachable. Try again later.", 
-								   "error" );
-			return false;
-		}
-		
-		if ($httpCode == 404 or $httpCode == 403) {
-			if ($unlink) unlink($upload_dir);
-			
+		if( is_wp_error( $response ) ) {
+			$error_message = $response->get_error_message();
 			add_settings_error( 'git2wp_settings_errors', 
-							'repo_no_perm', 
-							'You have insufficient permissions or repo does not exist!', 
-							'error' );
+						'repo_archive_error', 
+						"An error has occured: $error_message", 
+						'error' );
+			
 			return false;
 		}
 		
-		if (filesize($upload_dir) > 0) {
-			if ($unlink) unlink($upload_dir);
-
-			return true;
-		}
+		$code = wp_remote_retrieve_response_code($response);
 		
+		
+		if($code == 200) {
+			file_put_contents($upload_dir, 'abc');
+			$bit_count = file_put_contents($upload_dir, wp_remote_retrieve_body( $response ));
+		
+			if($bit_count)
+				return true;
+		}else {
+			$error_message = wp_remote_retrieve_response_message($response);
+			add_settings_error( 'git2wp_settings_errors', 
+						'repo_archive_error', 
+						"An error has occured: $code - $error_message", 
+						'error' );
+						
+			return false;
+		}
 		return false;
 	}
-	
+
 	public function check_repo_availability() {
 		$url = $this->config['git_api_base_url']."repos/".$this->config['user']
 					 ."/".$this->config['repo']."/branches"."?access_token=".$this->config['access_token'];
