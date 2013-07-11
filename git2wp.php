@@ -179,7 +179,7 @@ function git2wp_inject_info($result, $action = null, $args = null) {
 				if ( $git_data['payload'] )
 					$changelog = "<h4>".$changelog_head."</h4>"
 						. git2wp_get_commits($git_data['payload']);
-
+////////////COMMITS TAKEN FROM HISTORY NOT PAYLOAD
 				$sections = array(
 					"description" => git2wp_get_plugin_header($response_index, "Description"),
 					//"installation" => "(Recommended) Installation instructions.",
