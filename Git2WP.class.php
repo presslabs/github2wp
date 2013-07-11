@@ -42,6 +42,10 @@ class Git2WP {
 			. sprintf("repos/%s/%s/zipball/%s?access_token=%s", $this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token']);
 		}
 	}
+
+	public function return_git_archive_url() {
+		return $this->store_git_archive();
+	}
 	
 	public function store_git_archive() {
 		$url = $this->config['zip_url'];
@@ -50,21 +54,23 @@ class Git2WP {
 		
 		$upload_dir = $upload['basedir'];
 		$upload_dir = $upload_dir . '/git2wp/';
+		$upload_url = str_replace($upload['subdir'], '', $upload['url']) . '/git2wp/';
 		
 		if (! is_dir($upload_dir)) 
 		   mkdir( $upload_dir, 0777, true );
 
 		$upload_dir_zip .= $upload_dir . wp_hash($this->config['repo']) . ".zip";	
+		$upload_url_zip .= $upload_url . wp_hash($this->config['repo']) . ".zip";	
 		
 		$args = array(
 			'method'      =>    'GET',
-    			'timeout'     =>    50,
-    			'redirection' =>    5,
-    			'httpversion' =>    '1.0',
-    			'blocking'    =>    true,
-    			'headers'     =>    array(),
-    			'body'        =>    null,
-    			'cookies'     =>    array()
+			'timeout'     =>    50,
+			'redirection' =>    5,
+			'httpversion' =>    '1.0',
+			'blocking'    =>    true,
+			'headers'     =>    array(),
+			'body'        =>    null,
+			'cookies'     =>    array()
 		);
 		
 		$response = wp_remote_get( $url, $args );
@@ -116,7 +122,7 @@ class Git2WP {
    				$zip->close();
    				git2wp_rmdir($upload_dir.$this->config['repo']);
     			
-    			return true;
+    			return $upload_url_zip;
     		}
 			}else {
 				$error_message = wp_remote_retrieve_response_message($response);

@@ -81,7 +81,8 @@ function git2wp_update_check_themes($transient) {
 				$new_version = substr($git_data['head_commit']['id'], 0, 7); //strval( strtotime($git_data['head_commit']['timestamp']) );
 				if ( ($current_version > '-') && ($current_version > '') && ($current_version != $new_version) ) {
 					$update_url = 'http://themes.svn.wordpress.org/responsive/1.9.3.2/readme.txt';
-					$zipball = GIT2WP_ZIPBALL_URL . '/' . $resource['repo_name'].'.zip';
+					//$zipball = GIT2WP_ZIPBALL_URL . '/' . $resource['repo_name'].'.zip';
+					$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
 					$theme = array(
 						'new_version' => $new_version,
 						"url" => $update_url,
@@ -168,7 +169,8 @@ function git2wp_inject_info($result, $action = null, $args = null) {
 				//$current_version = git2wp_get_plugin_version($response_index);
 				$new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
 				$homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
-				$zipball = GIT2WP_ZIPBALL_URL . '/' . $resource['repo_name'].'.zip';
+				//$zipball = GIT2WP_ZIPBALL_URL . '/' . $resource['repo_name'].'.zip';
+				$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
 
 				$changelog_head = '';
 				if ( $new_version )
@@ -245,7 +247,8 @@ function git2wp_update_check_plugins($transient) {
 				$new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
 				if ( ($current_version > '-') && ($current_version > '') && ($current_version != $new_version) ) {
 					$homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
-					$zipball = GIT2WP_ZIPBALL_URL . '/' . wp_hash($resource['repo_name']) . '.zip';
+					//$zipball = GIT2WP_ZIPBALL_URL . '/' . wp_hash($resource['repo_name']) . '.zip';
+					$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
 					$plugin = array(
 						'slug' => dirname( $response_index ),
 						'new_version' => $new_version,
@@ -1047,7 +1050,7 @@ function git2wp_options_validate($input) {
 				"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
 				"source" => $resource['repo_branch']
 			));
-			$sw = $git->store_git_archive(false);
+			$sw = $git->store_git_archive();
 
 			if ( $repo_type == 'plugin' )
 				git2wp_uploadPlguinFile($zipball_path);
@@ -1087,7 +1090,7 @@ function git2wp_options_validate($input) {
 				"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
 				"source" => $resource['repo_branch']
 			));
-			$sw = $git->store_git_archive(false);
+			$sw = $git->store_git_archive();
 
 			if ( $repo_type == 'plugin' )
 				git2wp_uploadPlguinFile($zipball_path, 'update');
@@ -1154,7 +1157,7 @@ function git2wp_options_validate($input) {
 		$branches = $git->fetch_branches();
 		
 		$sw = $git->check_repo_availability();
-		$sw = $git->store_git_archive(false);
+		$sw = $git->store_git_archive();
 		
 	}
 	
@@ -1236,8 +1239,40 @@ function git2wp_init() {
 			update_option("git2wp_options", $options);
 		}
 	}
+
+	if ( isset( $_GET['zipball'] ) )
+		git2wp_install_from_wp_hash($_GET['zipball']);
 }
 add_action('init', 'git2wp_init');
+
+function git2wp_install_from_wp_hash($hash) {
+	$options = get_option("git2wp_options");
+	$default = &$options['default'];
+
+	$resource = null;
+	$resource_list = $options['resource_list'];
+	foreach( $resource_list as $resource_index => $resource_value )
+		if ( wp_hash($resource_value['repo_name']) == $hash ) {
+			$resource = $resource_value;
+			break;
+		}
+
+	if ( $resource != null ) {
+		$zipball_path = GIT2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']).'.zip';
+
+		$default = $options['default'];
+		$git = new Git2WP(array(
+			"user" => $resource['username'],
+			"repo" => $resource['repo_name'],
+			"client_id" => $default['client_id'],
+			"client_secret" => $default['client_secret'],
+			"access_token" => $default['access_token'],
+			"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
+			"source" => $resource['repo_branch']
+		));
+		header('Location: ' . $git->return_git_archive_url());
+	}
+}
 
 
 
