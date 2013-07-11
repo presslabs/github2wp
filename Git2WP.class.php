@@ -10,6 +10,7 @@ class Git2WP {
 	public $config = array(
 		"user" => "",
 		"repo" => "",
+		"repo_type" => "",
 		"client_secret" => "",
 		"client_id" => "",
 		"access_token" => "",
@@ -56,7 +57,7 @@ class Git2WP {
 		$upload_dir_zip .= $upload_dir . wp_hash($this->config['repo']) . ".zip";	
 		
 		$args = array(
-				'method'      =>    'GET',
+			'method'      =>    'GET',
     			'timeout'     =>    50,
     			'redirection' =>    5,
     			'httpversion' =>    '1.0',
@@ -64,7 +65,7 @@ class Git2WP {
     			'headers'     =>    array(),
     			'body'        =>    null,
     			'cookies'     =>    array()
-				);
+		);
 		
 		$response = wp_remote_get( $url, $args );
 		
@@ -109,7 +110,8 @@ class Git2WP {
     			$created = $zip->open( $upload_dir_zip, ZIPARCHIVE::CREATE );
     			
     			if($created)
-    				$this->addDirectoryToZip($zip, $upload_dir.$this->config['repo'], strlen($upload_dir));
+    				$this->addDirectoryToZip($zip, $upload_dir.$this->config['repo'], strlen($upload_dir),
+					substr($upload_dir.$name, -7) );
    				
    				$zip->close();
    				git2wp_rmdir($upload_dir.$this->config['repo']);
@@ -187,12 +189,30 @@ class Git2WP {
 		return $branches;
 	}
 	
-	public static function addDirectoryToZip(&$zip, $dir, $base = 0) {
+	public function addDirectoryToZip(&$zip, $dir, $base = 0, $version) {
     foreach(glob($dir . '/*') as $file) {
       if(is_dir($file))
-        addDirectoryToZip($zip, $file, $base);
-      else
-        $zip->addFile($file, substr($file, $base));
+        $this->addDirectoryToZip($zip, $file, $base, $version);
+      else {
+	$file_name = substr($file, $base);
+
+	$repo_file_name = $this->config['repo'].'.php';
+	if ( $this->config['repo_type'] == 'theme' )
+		$repo_file_name = 'style.css';
+
+	if ( basename($file_name) == $repo_file_name ) {
+		$tag_version = "Version: ";
+		$zip_filename = basename($file_name);
+
+		$file_content = file_get_contents($file);
+		$old_version = $tag_version . git2wp_str_between($tag_version, "\n", $file_content);
+		$new_version = $tag_version . $version;
+
+		$new_file_content = str_replace($old_version, $new_version, $file_content);
+		$zip->addFromString($file_name, $new_file_content);
+	} else
+       		$zip->addFile($file, $file_name);
+	}
     }
   }
 }
