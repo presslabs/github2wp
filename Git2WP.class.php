@@ -133,17 +133,30 @@ class Git2WP {
 		$url = $this->config['git_api_base_url']."repos/".$this->config['user']
 					 ."/".$this->config['repo']."/branches"."?access_token=".$this->config['access_token'];
 		
-		$ch = curl_init($url);
+		$args = array(
+				'method'      =>    'GET',
+    			'timeout'     =>    50,
+    			'redirection' =>    5,
+    			'httpversion' =>    '1.0',
+    			'blocking'    =>    true,
+    			'headers'     =>    array(),
+    			'body'        =>    null,
+    			'cookies'     =>    array()
+				);
 		
-		curl_setopt($ch, CURLOPT_TIMEOUT, 50);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-		curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows;U;Windows NT 5.1;en-US;rv:1.8.1.13)"." Gecko/20080311 Firefox/2.0.0.13');		
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		$result = curl_exec($ch);
+		$response = wp_remote_get( $url, $args );
 		
-		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE); 
+		if( is_wp_error( $response ) ) {
+			$error_message = $response->get_error_message();
+			add_settings_error( 'git2wp_settings_errors', 
+						'repo_archive_error', 
+						"An error has occured: $error_message", 
+						'error' );
+			
+			return false;
+		}
 		
-		curl_close($ch);
+		$result = wp_remote_retrieve_body( $response );
 		
 		$result = json_decode($result, true);
 		
@@ -164,18 +177,31 @@ class Git2WP {
 					 ."/".$this->config['repo']."/branches"."?access_token=".$this->config['access_token'];
 		
 		$branches = null;
+		$args = array(
+				'method'      =>    'GET',
+    			'timeout'     =>    50,
+    			'redirection' =>    5,
+    			'httpversion' =>    '1.0',
+    			'blocking'    =>    true,
+    			'headers'     =>    array(),
+    			'body'        =>    null,
+    			'cookies'     =>    array()
+				);
 		
-		$ch = curl_init($url);
 		
-		curl_setopt($ch, CURLOPT_TIMEOUT, 50);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-		curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows;U;Windows NT 5.1;en-US;rv:1.8.1.13)"." Gecko/20080311 Firefox/2.0.0.13');		
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		$result = curl_exec($ch);
+		$response = wp_remote_get( $url, $args );
 		
-		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE); 
+		if( is_wp_error( $response ) ) {
+			$error_message = $response->get_error_message();
+			add_settings_error( 'git2wp_settings_errors', 
+						'repo_archive_error', 
+						"An error has occured: $error_message", 
+						'error' );
+			
+			return null;
+		}
 		
-		curl_close($ch);
+		$result = wp_remote_retrieve_body( $response );
 		
 		$result = json_decode($result, true);
 		
@@ -190,7 +216,7 @@ class Git2WP {
 	public static function addDirectoryToZip(&$zip, $dir, $base = 0) {
     foreach(glob($dir . '/*') as $file) {
       if(is_dir($file))
-        addDirectoryToZip($zip, $file, $base);
+        Git2WP::addDirectoryToZip($zip, $file, $base);
       else
         $zip->addFile($file, substr($file, $base));
     }
