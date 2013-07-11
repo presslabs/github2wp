@@ -1154,7 +1154,7 @@ function git2wp_options_validate($input) {
 		$branches = $git->fetch_branches();
 		
 		$sw = $git->check_repo_availability();
-		$sw = $git->store_git_archive(false);
+		$sw = $git->store_git_archive();
 		
 	}
 	
