@@ -5,7 +5,7 @@
  * Description: Managing themes and plugins from github.
  * Author: PressLabs
  * Author URI: http://www.presslabs.com/ 
- * Version: 1.3.1
+ * Version: 1.3.2
  */
 
 define('GIT2WP_MAX_COMMIT_HIST_COUNT', 5);
@@ -23,7 +23,8 @@ register_activation_hook(__FILE__,'git2wp_activate');
 
 //------------------------------------------------------------------------------
 function git2wp_deactivate() {
-	//git2wp_delete_options();
+	git2wp_delete_options();
+	delete_transient('git2wp_branches');
 }
 register_deactivation_hook(__FILE__,'git2wp_deactivate');
 
