@@ -80,7 +80,8 @@ function git2wp_update_check_themes($transient) {
 				$response_index = $resource['repo_name'];
 				$current_version = git2wp_get_theme_version($response_index);
 				$new_version = substr($git_data['head_commit']['id'], 0, 7); //strval( strtotime($git_data['head_commit']['timestamp']) );
-				if ( ($current_version > '-') && ($current_version > '') && ($current_version != $new_version) ) {
+				if ( ($current_version != '-') && ($current_version != '') 
+				  && ($current_version != $new_version) && ($new_version != false) ) {
 					$update_url = 'http://themes.svn.wordpress.org/responsive/1.9.3.2/readme.txt';
 					//$zipball = GIT2WP_ZIPBALL_URL . '/' . $resource['repo_name'].'.zip';
 					$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
@@ -175,8 +176,8 @@ function git2wp_inject_info($result, $action = null, $args = null) {
 
 				$changelog_head = '';
 				if ( $new_version )
-					$changelog_head = $new_version . " - " 
-						. date("d/m/Y (h:m)", $new_version);
+					$changelog_head = $new_version;
+						//. date("d/m/Y (h:m)", $new_version);
 
 				$changelog = 'No changelog found';
 				if ( $git_data['payload'] )
@@ -246,7 +247,8 @@ function git2wp_update_check_plugins($transient) {
 				$response_index = $resource['repo_name'] . "/" . $resource['repo_name'] . ".php";
 				$current_version = git2wp_get_plugin_version($response_index);
 				$new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
-				if ( ($current_version > '-') && ($current_version > '') && ($current_version != $new_version) ) {
+				if ( ($current_version != '-') && ($current_version != '') 
+				  && ($current_version != $new_version) && ($new_version != false) ) {
 					$homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
 					//$zipball = GIT2WP_ZIPBALL_URL . '/' . wp_hash($resource['repo_name']) . '.zip';
 					$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
