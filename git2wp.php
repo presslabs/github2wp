@@ -889,7 +889,7 @@ function git2wp_setting_resources_list() {
 					
 					$new_version = substr($resource['git_data']['head_commit']['id'], 0, 7); //strtotime($resource['git_data']['head_commit']['timestamp']);
 				}
-				if ( ($new_version != $current_plugin_version) && ($new_version > '') ) {
+				if ( ($new_version != $current_plugin_version) && ($new_version != false) ) {
 					$my_data .= "<strong>New Version: </strong>" . $new_version . "<br />";
 
 					$action .= '<p><input name="submit_update_resource_'.($k-1) // Update resource button
@@ -909,9 +909,9 @@ function git2wp_setting_resources_list() {
 				$my_data .= "<strong>Author: </strong>" . $author . "<br />";
 				$current_theme_version = git2wp_get_theme_version($theme_dirname);
 				$my_data .= "<strong>Version: </strong>" . $current_theme_version . "<br />";
-				
+
 				$new_version = substr($resource['git_data']['head_commit']['id'], 0, 7); //strtotime($resource['git_data']['head_commit']['timestamp']);
-				if ( ($new_version != $current_theme_version) && ($new_version > '') ) {
+				if ( ($new_version != $current_theme_version) && ($new_version != false) ) {
 					$my_data .= "<strong>New Version: </strong>" . $new_version . "<br />";
 
 					$action .= '<p><input name="submit_update_resource_'.($k-1) // Update resource button
@@ -1180,38 +1180,39 @@ function git2wp_init() {
 					$raw = stripslashes($_POST['payload']);
 					$obj = json_decode($raw, true);
 					
-					if($resource['repo_branch'] == substr ($obj['ref'], strlen("refs/heads/"))){
-						$git_data['head_commit'] = $obj["head_commit"];
+					if($resource['repo_branch'] == substr ($obj['ref'], strlen("refs/heads/")))
+						if(sprintf("https://github.com/%s/%s", $resource['username'], $resource['repo_name']) === $obj['repository']['url']) {
+							$git_data['head_commit'] = $obj["head_commit"];
 						
-						$commits = $obj['commits'];
+							$commits = $obj['commits'];
 						
-						if(count($commits) > GIT2WP_MAX_COMMIT_HIST_COUNT)
-							$commits = array_slice($obj['commits'], -GIT2WP_MAX_COMMIT_HIST_COUNT);
+							if(count($commits) > GIT2WP_MAX_COMMIT_HIST_COUNT)
+								$commits = array_slice($obj['commits'], -GIT2WP_MAX_COMMIT_HIST_COUNT);
 						
-						foreach($commits as $key => $data)	{
-							$unique = true;
-							if($git_data['commit_history']) {
-								foreach($git_data['commit_history'] as $key2 => $data2)
-									if($data['id'] === $data2['sha']) {
-										$unique = false;
-										break;
-									}
+							foreach($commits as $key => $data)	{
+								$unique = true;
+								if($git_data['commit_history']) {
+									foreach($git_data['commit_history'] as $key2 => $data2)
+										if($data['id'] === $data2['sha']) {
+											$unique = false;
+											break;
+										}
 								
-									if($unique)
-										$git_data['commit_history'][] = array('sha' => $data['id'],
-																													'message' => $data['message'],
-																													'timestamp' => $data['timestamp'],
-																													'git_url' => $data['url']
-																												 );
+										if($unique)
+											$git_data['commit_history'][] = array('sha' => $data['id'],
+																				  'message' => $data['message'],
+																				  'timestamp' => $data['timestamp'],
+																				  'git_url' => $data['url']
+																			     );
+								}
 							}
-						}
 							
-						if(count($git_data['commit_history']) > GIT2WP_MAX_COMMIT_HIST_COUNT)
-							$git_data['commit_history'] = array_slice($git_data['commit_history'], -GIT2WP_MAX_COMMIT_HIST_COUNT);
+							if(count($git_data['commit_history']) > GIT2WP_MAX_COMMIT_HIST_COUNT)
+								$git_data['commit_history'] = array_slice($git_data['commit_history'], -GIT2WP_MAX_COMMIT_HIST_COUNT);
 
 						
-						$git_data['payload'] = $raw;
-					}
+							$git_data['payload'] = $raw;
+						}
 				}
 				break;
 			}
