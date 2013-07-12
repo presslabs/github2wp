@@ -181,7 +181,7 @@ function git2wp_inject_info($result, $action = null, $args = null) {
 				if ( $git_data['payload'] )
 					$changelog = "<h4>".$changelog_head."</h4>"
 						. git2wp_get_commits($git_data['payload']);
-
+////////////COMMITS TAKEN FROM HISTORY NOT PAYLOAD
 				$sections = array(
 					"description" => git2wp_get_plugin_header($response_index, "Description"),
 					//"installation" => "(Recommended) Installation instructions.",
@@ -893,9 +893,6 @@ function git2wp_setting_resources_list() {
 						.'" type="submit" class="button" value="'
 						.esc_attr('Update') . '" /></p>';
 				}
-				
-				if ( ! (($current_plugin_version > '-') && ($current_plugin_version > '')) )
-					$alternate = ' style="background-color:#EDC5C0;"';
 			}
 			else if ( ($repo_type == 'theme') ) {
 				$theme_dirname = $resource['repo_name'];
@@ -1013,7 +1010,6 @@ function git2wp_options_validate($input) {
 												'repo_name' => $resource_repo_name,
 												'repo_branch' => $repo_branch,
 												'username' => $resource_owner,
-												'current_version' => 0
 											);
 				} else {
 					add_settings_error( 'git2wp_settings_errors', 'duplicate_endpoint', 

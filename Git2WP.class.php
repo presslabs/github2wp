@@ -141,17 +141,30 @@ class Git2WP {
 		$url = $this->config['git_api_base_url']."repos/".$this->config['user']
 					 ."/".$this->config['repo']."/branches"."?access_token=".$this->config['access_token'];
 		
-		$ch = curl_init($url);
+		$args = array(
+				'method'      =>    'GET',
+    			'timeout'     =>    50,
+    			'redirection' =>    5,
+    			'httpversion' =>    '1.0',
+    			'blocking'    =>    true,
+    			'headers'     =>    array(),
+    			'body'        =>    null,
+    			'cookies'     =>    array()
+				);
 		
-		curl_setopt($ch, CURLOPT_TIMEOUT, 50);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-		curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows;U;Windows NT 5.1;en-US;rv:1.8.1.13)"." Gecko/20080311 Firefox/2.0.0.13');		
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		$result = curl_exec($ch);
+		$response = wp_remote_get( $url, $args );
 		
-		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE); 
+		if( is_wp_error( $response ) ) {
+			$error_message = $response->get_error_message();
+			add_settings_error( 'git2wp_settings_errors', 
+						'repo_archive_error', 
+						"An error has occured: $error_message", 
+						'error' );
+			
+			return false;
+		}
 		
-		curl_close($ch);
+		$result = wp_remote_retrieve_body( $response );
 		
 		$result = json_decode($result, true);
 		
@@ -172,18 +185,31 @@ class Git2WP {
 					 ."/".$this->config['repo']."/branches"."?access_token=".$this->config['access_token'];
 		
 		$branches = null;
+		$args = array(
+				'method'      =>    'GET',
+    			'timeout'     =>    50,
+    			'redirection' =>    5,
+    			'httpversion' =>    '1.0',
+    			'blocking'    =>    true,
+    			'headers'     =>    array(),
+    			'body'        =>    null,
+    			'cookies'     =>    array()
+				);
 		
-		$ch = curl_init($url);
 		
-		curl_setopt($ch, CURLOPT_TIMEOUT, 50);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-		curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows;U;Windows NT 5.1;en-US;rv:1.8.1.13)"." Gecko/20080311 Firefox/2.0.0.13');		
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		$result = curl_exec($ch);
+		$response = wp_remote_get( $url, $args );
 		
-		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE); 
+		if( is_wp_error( $response ) ) {
+			$error_message = $response->get_error_message();
+			add_settings_error( 'git2wp_settings_errors', 
+						'repo_archive_error', 
+						"An error has occured: $error_message", 
+						'error' );
+			
+			return null;
+		}
 		
-		curl_close($ch);
+		$result = wp_remote_retrieve_body( $response );
 		
 		$result = json_decode($result, true);
 		
@@ -200,26 +226,26 @@ class Git2WP {
       if(is_dir($file))
         $this->addDirectoryToZip($zip, $file, $base, $version);
       else {
-	$file_name = substr($file, $base);
+				$file_name = substr($file, $base);
 
-	$repo_file_name = $this->config['repo'].'.php';
-	if ( $this->config['repo_type'] == 'theme' )
-		$repo_file_name = 'style.css';
+				$repo_file_name = $this->config['repo'].'.php';
+				if ( $this->config['repo_type'] == 'theme' )
+					$repo_file_name = 'style.css';
 
-	if ( basename($file_name) == $repo_file_name ) {
-		$tag_version = "Version: ";
-		$zip_filename = basename($file_name);
+				if ( basename($file_name) == $repo_file_name ) {
+					$tag_version = "Version: ";
+					$zip_filename = basename($file_name);
 
-		$file_content = file_get_contents($file);
-		$old_version = $tag_version . git2wp_str_between($tag_version, "\n", $file_content);
-		$new_version = $tag_version . $version;
+					$file_content = file_get_contents($file);
+					$old_version = $tag_version . git2wp_str_between($tag_version, "\n", $file_content);
+					$new_version = $tag_version . $version;
 
-		$new_file_content = str_replace($old_version, $new_version, $file_content);
-		$zip->addFromString($file_name, $new_file_content);
-	} else
+					$new_file_content = str_replace($old_version, $new_version, $file_content);
+					$zip->addFromString($file_name, $new_file_content);
+				} else
        		$zip->addFile($file, $file_name);
-	}
-    }
+			}
+  	}
   }
 }
 
