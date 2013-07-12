@@ -5,7 +5,7 @@
  * Description: Managing themes and plugins from github.
  * Author: PressLabs
  * Author URI: http://www.presslabs.com/ 
- * Version: 1.3.2
+ * Version: 1.3.3
  */
 
 define('GIT2WP_MAX_COMMIT_HIST_COUNT', 5);
@@ -270,13 +270,59 @@ add_filter("pre_set_site_transient_update_plugins","git2wp_update_check_plugins"
 //add_filter("site_transient_update_plugins","git2wp_update_check_plugins", 10, 1); //WP 3.0+
 //add_filter('transient_update_plugins', 'git2wp_update_check_plugins'); //WP 2.8+
 
-//-----------------------------------------------------------------------------
-function git2wp_add_script() { 
+//------------------------------------------------------------------------------
+function git2wp_ajax_callback() {
+	$options = get_option('git2wp_options');
+	$resource_list = &$options['resource_list'];
+	$default = $options['default'];
+	$response = array('success'=> false, 'error_messges'=>array(), 'success_messages'=>array());
+
+	if( isset($_POST['id']) and isset($_POST['branch']) and isset($_POST['git2wp_action'])){
+		if( $_POST['git2wp_action'] == 'set_branch' ) {
+			$resource = &$resource_list[$_POST['id']];
+			
+			$git = new Git2WP( array(
+				"user" => $resource['username'],
+				"repo" => $resource['repo_name'],
+				"access_token" => $default['access_token'],
+				"source" => $resource['repo_branch'] 
+			));
+
+			$branches = $git->fetch_branches();
+			$branch_set = false;
+
+			if(count($branches) > 0) {
+				foreach($branches as $br)
+					if($br == $_POST['branch']) {
+						$resource['repo_branch'] = $br;
+						update_option('git2wp_options', $options);
+						$branch_set = true;
+						$response['success'] = true;
+						break;
+					}
+			}
+			
+			if(!$branch_set)
+				$response['error_messages'][] = 'Branch not set';  
+		
+			header("Content-type: application/json");
+			echo json_encode($response);
+			die();
+		}
+	}
+}
+add_action('wp_ajax_git2wp_add', 'git2wp_ajax_callback');
+
+//------------------------------------------------------------------------------
+function git2wp_add_javascript($hook) { 
+	if( 'dashboard_page_git2wp/git2wp' != $hook )
+		return;
+
 	$script_file_name_url = plugins_url('git2wp.js', __FILE__);
 	$script_file_name_path = plugin_dir_path(__FILE__) . '/git2wp.js';
-	wp_enqueue_script('git2wp_js', $script_file_name_url, null, filemtime($script_file_name_path) ); 
+	wp_enqueue_script('git2wp_js', $script_file_name_url, array('jquery'), filemtime($script_file_name_path) ); 
 } 
-add_action('admin_enqueue_scripts','git2wp_add_script'); 
+add_action('admin_enqueue_scripts','git2wp_add_javascript'); 
 
 //------------------------------------------------------------------------------
 function git2wp_add_style() {
