@@ -422,7 +422,7 @@ function git2wp_options_page() {
 					</th>
 					<td>
 						<label for="master_branch">
-							<input name='master_branch' id='master_branch'  type="text" size='40' value='<?php echo $default["master_branch"]  ? $default["master_branch"] : "";
+							<input name='master_branch' id='master_branch'  type="text" size='40' value='<?php echo $default["master_branch"]  ? $default["master_branch"] : "master";
 ?>'>
 						</label>
 						<p class="description">In case you don't  want to synch your master branch, change this setting here.</p>
@@ -1110,12 +1110,15 @@ function git2wp_options_validate($input) {
 	if(isset($_POST['submit_settings'])) {
 		$default = &$options['default'];
 		
-		$master_branch = 'master';
 		$client_id = $default['client_id'];
 		$client_secret = $default['client_secret'];
 		
-		if(isset($_POST['master_branch']))
-			$master_branch = trim($_POST['master_branch']);
+		if(isset($_POST['master_branch'])) {
+			if($_POST['master_branch'])
+				$master_branch = trim($_POST['master_branch']);
+			else
+				$master_branch = 'master';
+		}
 		
 		if(isset($_POST['client_id']))
 			if($_POST['client_id'] != $default['client_id']) {
