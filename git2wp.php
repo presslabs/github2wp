@@ -1103,38 +1103,38 @@ function git2wp_options_validate($input) {
 		if ( isset($_POST['submit_delete_resource_'.$k++]) ) 
 			unset($resource_list[$key]);
 		
-		// settings
-		if(isset($_POST['submit_settings'])) {
-			$default = &$options['default'];
-			
-			$master_branch = 'master';
-			$client_id = $default['client_id'];
-			$client_secret = $default['client_secret'];
-			
-			if(isset($_POST['master_branch']))
-				$master_branch = trim($_POST['master_branch']);
-			
-			if(isset($_POST['client_id']))
-				if($_POST['client_id'] != $default['client_id']) {
-					$client_id = trim($_POST['client_id']);
-					$changed = 1;
-				}
-			
-			if(isset($_POST['client_secret']))
-				if($_POST['client_secret'] != $default['client_secret']) {
-					$client_secret = trim($_POST['client_secret']);
-					$changed = 1;
-				}
-			
-			$default["master_branch"] = $master_branch;
-			$default["client_id"] = $client_id;
-			$default["client_secret"] = $client_secret;
-			
-			if($changed) {
-				$default["access_token"] = NULL;
-				$default["changed"] =  $changed;
+	// settings
+	if(isset($_POST['submit_settings'])) {
+		$default = &$options['default'];
+		
+		$master_branch = 'master';
+		$client_id = $default['client_id'];
+		$client_secret = $default['client_secret'];
+		
+		if(isset($_POST['master_branch']))
+			$master_branch = trim($_POST['master_branch']);
+		
+		if(isset($_POST['client_id']))
+			if($_POST['client_id'] != $default['client_id']) {
+				$client_id = trim($_POST['client_id']);
+				$changed = 1;
 			}
+		
+		if(isset($_POST['client_secret']))
+			if($_POST['client_secret'] != $default['client_secret']) {
+				$client_secret = trim($_POST['client_secret']);
+				$changed = 1;
+			}
+		
+		$default["master_branch"] = $master_branch;
+		$default["client_id"] = $client_id;
+		$default["client_secret"] = $client_secret;
+		
+		if($changed) {
+			$default["access_token"] = NULL;
+			$default["changed"] =  $changed;
 		}
+	}
 	
 	// TEST ARCHIVE
 	if(isset($_POST['submit_test'])) { 
@@ -1187,18 +1187,20 @@ function git2wp_init() {
 						
 						foreach($commits as $key => $data)	{
 							$unique = true;
-							foreach($git_data['commit_history'] as $key2 => $data2)
-								if($data['id'] === $data2['sha']) {
-									$unique = false;
-									break;
-								}
+							if($git_data['commit_history']) {
+								foreach($git_data['commit_history'] as $key2 => $data2)
+									if($data['id'] === $data2['sha']) {
+										$unique = false;
+										break;
+									}
 								
-								if($unique)
-									$git_data['commit_history'][] = array('sha' => $data['id'],
-																												'message' => $data['message'],
-																												'timestamp' => $data['timestamp'],
-																												'git_url' => $data['url']
-																											 );
+									if($unique)
+										$git_data['commit_history'][] = array('sha' => $data['id'],
+																													'message' => $data['message'],
+																													'timestamp' => $data['timestamp'],
+																													'git_url' => $data['url']
+																												 );
+							}
 						}
 							
 						if(count($git_data['commit_history']) > GIT2WP_MAX_COMMIT_HIST_COUNT)
@@ -1266,7 +1268,29 @@ function git2wp_install_from_wp_hash($hash) {
 			"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
 			"source" => $resource['repo_branch']
 		));
-		header('Location: ' . $git->return_git_archive_url());
+		//header('Location: ' . $git->return_git_archive_url());
+		
+		$zip_url = $git->store_git_archive();
+		$upload = wp_upload_dir();
+		
+		$upload_dir = $upload['basedir'];
+		$upload_dir = $upload_dir . '/git2wp/';
+		$upload_dir_zip .= $upload_dir . wp_hash($git->config['repo']) . ".zip";
+			
+		ob_start();
+		$mm_type="application/octet-stream";
+		header("Cache-Control: public, must-revalidate");
+		header("Pragma: GIT2WP");
+		header("Content-Type: " . $mm_type);
+		header("Content-Length: " .filesize($upload_dir_zip) );
+		header('Content-Disposition: attachment; filename="'.basename($zip_url).'"');
+		header("Content-Transfer-Encoding: binary\n");
+		ob_end_clean();         
+		
+		
+		
+		readfile($upload_dir_zip);
+		unlink($upload_dir_zip);
 	}
 }
 
