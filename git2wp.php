@@ -890,9 +890,6 @@ function git2wp_setting_resources_list() {
 						.'" type="submit" class="button" value="'
 						.esc_attr('Update') . '" /></p>';
 				}
-				
-				if ( ! (($current_plugin_version > '-') && ($current_plugin_version > '')) )
-					$alternate = ' style="background-color:#EDC5C0;"';
 			}
 			else if ( ($repo_type == 'theme') ) {
 				$theme_dirname = $resource['repo_name'];
@@ -1010,7 +1007,6 @@ function git2wp_options_validate($input) {
 												'repo_name' => $resource_repo_name,
 												'repo_branch' => $repo_branch,
 												'username' => $resource_owner,
-												'current_version' => 0
 											);
 				} else {
 					add_settings_error( 'git2wp_settings_errors', 'duplicate_endpoint', 
