@@ -1107,7 +1107,7 @@ function git2wp_options_validate($input) {
 		if(isset($_POST['submit_settings'])) {
 			$default = &$options['default'];
 			
-			$master_branch = '';
+			$master_branch = 'master';
 			$client_id = $default['client_id'];
 			$client_secret = $default['client_secret'];
 			
