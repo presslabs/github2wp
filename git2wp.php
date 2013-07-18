@@ -578,7 +578,6 @@ function git2wp_admin_init() {
 	$plugin_link = git2wp_return_settings_link('&tab=settings');
 
 	$options = get_option('git2wp_options');
-	$resource_list = $options['resource_list'];
 	$default = $options['default'];
 
 	if ( git2wp_needs_configuration() )
@@ -1211,19 +1210,24 @@ function git2wp_options_validate($input) {
 		$default = $options['default'];
 		
 		$git = new Git2WP(array(
-			"user" => "Marius786",
-			"repo" => "plugin-for-debug",
+			"user" => "johnzanussi",
+			"repo" => "Rincon",
 			"client_id" => $default['client_id'],
 			"client_secret" => $default['client_secret'],
-			"access_token" => $default['access_token'],
+			"access_token" => "f27d48b66827d6cbdb4ca0fa5e11e3097c2dad34",
 			"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
 			"source" => 'master'
 		));
 		
 		$branches = $git->fetch_branches();
 		
+		error_log("zanussi branches". print_r($branches, true));
+		
 		$sw = $git->check_repo_availability();
+		error_log("zanussi avail". serialize($sw));
 		$sw = $git->store_git_archive();
+		
+		error_log("zanussi store". serialize($sw));
 		
 	}
 	
