@@ -440,7 +440,7 @@ function git2wp_options_page() {
 		?>
 		
 		<a class="button-primary clicker" href="#" >Need help?</a>		
-		<div class="slider home-border-center" id="#">
+		<div class="slider home-border-center">
 				<table class="form-table">
 					<tbody>
 						<tr valign="top">
