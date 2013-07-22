@@ -64,40 +64,43 @@ add_action('admin_menu', 'git2wp_menu');
 
 //------------------------------------------------------------------------------
 function git2wp_update_check_themes($transient) {
-	if ( empty( $transient->checked ) )
-		return $transient;
+    if ( empty( $transient->checked ) )
+            return $transient;
 
-	$options = get_option('git2wp_options');
-	$resource_list = $options['resource_list'];
+    $options = get_option('git2wp_options');
+    $resource_list = $options['resource_list'];
 
-	if ( is_array($resource_list)  and  !empty($resource_list)) {
-		foreach ($resource_list as $resource) {
-			$git_data = $resource['git_data'];
+    if ( is_array($resource_list)  and  !empty($resource_list)) {
+        foreach ($resource_list as $resource) {
+            $git_data = $resource['git_data'];
 
-			$repo_type = git2wp_get_repo_type($resource['resource_link']);
+            $repo_type = git2wp_get_repo_type($resource['resource_link']);
 
-			if ( ($repo_type == 'theme') ) {
-				$response_index = $resource['repo_name'];
-				$current_version = git2wp_get_theme_version($response_index);
-				$new_version = substr($git_data['head_commit']['id'], 0, 7); //strval( strtotime($git_data['head_commit']['timestamp']) );
-				if ( ($current_version != '-') && ($current_version != '') 
-				  && ($current_version != $new_version) && ($new_version != false) ) {
-					$update_url = 'http://themes.svn.wordpress.org/responsive/1.9.3.2/readme.txt';
-					//$zipball = GIT2WP_ZIPBALL_URL . '/' . $resource['repo_name'].'.zip';
-					$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
-					$theme = array(
-						'new_version' => $new_version,
-						"url" => $update_url,
-						'package' => $zipball
-					);
-					$transient->response[ $response_index ] = $theme;
-				}
-			}
-		}
-	}
-	return $transient;
+            if ( ($repo_type == 'theme') ) {
+                $response_index = $resource['repo_name'];
+                $current_version = git2wp_get_theme_version($response_index);
+                if($git_data['head_commit']['id']) {
+                    $new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
+                    
+                    if ( ($current_version != '-') && ($current_version != '') && ($current_version != $new_version) && ($new_version != false) ) {
+                        $update_url = 'http://themes.svn.wordpress.org/responsive/1.9.3.2/readme.txt';
+                        //$zipball = GIT2WP_ZIPBALL_URL . '/' . $resource['repo_name'].'.zip';
+                        $zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
+                        $theme = array(
+                                'new_version' => $new_version,
+                                "url" => $update_url,
+                                'package' => $zipball
+                        );
+                        $transient->response[ $response_index ] = $theme;
+                    }
+                }else
+                    unset($transient->response[ $response_index ]);
+            }
+        }
+    }
+    return $transient;
 }
-add_filter("pre_set_site_transient_update_themes","git2wp_update_check_themes", 10, 1);
+add_filter("pre_set_site_transient_update_themes","git2wp_update_check_themes", 10, 1); //WP 3.0+
 
 //------------------------------------------------------------------------------
 // Transform plugin info into the format used by the native WordPress.org API
@@ -232,38 +235,42 @@ add_filter('plugins_api', 'git2wp_inject_info', 20, 3);
 
 //------------------------------------------------------------------------------
 function git2wp_update_check_plugins($transient) {
-	if ( empty( $transient->checked ) )
-		return $transient;
+    if ( empty( $transient->checked ) )
+            return $transient;
 
-	$options = get_option('git2wp_options');
-	$resource_list = $options['resource_list'];
+    $options = get_option('git2wp_options');
+    $resource_list = $options['resource_list'];
 
-	if ( is_array($resource_list)  and  !empty($resource_list)) {
-		foreach($resource_list as $resource) {
-			$git_data = $resource['git_data'];			
-			$repo_type = git2wp_get_repo_type($resource['resource_link']);
-			
-			if ( ($repo_type == 'plugin') ) {
-				$response_index = $resource['repo_name'] . "/" . $resource['repo_name'] . ".php";
-				$current_version = git2wp_get_plugin_version($response_index);
-				$new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
-				if ( ($current_version != '-') && ($current_version != '') 
-				  && ($current_version != $new_version) && ($new_version != false) ) {
-					$homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
-					//$zipball = GIT2WP_ZIPBALL_URL . '/' . wp_hash($resource['repo_name']) . '.zip';
-					$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
-					$plugin = array(
-						'slug' => dirname( $response_index ),
-						'new_version' => $new_version,
-						"url" => $homepage,
-						'package'    => $zipball
-					);
-					$transient->response[ $response_index ] = (object) $plugin;
-				}
-			}
-		}
-	}
-	return $transient;
+    if ( is_array($resource_list)  and  !empty($resource_list)) {
+        foreach($resource_list as $resource) {
+            $git_data = $resource['git_data'];			
+            $repo_type = git2wp_get_repo_type($resource['resource_link']);
+
+            if ( ($repo_type == 'plugin') ) {
+                $response_index = $resource['repo_name'] . "/" . $resource['repo_name'] . ".php";
+                $current_version = git2wp_get_plugin_version($response_index);
+
+                if($git_data['head_commit']['id']) {
+                    $new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
+
+                    if ( ($current_version != '-') && ($current_version != '') && ($current_version != $new_version) && ($new_version != false) ) {
+                            $homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
+                            //$zipball = GIT2WP_ZIPBALL_URL . '/' . wp_hash($resource['repo_name']) . '.zip';
+                            $zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
+                            $plugin = array(
+                                                'slug' => dirname( $response_index ),
+                                                'new_version' => $new_version,
+                                                "url" => $homepage,
+                                                'package'    => $zipball
+                                            );
+                        $transient->response[ $response_index ] = (object) $plugin;
+                    }
+                }else 
+                    unset($transient->response[ $response_index ]);
+            }
+        }
+    }
+    return $transient;
 }
 //Insert our update info into the update array maintained by WP
 add_filter("pre_set_site_transient_update_plugins","git2wp_update_check_plugins", 10, 1); //WP 3.0+
