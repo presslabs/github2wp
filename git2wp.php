@@ -538,7 +538,7 @@ function git2wp_options_page() {
 		</table>
 		
 		<input name="submit_settings" type="submit" class="button button-primary" value="<?php esc_attr_e('Save changes'); ?>" />
-		<input name="submit_test" type="submit" class="button button-primary" value="<?php esc_attr_e('GET'); ?>" />
+		<!--input name="submit_test" type="submit" class="button button-primary" value="<?php esc_attr_e('GET'); ?>" /-->
 	</form>
 	<?php } ?>
 	
