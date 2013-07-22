@@ -5,7 +5,7 @@
  * Description: Managing themes and plugins from github.
  * Author: PressLabs
  * Author URI: http://www.presslabs.com/ 
- * Version: 1.3.3
+ * Version: 1.3.4
  */
 
 define('GIT2WP_MAX_COMMIT_HIST_COUNT', 5);
@@ -287,7 +287,7 @@ function git2wp_ajax_callback() {
 				"access_token" => $default['access_token'],
 				"source" => $resource['repo_branch'] 
 			));
-
+//error_log('>>>>>>>>>ID:'.$_POST['id']);
 			$branches = $git->fetch_branches();
 			$branch_set = false;
 
@@ -295,7 +295,13 @@ function git2wp_ajax_callback() {
 				foreach($branches as $br)
 					if($br == $_POST['branch']) {
 						$resource['repo_branch'] = $br;
-						update_option('git2wp_options', $options);
+//error_log('>>>>>>>>>options:'.serialize($options));
+						//update_option('git2wp_options', $options);
+						$data_array = array('option_value' => serialize($options) );
+						$where_array = array('option_name' => 'git2wp_options');
+						global $wpdb;
+						$wpdb->update( $wpdb->prefix . 'options', $data_array, $where_array );
+
 						$branch_set = true;
 						$response['success'] = true;
 						break;
@@ -356,6 +362,10 @@ function git2wp_options_page() {
 	
 	<form action="options.php" method="post">
 		<?php 
+				$disable_resource_fields = '';
+				if ( git2wp_needs_configuration() )
+					$disable_resource_fields = 'disabled="disabled" ';
+
 				settings_fields('git2wp_options');
 				do_settings_sections('git2wp');				
 		?>
@@ -367,7 +377,7 @@ function git2wp_options_page() {
 					</th>
 					<td>
 						<label for="resource_type_dropdown">
-							<select name='resource_type_dropdown' id='resource_type_dropdown'>
+							<select name='resource_type_dropdown' <?php echo $disable_resource_fields; ?>id='resource_type_dropdown'>
 								<option value='plugins'>Plugin</option>
 								<option value='themes'>Theme</option>
 							</select>
@@ -381,7 +391,7 @@ function git2wp_options_page() {
 					</th>
 					<td>
 						<label for="resource_link">
-							<input name="resource_link" id="resource_link" value="" type="text" size='30'>
+							<input name="resource_link" id="resource_link" value="" <?php echo $disable_resource_fields; ?>type="text" size='30'>
 						</label>
 						<p class="description">Github repo link.</p>
 					</tr>
@@ -391,7 +401,7 @@ function git2wp_options_page() {
 					</th>
 					<td>
 						<label for="master_branch">
-							<input name="master_branch" id="master_branch" value="" type="text" size='30'>
+							<input name="master_branch" id="master_branch" value="" <?php echo $disable_resource_fields; ?>type="text" size='30'>
 						</label>
 						<p class="description">This will override your account preference only for this resource.</p>
 						<p class="description">Optional: This will set the branch that will dictate whether or not to synch.</p>
@@ -404,7 +414,7 @@ function git2wp_options_page() {
 				</tr>
 			</tbody>
 		</table>
-		<input name="submit_resource" type="submit" class="button button-primary" value="<?php esc_attr_e('Add Resource'); ?>" />
+		<input name="submit_resource" <?php echo $disable_resource_fields; ?>type="submit" class="button button-primary" value="<?php esc_attr_e('Add Resource'); ?>" />
 		
 		<br /><br /><br />
 		<?php 
@@ -537,6 +547,13 @@ function git2wp_options_page() {
 
 <?php
 }
+//------------------------------------------------------------------------------
+function git2wp_needs_configuration() {
+	$options = get_option('git2wp_options');
+	$default = $options['default'];
+
+	return ( empty($default['master_branch']) || empty($default['client_id']) || empty($default['client_secret']) );
+}
 
 //------------------------------------------------------------------------------
 function git2wp_admin_init() {
@@ -563,7 +580,7 @@ function git2wp_admin_init() {
 	$resource_list = $options['resource_list'];
 	$default = $options['default'];
 
-	if ( empty($default['master_branch']) || empty($default['client_id']) || empty($default['client_secret']) )
+	if ( git2wp_needs_configuration() )
 		add_action('admin_notices', create_function( '', "echo '<div class=\"error\"><p>"
 			.sprintf(__('Git2WP needs configuration information on its <a href="%s">'.__('Settings').'</a> page.', $plugin_page), 
   					 $plugin_link)."</p></div>';" ) );
@@ -859,8 +876,8 @@ function git2wp_setting_resources_list() {
 						break;
 					}
 			
-			$branch_dropdown = "<strong>Branch: </strong><select style='width: 125px;'class='resource_set_branch' resource_id='$index'>";
-			
+			$branch_dropdown = "<strong>Branch: </strong><select style='width: 125px;' class='resource_set_branch' resource_id='$index'>";
+error_log('>>>>>>branch='.$resource['repo_branch']);
 			if(is_array($branches) and count($branches) > 0) {
 				foreach($branches as $branch)
 					if($resource['repo_branch'] == $branch)
@@ -993,7 +1010,7 @@ function git2wp_options_validate($input) {
 	$options = get_option('git2wp_options');
 	$initial_options = $options;
 	
-	if(isset($_POST['submit_resource'])) {
+	if( isset($_POST['submit_resource']) && !git2wp_needs_configuration() ) {
 		$resource_list = &$options['resource_list'];
 		$git_base = 'https://github.com/';
 		
