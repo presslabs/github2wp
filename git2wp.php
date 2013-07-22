@@ -552,7 +552,8 @@ function git2wp_needs_configuration() {
 	$options = get_option('git2wp_options');
 	$default = $options['default'];
 
-	return ( empty($default['master_branch']) || empty($default['client_id']) || empty($default['client_secret']) );
+	return (empty($default['master_branch']) || empty($default['client_id']) 
+		|| empty($default['client_secret']) || empty($default['access_token']));
 }
 
 //------------------------------------------------------------------------------
