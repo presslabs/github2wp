@@ -269,9 +269,9 @@ class Git2WP {
 			return false;
 
 		$result = json_decode(wp_remote_retrieve_body( $response ), true);
-
-		if(empty($result['message']))
+		if(empty($result['message'])) {
 			return true;
+		}
 		
 		return false;
 	  }
