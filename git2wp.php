@@ -17,7 +17,8 @@ require_once('Git2WpFile.class.php');
 
 //------------------------------------------------------------------------------
 function git2wp_activate() {
-	add_option('git2wp_options', array());
+    add_option('git2wp_options', array());
+    wp_schedule_event( current_time ( 'timestamp' ), 'twicedaily', 'git2wp_token_cron' );
 }
 register_activation_hook(__FILE__,'git2wp_activate');
 
@@ -25,6 +26,7 @@ register_activation_hook(__FILE__,'git2wp_activate');
 function git2wp_deactivate() {
 	git2wp_delete_options();
 	delete_transient('git2wp_branches');
+	wp_clear_scheduled_hook( 'git2wp_token_cron' );
 }
 register_deactivation_hook(__FILE__,'git2wp_deactivate');
 
@@ -55,6 +57,29 @@ function git2wp_return_settings_link($query_vars = '') {
 }
 
 //------------------------------------------------------------------------------
+function git2wp_token_cron() {
+	$options = get_option('git2wp_options');
+	$default = &$options['default'];
+	
+	if(isset($default['access_token'])) {
+		$args = array(
+			access_token => $default['access_token']
+		);
+
+		$git = new Git2WP($args);
+
+		if(!$git->check_user()) {
+			$default['access_token'] = null;
+			$default['client_id'] = null;
+			$default['client_secret'] = null;
+			$default['app_reset'] = 1;
+			git2wp_update_options("git2wp_options", $options);
+		}	
+	}
+}
+
+
+//------------------------------------------------------------------------------
 // Dashboard integration
 function git2wp_menu() {
 	add_dashboard_page('Git to WordPress Options Page', 'Git2WP', 
@@ -64,40 +89,43 @@ add_action('admin_menu', 'git2wp_menu');
 
 //------------------------------------------------------------------------------
 function git2wp_update_check_themes($transient) {
-	if ( empty( $transient->checked ) )
-		return $transient;
+    if ( empty( $transient->checked ) )
+            return $transient;
 
-	$options = get_option('git2wp_options');
-	$resource_list = $options['resource_list'];
+    $options = get_option('git2wp_options');
+    $resource_list = $options['resource_list'];
 
-	if ( is_array($resource_list)  and  !empty($resource_list)) {
-		foreach ($resource_list as $resource) {
-			$git_data = $resource['git_data'];
+    if ( is_array($resource_list)  and  !empty($resource_list)) {
+        foreach ($resource_list as $resource) {
+            $git_data = $resource['git_data'];
 
-			$repo_type = git2wp_get_repo_type($resource['resource_link']);
+            $repo_type = git2wp_get_repo_type($resource['resource_link']);
 
-			if ( ($repo_type == 'theme') ) {
-				$response_index = $resource['repo_name'];
-				$current_version = git2wp_get_theme_version($response_index);
-				$new_version = substr($git_data['head_commit']['id'], 0, 7); //strval( strtotime($git_data['head_commit']['timestamp']) );
-				if ( ($current_version != '-') && ($current_version != '') 
-				  && ($current_version != $new_version) && ($new_version != false) ) {
-					$update_url = 'http://themes.svn.wordpress.org/responsive/1.9.3.2/readme.txt';
-					//$zipball = GIT2WP_ZIPBALL_URL . '/' . $resource['repo_name'].'.zip';
-					$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
-					$theme = array(
-						'new_version' => $new_version,
-						"url" => $update_url,
-						'package' => $zipball
-					);
-					$transient->response[ $response_index ] = $theme;
-				}
-			}
-		}
-	}
-	return $transient;
+            if ( ($repo_type == 'theme') ) {
+                $response_index = $resource['repo_name'];
+                $current_version = git2wp_get_theme_version($response_index);
+                if($git_data['head_commit']['id']) {
+                    $new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
+                    
+                    if ( ($current_version != '-') && ($current_version != '') && ($current_version != $new_version) && ($new_version != false) ) {
+                        $update_url = 'http://themes.svn.wordpress.org/responsive/1.9.3.2/readme.txt';
+                        //$zipball = GIT2WP_ZIPBALL_URL . '/' . $resource['repo_name'].'.zip';
+                        $zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
+                        $theme = array(
+                                'new_version' => $new_version,
+                                "url" => $update_url,
+                                'package' => $zipball
+                        );
+                        $transient->response[ $response_index ] = $theme;
+                    }
+                }else
+                    unset($transient->response[ $response_index ]);
+            }
+        }
+    }
+    return $transient;
 }
-add_filter("pre_set_site_transient_update_themes","git2wp_update_check_themes", 10, 1);
+add_filter("pre_set_site_transient_update_themes","git2wp_update_check_themes", 10, 1); //WP 3.0+
 
 //------------------------------------------------------------------------------
 // Transform plugin info into the format used by the native WordPress.org API
@@ -232,38 +260,42 @@ add_filter('plugins_api', 'git2wp_inject_info', 20, 3);
 
 //------------------------------------------------------------------------------
 function git2wp_update_check_plugins($transient) {
-	if ( empty( $transient->checked ) )
-		return $transient;
+    if ( empty( $transient->checked ) )
+            return $transient;
 
-	$options = get_option('git2wp_options');
-	$resource_list = $options['resource_list'];
+    $options = get_option('git2wp_options');
+    $resource_list = $options['resource_list'];
 
-	if ( is_array($resource_list)  and  !empty($resource_list)) {
-		foreach($resource_list as $resource) {
-			$git_data = $resource['git_data'];			
-			$repo_type = git2wp_get_repo_type($resource['resource_link']);
-			
-			if ( ($repo_type == 'plugin') ) {
-				$response_index = $resource['repo_name'] . "/" . $resource['repo_name'] . ".php";
-				$current_version = git2wp_get_plugin_version($response_index);
-				$new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
-				if ( ($current_version != '-') && ($current_version != '') 
-				  && ($current_version != $new_version) && ($new_version != false) ) {
-					$homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
-					//$zipball = GIT2WP_ZIPBALL_URL . '/' . wp_hash($resource['repo_name']) . '.zip';
-					$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
-					$plugin = array(
-						'slug' => dirname( $response_index ),
-						'new_version' => $new_version,
-						"url" => $homepage,
-						'package'    => $zipball
-					);
-					$transient->response[ $response_index ] = (object) $plugin;
-				}
-			}
-		}
-	}
-	return $transient;
+    if ( is_array($resource_list)  and  !empty($resource_list)) {
+        foreach($resource_list as $resource) {
+            $git_data = $resource['git_data'];			
+            $repo_type = git2wp_get_repo_type($resource['resource_link']);
+
+            if ( ($repo_type == 'plugin') ) {
+                $response_index = $resource['repo_name'] . "/" . $resource['repo_name'] . ".php";
+                $current_version = git2wp_get_plugin_version($response_index);
+
+                if($git_data['head_commit']['id']) {
+                    $new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
+
+                    if ( ($current_version != '-') && ($current_version != '') && ($current_version != $new_version) && ($new_version != false) ) {
+                            $homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
+                            //$zipball = GIT2WP_ZIPBALL_URL . '/' . wp_hash($resource['repo_name']) . '.zip';
+                            $zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
+                            $plugin = array(
+                                                'slug' => dirname( $response_index ),
+                                                'new_version' => $new_version,
+                                                "url" => $homepage,
+                                                'package'    => $zipball
+                                            );
+                        $transient->response[ $response_index ] = (object) $plugin;
+                    }
+                }else 
+                    unset($transient->response[ $response_index ]);
+            }
+        }
+    }
+    return $transient;
 }
 //Insert our update info into the update array maintained by WP
 add_filter("pre_set_site_transient_update_plugins","git2wp_update_check_plugins", 10, 1); //WP 3.0+
@@ -287,7 +319,7 @@ function git2wp_ajax_callback() {
 				"access_token" => $default['access_token'],
 				"source" => $resource['repo_branch'] 
 			));
-//error_log('>>>>>>>>>ID:'.$_POST['id']);
+			
 			$branches = $git->fetch_branches();
 			$branch_set = false;
 
@@ -295,16 +327,14 @@ function git2wp_ajax_callback() {
 				foreach($branches as $br)
 					if($br == $_POST['branch']) {
 						$resource['repo_branch'] = $br;
-//error_log('>>>>>>>>>options:'.serialize($options));
-						//update_option('git2wp_options', $options);
-						$data_array = array('option_value' => serialize($options) );
-						$where_array = array('option_name' => 'git2wp_options');
-						global $wpdb;
-						$wpdb->update( $wpdb->prefix . 'options', $data_array, $where_array );
-
-						$branch_set = true;
-						$response['success'] = true;
-						break;
+						
+						$sw = git2wp_update_options('git2wp_options', $options);
+						
+						if($sw) {
+							$branch_set = true;
+							$response['success'] = true;
+							break;
+						}
 					}
 			}
 			
@@ -318,6 +348,16 @@ function git2wp_ajax_callback() {
 	}
 }
 add_action('wp_ajax_git2wp_add', 'git2wp_ajax_callback');
+
+//-----------------------------------------------------------------------------
+function git2wp_update_options($where,$data) {
+	$data_array = array('option_value' => serialize($data) );
+	$where_array = array('option_name' => $where);
+	global $wpdb;
+	$sw = $wpdb->update( $wpdb->prefix . 'options', $data_array, $where_array );
+	
+	return $sw;
+}
 
 //------------------------------------------------------------------------------
 function git2wp_add_javascript($hook) { 
@@ -428,8 +468,21 @@ function git2wp_options_page() {
 	
 	<?php 
 	if ( $tab == 'settings' ) {
-		$default = $options['default'];
 		
+		git2wp_token_cron();
+		
+		$options = get_option("git2wp_options");
+		$default = &$options['default'];
+		
+		if($default['app_reset']) {
+			add_settings_error( 'git2wp_settings_app_reset', 
+						'app_reset_error', 
+						"You've reset/deleted you're GitHub application settings reconfigure them here.",
+						'updated' );
+			//add checks for all fields to be completed
+			$default["app_reset"] = 0;
+			git2wp_update_options("git2wp_options", $options);
+		}
 	?>
 	
 	<form action="options.php" method="post">
@@ -515,7 +568,7 @@ function git2wp_options_page() {
 			. "<label>Generate Token:</label>"
 			. "</th>"
 			. "<td>"
-			. "<a onclick='setTimeout(function(){location.reload(true);}, 5000)' target='_blank' style='text-decoration: none; color: red; font-weight: bold;' href='https://github.com/login/oauth/authorize" 
+			. "<a onclick='setTimeout(function(){location.reload(true);}, 60*1000)' target='_blank' style='text-decoration: none; color: red; font-weight: bold;' href='https://github.com/login/oauth/authorize" 
 			. "?client_id=" . $default['client_id']
 			. "&client_secret" . $default['client_secret']
 			. "&scope=repo'>" . "Generate!"
@@ -578,7 +631,6 @@ function git2wp_admin_init() {
 	$plugin_link = git2wp_return_settings_link('&tab=settings');
 
 	$options = get_option('git2wp_options');
-	$resource_list = $options['resource_list'];
 	$default = $options['default'];
 
 	if ( git2wp_needs_configuration() )
@@ -1233,19 +1285,24 @@ function git2wp_options_validate($input) {
 		$default = $options['default'];
 		
 		$git = new Git2WP(array(
-			"user" => "Marius786",
-			"repo" => "plugin-for-debug",
+			"user" => "johnzanussi",
+			"repo" => "Rincon",
 			"client_id" => $default['client_id'],
 			"client_secret" => $default['client_secret'],
-			"access_token" => $default['access_token'],
+			"access_token" => "f27d48b66827d6cbdb4ca0fa5e11e3097c2dad34",
 			"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
 			"source" => 'master'
 		));
 		
 		$branches = $git->fetch_branches();
 		
+		error_log("zanussi branches". print_r($branches, true));
+		
 		$sw = $git->check_repo_availability();
+		error_log("zanussi avail". serialize($sw));
 		$sw = $git->store_git_archive();
+		
+		error_log("zanussi store". serialize($sw));
 		
 	}
 	
