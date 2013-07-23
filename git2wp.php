@@ -60,21 +60,21 @@ function git2wp_return_settings_link($query_vars = '') {
 function git2wp_token_cron() {
 	$options = get_option('git2wp_options');
 	$default = &$options['default'];
-
-	if(isset($default['token'])) {
+	
+	if(isset($default['access_token'])) {
 		$args = array(
 			access_token => $default['access_token']
 		);
 
 		$git = new Git2WP($args);
 
-		if( ! $git->check_user()) {
+		if(!$git->check_user()) {
 			$default['access_token'] = null;
 			$default['client_id'] = null;
 			$default['client_secret'] = null;
-			error_log("options ", print_r($options, true));
-			update_option("git2wp_options", $options);
-		}
+			$default['app_reset'] = 1;
+			git2wp_update_options("git2wp_options", $options);
+		}	
 	}
 }
 
@@ -472,7 +472,17 @@ function git2wp_options_page() {
 		git2wp_token_cron();
 		
 		$options = get_option("git2wp_options");
-		$default = $options['default'];
+		$default = &$options['default'];
+		
+		if($default['app_reset']) {
+			add_settings_error( 'git2wp_settings_app_reset', 
+						'app_reset_error', 
+						"You've reset/deleted you're GitHub application settings reconfigure them here.",
+						'updated' );
+			//add checks for all fields to be completed
+			$default["app_reset"] = 0;
+			git2wp_update_options("git2wp_options", $options);
+		}
 	?>
 	
 	<form action="options.php" method="post">
@@ -558,7 +568,7 @@ function git2wp_options_page() {
 			. "<label>Generate Token:</label>"
 			. "</th>"
 			. "<td>"
-			. "<a onclick='setTimeout(function(){location.reload(true);}, 5000)' target='_blank' style='text-decoration: none; color: red; font-weight: bold;' href='https://github.com/login/oauth/authorize" 
+			. "<a onclick='setTimeout(function(){location.reload(true);}, 60*1000)' target='_blank' style='text-decoration: none; color: red; font-weight: bold;' href='https://github.com/login/oauth/authorize" 
 			. "?client_id=" . $default['client_id']
 			. "&client_secret" . $default['client_secret']
 			. "&scope=repo'>" . "Generate!"
