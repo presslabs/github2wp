@@ -463,7 +463,7 @@ function git2wp_options_page() {
 		?>
 	</form>
 	<?php } ?>
-	
+
 	
 	
 	<?php 
@@ -474,15 +474,9 @@ function git2wp_options_page() {
 		$options = get_option("git2wp_options");
 		$default = &$options['default'];
 		
-		if($default['app_reset']) {
-			add_settings_error( 'git2wp_settings_app_reset', 
-						'app_reset_error', 
-						"You've reset/deleted you're GitHub application settings reconfigure them here.",
-						'updated' );
-			//add checks for all fields to be completed
-			$default["app_reset"] = 0;
-			git2wp_update_options("git2wp_options", $options);
-		}
+		if($default['app_reset'])
+			if(git2wp_needs_configuration())
+				echo "<div class='updated'><p>You've reset/deleted you're GitHub application settings reconfigure them here.</p></div>";
 	?>
 	
 	<form action="options.php" method="post">
@@ -1269,6 +1263,9 @@ function git2wp_options_validate($input) {
 				$client_secret = trim($_POST['client_secret']);
 				$changed = 1;
 			}
+		
+		if($master_branch and $client_id and $client_secret)
+			$default['app_reset']=0;
 		
 		$default["master_branch"] = $master_branch;
 		$default["client_id"] = $client_id;
