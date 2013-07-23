@@ -4,8 +4,8 @@ j(document).ready(function($) {
     j(".slider").hide();
 
     j(".clicker").click(function(){
-    	var target = j(this).attr("href");
-    	j(".slider[id='" + target + "']").slideToggle('slow', function() {
+    	var alt = j(this).attr("alt");
+    	j(".slider[id='" + alt + "']").slideToggle('slow', function() {
     			//on completion
     		});
     });    

@@ -439,7 +439,7 @@ function git2wp_options_page() {
 		do_settings_sections('git2wp_settings');
 		?>
 		
-		<a class="button-primary clicker" href="#" >Need help?</a>		
+		<a class="button-primary clicker" alt="#" >Need help?</a>		
 		<div class="slider home-border-center" id="#">
 				<table class="form-table">
 					<tbody>
@@ -869,7 +869,7 @@ function git2wp_setting_resources_list() {
 			if(false === $transient){
 				$branches = $git->fetch_branches();
 				$new_transient[] = array('repo_name' => $resource['repo_name'],
-														     'branches' => $branches);
+						'branches' => $branches);
 			}else
 				foreach($transient as $tran_res)
 					if($tran_res['repo_name'] == $resource['repo_name']){
@@ -890,6 +890,13 @@ error_log('>>>>>>branch='.$resource['repo_branch']);
 			
 			
 			$endpoint = home_url() . '/' . '?git2wp=' . md5( str_replace(home_url(), '', $resource['resource_link']) );
+
+			$url = "https://github.com/".$resource['username']."/".$resource['repo_name']."/settings/hooks/";
+			$not_synced_message = '<br /><div id="need_help_'.$k.'" class="slider home-border-center">In order to sync the resource with Github you must copy <strong><i>\'Endpoint URL\'</i></strong> and put it on <strong><i>\'WebHook URLs\'</i></strong> at this link: <a href=\'$url\' target=\'_blank\'>$url</a> then press <strong><i>\'Test hook\'</i></strong>.</div>';
+
+			(!empty($resource['git_data']['head_commit']['id'])) ? $synced_resources = '<span style="color:green;">This resource is synced with Github.</span>' : $synced_resources = '<span style="color:red;">This resource is NOT synced with Github!</span> <a id="need_help_'.$k.'" class="button clicker" alt="need_help_'.$k.'">Need help?</a>' . $not_synced_message ;
+			$endpoint .= '<br />' . $synced_resources;
+
 			$repo_type = git2wp_get_repo_type($resource['resource_link']);
 			
 			$alternate = '';
