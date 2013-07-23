@@ -17,7 +17,8 @@ require_once('Git2WpFile.class.php');
 
 //------------------------------------------------------------------------------
 function git2wp_activate() {
-	add_option('git2wp_options', array());
+    add_option('git2wp_options', array());
+    wp_schedule_event( current_time ( 'timestamp' ), 'twicedaily', 'git2wp_token_cron' );
 }
 register_activation_hook(__FILE__,'git2wp_activate');
 
@@ -25,6 +26,7 @@ register_activation_hook(__FILE__,'git2wp_activate');
 function git2wp_deactivate() {
 	git2wp_delete_options();
 	delete_transient('git2wp_branches');
+	wp_clear_scheduled_hook( 'git2wp_token_cron' );
 }
 register_deactivation_hook(__FILE__,'git2wp_deactivate');
 
@@ -53,6 +55,29 @@ add_filter("plugin_action_links_".plugin_basename(__FILE__), 'git2wp_settings_li
 function git2wp_return_settings_link($query_vars = '') {
 	return admin_url('index.php?page=' . plugin_basename(__FILE__) . $query_vars);
 }
+
+//------------------------------------------------------------------------------
+function git2wp_token_cron() {
+	$options = get_option('git2wp_options');
+	$default = &$options['default'];
+
+	if(isset($default['token'])) {
+		$args = array(
+			access_token => $default['access_token']
+		);
+
+		$git = new Git2WP($args);
+
+		if( ! $git->check_user()) {
+			$default['access_token'] = null;
+			$default['client_id'] = null;
+			$default['client_secret'] = null;
+			error_log("options ", print_r($options, true));
+			update_option("git2wp_options", $options);
+		}
+	}
+}
+
 
 //------------------------------------------------------------------------------
 // Dashboard integration
@@ -294,7 +319,7 @@ function git2wp_ajax_callback() {
 				"access_token" => $default['access_token'],
 				"source" => $resource['repo_branch'] 
 			));
-//error_log('>>>>>>>>>ID:'.$_POST['id']);
+			
 			$branches = $git->fetch_branches();
 			$branch_set = false;
 
@@ -302,16 +327,14 @@ function git2wp_ajax_callback() {
 				foreach($branches as $br)
 					if($br == $_POST['branch']) {
 						$resource['repo_branch'] = $br;
-//error_log('>>>>>>>>>options:'.serialize($options));
-						//update_option('git2wp_options', $options);
-						$data_array = array('option_value' => serialize($options) );
-						$where_array = array('option_name' => 'git2wp_options');
-						global $wpdb;
-						$wpdb->update( $wpdb->prefix . 'options', $data_array, $where_array );
-
-						$branch_set = true;
-						$response['success'] = true;
-						break;
+						
+						$sw = git2wp_update_options('git2wp_options', $options);
+						
+						if($sw) {
+							$branch_set = true;
+							$response['success'] = true;
+							break;
+						}
 					}
 			}
 			
@@ -325,6 +348,16 @@ function git2wp_ajax_callback() {
 	}
 }
 add_action('wp_ajax_git2wp_add', 'git2wp_ajax_callback');
+
+//-----------------------------------------------------------------------------
+function git2wp_update_options($where,$data) {
+	$data_array = array('option_value' => serialize($data) );
+	$where_array = array('option_name' => $where);
+	global $wpdb;
+	$sw = $wpdb->update( $wpdb->prefix . 'options', $data_array, $where_array );
+	
+	return $sw;
+}
 
 //------------------------------------------------------------------------------
 function git2wp_add_javascript($hook) { 
@@ -435,8 +468,11 @@ function git2wp_options_page() {
 	
 	<?php 
 	if ( $tab == 'settings' ) {
-		$default = $options['default'];
 		
+		git2wp_token_cron();
+		
+		$options = get_option("git2wp_options");
+		$default = $options['default'];
 	?>
 	
 	<form action="options.php" method="post">
