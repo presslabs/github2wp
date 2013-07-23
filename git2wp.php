@@ -5,7 +5,7 @@
  * Description: Managing themes and plugins from github.
  * Author: PressLabs
  * Author URI: http://www.presslabs.com/ 
- * Version: 1.3.4
+ * Version: 1.3.5
  */
 
 define('GIT2WP_MAX_COMMIT_HIST_COUNT', 5);
@@ -894,7 +894,7 @@ error_log('>>>>>>branch='.$resource['repo_branch']);
 			$url = "https://github.com/".$resource['username']."/".$resource['repo_name']."/settings/hooks/";
 			$not_synced_message = '<br /><div id="need_help_'.$k.'" class="slider home-border-center">In order to sync the resource with Github you must copy <strong><i>\'Endpoint URL\'</i></strong> and put it on <strong><i>\'WebHook URLs\'</i></strong> at this link: <a href=\'$url\' target=\'_blank\'>$url</a> then press <strong><i>\'Test hook\'</i></strong>.</div>';
 
-			(!empty($resource['git_data']['head_commit']['id'])) ? $synced_resources = '<span style="color:green;">This resource is synced with Github.</span>' : $synced_resources = '<span style="color:red;">This resource is NOT synced with Github!</span> <a id="need_help_'.$k.'" class="button clicker" alt="need_help_'.$k.'">Need help?</a>' . $not_synced_message ;
+			(!empty($resource['git_data']['head_commit']['id'])) ? $synced_resources = '<span style="color:green;">This resource is synced with Github.</span>' : $synced_resources = '<span style="color:red;">This resource is NOT synced with Github!</span> <a id="need_help_'.$k.'" class="clicker" alt="need_help_'.$k.'"><strong>Need help?</strong></a>' . $not_synced_message ;
 			$endpoint .= '<br />' . $synced_resources;
 
 			$repo_type = git2wp_get_repo_type($resource['resource_link']);
@@ -945,16 +945,22 @@ error_log('>>>>>>branch='.$resource['repo_branch']);
 				$plugin_file = $resource['repo_name'] . "/" . $resource['repo_name'] . ".php";
 				if ( (git2wp_get_plugin_version($plugin_file) > '-') 
 					&& (git2wp_get_plugin_version($plugin_file) > '') ) {
-					$my_data .= "<strong>Name: </strong>" . git2wp_get_plugin_header($plugin_file, "Name") . "<br />";
-					$my_data .= "<strong>Description: </strong>" . git2wp_get_plugin_header($plugin_file, "Description") . "<br />";
-
+					$my_data .= "<strong>" . git2wp_get_plugin_header($plugin_file, "Name") . "</strong>&nbsp;(";
 					$author = git2wp_get_plugin_header($plugin_file, "Author");
 					$author_uri = git2wp_get_plugin_header($plugin_file, "AuthorURI");
 					if ( $author_uri != '-' && $author_uri != '' )
 						$author = '<a href="' . $author_uri . '" target="_blank">' . $author . '</a>';
-					$my_data .= "<strong>Author: </strong>" . $author . "<br />";
 					$current_plugin_version = git2wp_get_plugin_version($plugin_file);
-					$my_data .= "<strong>Version: </strong>" . $current_plugin_version . "<br />";
+					$my_data .= "Version " . $current_plugin_version . "&nbsp;|&nbsp;";
+					$my_data .= "By " . $author . ")&nbsp;";
+					$my_data .= '<a id="need_help_'.$k.'" class="clicker" alt="res_details_'.$k.'"><strong>Details</strong></a><br />';
+
+					$my_data .= "<div id='res_details_".$k."' class='slider home-border-center'>";
+
+					$plugin_description = git2wp_get_plugin_header($plugin_file, "Description");
+					if ( ($plugin_description != '') && ($plugin_description != '-') )
+						$my_data .= $plugin_description . "<br />";
+
 					//$zipball = home_url() . '/wp-content/uploads/' . basename(dirname(__FILE__)) . '/' . $resource['repo_name'].'.zip';
 					//$my_data .= "<strong>zipball: </strong>" . $zipball . "<br />";
 					
@@ -963,6 +969,8 @@ error_log('>>>>>>branch='.$resource['repo_branch']);
 				if ( ($new_version != $current_plugin_version) && ($new_version != false) ) {
 					$my_data .= "<strong>New Version: </strong>" . $new_version . "<br />";
 
+				$my_data .= '</div>';
+
 					$action .= '<p><input name="submit_update_resource_'.($k-1) // Update resource button
 						.'" type="submit" class="button" value="'
 						.esc_attr('Update') . '" /></p>';
@@ -970,24 +978,31 @@ error_log('>>>>>>branch='.$resource['repo_branch']);
 			}
 			else if ( ($repo_type == 'theme') ) {
 				$theme_dirname = $resource['repo_name'];
-				$my_data .= "<strong>Name: </strong>" . git2wp_get_theme_header($theme_dirname, "Name") . "<br />";
-				$my_data .= "<strong>Description: </strong>" . git2wp_get_theme_header($theme_dirname, "Description") . "<br />";
-
+				$my_data .= "<strong>" . git2wp_get_theme_header($theme_dirname, "Name") . "</strong>&nbsp;(";
 				$author = git2wp_get_theme_header($theme_file, "Author");
 				$author_uri = git2wp_get_theme_header($theme_file, "AuthorURI");
 				if ( $author_uri != '-' && $author_uri != '' )
 					$author = '<a href="' . $author_uri . '" target="_blank">' . $author . '</a>';
-				$my_data .= "<strong>Author: </strong>" . $author . "<br />";
 				$current_theme_version = git2wp_get_theme_version($theme_dirname);
-				$my_data .= "<strong>Version: </strong>" . $current_theme_version . "<br />";
+				$my_data .= "Version " . $current_theme_version . "&nbsp;|&nbsp;";
+				$my_data .= "By " . $author . ")&nbsp;";
+				$my_data .= '<a id="need_help_'.$k.'" class="clicker" alt="res_details_'.$k.'"><strong>Details</strong></a><br />';
+
+				$my_data .= "<div id='res_details_".$k."' class='slider home-border-center'>";
+
+				$theme_description = git2wp_get_theme_header($theme_dirname, "Description");
+				if ( ($theme_description != '') && ($theme_description != '-') )
+					$my_data .= $theme_description . "<br />";
 
 				$new_version = substr($resource['git_data']['head_commit']['id'], 0, 7); //strtotime($resource['git_data']['head_commit']['timestamp']);
 				if ( ($new_version != $current_theme_version) && ($new_version != false) ) {
 					$my_data .= "<strong>New Version: </strong>" . $new_version . "<br />";
 
-					$action .= '<p><input name="submit_update_resource_'.($k-1) // Update resource button
-						.'" type="submit" class="button" value="'
-						.esc_attr('Update') . '" /></p>';
+				$my_data .= '</div>';
+
+				$action .= '<p><input name="submit_update_resource_'.($k-1) // Update resource button
+					.'" type="submit" class="button" value="'
+					.esc_attr('Update') . '" /></p>';
 				}
 
 				if ( ! (($current_theme_version > '-') && ($current_theme_version > '')) ) {
@@ -997,12 +1012,12 @@ error_log('>>>>>>branch='.$resource['repo_branch']);
 				}
 			}
 
+			//echo "<tr".$alternate."><td>".$k."</td><td><div class='update-message'>" . $my_data . "</div></td><td></td><td></td></tr>";
+
 			echo "<tr".$alternate."><td>".$k."</td>"
-				."<td>".$github_resource."<br />".$wordpress_resource."<br />".$branch_dropdown."</td>"
+				."<td>" . $my_data . "<br />".$github_resource."<br />".$wordpress_resource."<br />".$branch_dropdown."</td>"
 				."<td>".$endpoint."</td>"
 				."<td>".$action."</td></tr>";
-
-			echo "<tr".$alternate."><td></td><td colspan='3'><div class='update-message'>" . $my_data . "</div></td></tr>";
 		}
 		
 		if($transient === false)
