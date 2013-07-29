@@ -1136,8 +1136,6 @@ function git2wp_options_validate($input) {
 						"source" => $repo_branch 
 					);
 
-					error_log('args: ' . print_r($args,true));
-
 					$git = new Git2WP($args);
 					
 					$sw = $git->check_repo_availability();
@@ -1152,7 +1150,7 @@ function git2wp_options_validate($input) {
 												'username' => $resource_owner,
 												'is_on_wp_svn' => $on_wp
 											);
-						error_log(serialize($on_wp));
+						
 						add_settings_error( 'git2wp_settings_errors', 'repo_connected', "Connection was established.", "updated" );
 						delete_transient('git2wp_branches');
 					}else
@@ -1303,14 +1301,9 @@ function git2wp_options_validate($input) {
 		));
 		
 		$branches = $git->fetch_branches();
-		
-		error_log("zanussi branches". print_r($branches, true));
-		
-		$sw = $git->check_repo_availability();
-		error_log("zanussi avail". serialize($sw));
+		$sw = $git->check_repo_availability();	
 		$sw = $git->store_git_archive();
-		
-		error_log("zanussi store". serialize($sw));
+
 		
 	}
 	
