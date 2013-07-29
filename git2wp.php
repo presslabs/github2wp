@@ -1139,12 +1139,16 @@ function git2wp_options_validate($input) {
 					$sw = $git->check_repo_availability();
 					
 					if ($sw) {
+						$on_wp = Git2WP::check_svn_avail($resource_repo_name, substr($_POST['resource_type_dropdown'], 0, -1));
+						
 						$resource_list[] = array(
 												'resource_link' => $link,
 												'repo_name' => $resource_repo_name,
 												'repo_branch' => $repo_branch,
 												'username' => $resource_owner,
+												'is_on_wp_svn' => $on_wp
 											);
+						
 						add_settings_error( 'git2wp_settings_errors', 'repo_connected', "Connection was established.", "updated" );
 						delete_transient('git2wp_branches');
 					}else
