@@ -12,9 +12,9 @@
 .ajax-success {
 	background-image: url('./resources/ajax-success.jpg');
 	background-repeat: no-repeat;
-	background-size: 16px 16px;
-	height: 16px;
-	width: 16px;
+	background-size: 14px 14px;
+	height: 14px;
+	width: 14px;
 	display: inline-block;
 	margin-left: 10px;
 	vertical-align: middle;
@@ -23,11 +23,24 @@
 .ajax-fail {
 	background-image: url('./resources/ajax-fail.png');
 	background-repeat: no-repeat;
-	background-size: 16px 16px;
-	height: 16px;
-	width: 16px;
+	background-size: 14px 14px;
+	height: 14px;
+	width: 14px;
 	display: inline-block;
 	margin-left: 10px;
+	vertical-align: middle;
+}
+
+.notification-warning {
+	background-image: url('./resources/notification_warning.png');
+	background-repeat: no-repeat;
+	background-size: 14px 14px;
+	height: 14px;
+	width: 14px;
+	display: inline-block;
+	margin-left: 2px;
+	margin-right: 2px;
+	padding-bottom: 1px;
 	vertical-align: middle;
 }
 
