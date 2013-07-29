@@ -1,11 +1,10 @@
 <?php
 
-	function git2wp_render_resource_history( $key ) {
+	function git2wp_render_resource_history( $reource ) {
 		$html = '';
 		$html .= "<div height='100px'>";
 		
-		$options = get_option('git2wp_options');
-		$commit_history = $options['resource_list'][$key]['git_data']['commit_history'];
+		$commit_history = $resource['git_data']['commit_history'];
 		$commit_history = array_reverse($commit_history);
 		
 		foreach($commit_history as $key => $commit) {
