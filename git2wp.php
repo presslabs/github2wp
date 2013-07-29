@@ -1145,19 +1145,16 @@ function git2wp_options_validate($input) {
 					$sw = $git->check_repo_availability();
 					
 					if ($sw) {
-						add_settings_error( 'git2wp_settings_errors', 'repo_connected', "Connection was established.", "updated" );
-						delete_transient('git2wp_branches');
-					}else
-						return $initial_options;	
-
-					
-					
-					$resource_list[] = array(
+						$resource_list[] = array(
 												'resource_link' => $link,
 												'repo_name' => $resource_repo_name,
 												'repo_branch' => $repo_branch,
 												'username' => $resource_owner,
 											);
+						add_settings_error( 'git2wp_settings_errors', 'repo_connected', "Connection was established.", "updated" );
+						delete_transient('git2wp_branches');
+					}else
+						return $initial_options;	
 				} else {
 					add_settings_error( 'git2wp_settings_errors', 'duplicate_endpoint', 
 									   "Duplicate resources! Repositories can't be both themes and plugins ", 
