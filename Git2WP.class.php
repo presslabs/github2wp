@@ -277,8 +277,7 @@ class Git2WP {
 	  }
 		
 		public static function check_svn_avail( $resource_name, $type ) {
-			if( $type == 'plugin' ) {
-				$url = "http://plugins.svn.wordpress.org/$reource_name/"
+				$url = "http://".$type."s.svn.wordpress.org/".$resource_name."/";
 				
 				$args = array(
 					'method'      =>    'GET',
@@ -292,33 +291,10 @@ class Git2WP {
 				);
 				
 				$response = wp_remote_get( $url, $args );
-				
-				if(wp_remote_retrieve_response_code( $response ) === '200')
+
+				if(wp_remote_retrieve_response_code( $response ) == '200')
 					return true;
-				else
-					return false;
-			}
-			if($type == 'theme') {
-				$url = "http://themes.svn.wordpress.org/$reource_name/"
-			
-				$args = array(
-					'method'      =>    'GET',
-					'timeout'     =>    50,
-					'redirection' =>    5,
-					'httpversion' =>    '1.0',
-					'blocking'    =>    true,
-					'headers'     =>    array(),
-					'body'        =>    null,
-					'cookies'     =>    array()
-				);
-				
-				$response = wp_remote_get( $url, $args );
-				
-				if(wp_remote_retrieve_response_code( $response ) === '200')
-					return true;
-				else
-					return false;
-			}
+				return false;
 		}
 }
 
