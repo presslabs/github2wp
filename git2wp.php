@@ -95,10 +95,9 @@ function git2wp_update_check_themes($transient) {
     $options = get_option('git2wp_options');
     $resource_list = $options['resource_list'];
 
-    if ( is_array($resource_list)  and  !empty($resource_list)) {
+    if ( count($resource_list) > 0 ) {
         foreach ($resource_list as $resource) {
             $git_data = $resource['git_data'];
-
             $repo_type = git2wp_get_repo_type($resource['resource_link']);
 
             if ( ($repo_type == 'theme') ) {
@@ -106,7 +105,11 @@ function git2wp_update_check_themes($transient) {
                 $current_version = git2wp_get_theme_version($response_index);
                 if($git_data['head_commit']['id']) {
                     $new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
-                    
+                    $trans_new_version = $transient->response[ $response_index ]->new_version;
+			
+		    if( isset($trans_new_version) && (strlen($trans_new_version) != 7 || strpos($trans_new_version, ".") != FALSE) )
+			unset($transient->response[ $response_index ]);
+					
                     if ( ($current_version != '-') && ($current_version != '') && ($current_version != $new_version) && ($new_version != false) ) {
                         $update_url = 'http://themes.svn.wordpress.org/responsive/1.9.3.2/readme.txt';
                         //$zipball = GIT2WP_ZIPBALL_URL . '/' . $resource['repo_name'].'.zip';
@@ -126,7 +129,7 @@ function git2wp_update_check_themes($transient) {
     return $transient;
 }
 add_filter("pre_set_site_transient_update_themes","git2wp_update_check_themes", 10, 1); //WP 3.0+
-
+//to be changed
 //------------------------------------------------------------------------------
 // Transform plugin info into the format used by the native WordPress.org API
 function git2wp_toWpFormat($data){
@@ -260,13 +263,13 @@ add_filter('plugins_api', 'git2wp_inject_info', 20, 3);
 
 //------------------------------------------------------------------------------
 function git2wp_update_check_plugins($transient) {
-    if ( empty( $transient->checked ) )
-            return $transient;
-
+    if ( empty( $transient->checked ) ) 
+	return $transient;
+	
     $options = get_option('git2wp_options');
     $resource_list = $options['resource_list'];
 
-    if ( is_array($resource_list)  and  !empty($resource_list)) {
+    if ( count($resource_list) > 0 ) {
         foreach($resource_list as $resource) {
             $git_data = $resource['git_data'];			
             $repo_type = git2wp_get_repo_type($resource['resource_link']);
@@ -274,23 +277,27 @@ function git2wp_update_check_plugins($transient) {
             if ( ($repo_type == 'plugin') ) {
                 $response_index = $resource['repo_name'] . "/" . $resource['repo_name'] . ".php";
                 $current_version = git2wp_get_plugin_version($response_index);
-
                 if($git_data['head_commit']['id']) {
-                    $new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
-
-                    if ( ($current_version != '-') && ($current_version != '') && ($current_version != $new_version) && ($new_version != false) ) {
-                            $homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
-                            //$zipball = GIT2WP_ZIPBALL_URL . '/' . wp_hash($resource['repo_name']) . '.zip';
-                            $zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
-                            $plugin = array(
-                                                'slug' => dirname( $response_index ),
-                                                'new_version' => $new_version,
-                                                "url" => $homepage,
-                                                'package'    => $zipball
-                                            );
-                        $transient->response[ $response_index ] = (object) $plugin;
-                    }
-                }else 
+			$new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
+			$trans_new_version = $transient->response[ $response_index ]->new_version;
+			
+			if( isset($trans_new_version) && (strlen($trans_new_version) != 7 || strpos($trans_new_version, ".") != FALSE) )
+				unset($transient->response[ $response_index ]);
+			
+			if ( ($current_version != '-') && ($current_version != '') && ($current_version != $new_version) && ($new_version != false) ) {
+					$homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
+					//$zipball = GIT2WP_ZIPBALL_URL . '/' . wp_hash($resource['repo_name']) . '.zip';
+					$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
+					$plugin = array(
+										'slug' => dirname( $response_index ),
+										'new_version' => $new_version,
+										"url" => $homepage,
+										'package'    => $zipball
+									);
+				$transient->response[ $response_index ] = (object) $plugin;
+			}
+			
+		}else
                     unset($transient->response[ $response_index ]);
             }
         }
@@ -487,7 +494,7 @@ function git2wp_options_page() {
 		?>
 		
 		<a class="button-primary clicker" alt="#" >Need help?</a>		
-		<div class="slider home-border-center" id="#">
+		<div class="slider home-border-center">
 				<table class="form-table">
 					<tbody>
 						<tr valign="top">
@@ -924,7 +931,7 @@ function git2wp_setting_resources_list() {
 					}
 			
 			$branch_dropdown = "<strong>Branch: </strong><select style='width: 125px;' class='resource_set_branch' resource_id='$index'>";
-error_log('>>>>>>branch='.$resource['repo_branch']);
+
 			if(is_array($branches) and count($branches) > 0) {
 				foreach($branches as $branch)
 					if($resource['repo_branch'] == $branch)
@@ -989,14 +996,14 @@ error_log('>>>>>>branch='.$resource['repo_branch']);
 			
 			if ( ($repo_type == 'plugin') ) {
 				$plugin_file = $resource['repo_name'] . "/" . $resource['repo_name'] . ".php";
-				if ( (git2wp_get_plugin_version($plugin_file) > '-') 
-					&& (git2wp_get_plugin_version($plugin_file) > '') ) {
+				$current_plugin_version = git2wp_get_plugin_version($plugin_file);
+				$new_version = false;
+				if ($current_plugin_version > '-' && $current_plugin_version > '') {
 					$my_data .= "<strong>" . git2wp_get_plugin_header($plugin_file, "Name") . "</strong>&nbsp;(";
 					$author = git2wp_get_plugin_header($plugin_file, "Author");
 					$author_uri = git2wp_get_plugin_header($plugin_file, "AuthorURI");
 					if ( $author_uri != '-' && $author_uri != '' )
 						$author = '<a href="' . $author_uri . '" target="_blank">' . $author . '</a>';
-					$current_plugin_version = git2wp_get_plugin_version($plugin_file);
 					$my_data .= "Version " . $current_plugin_version . "&nbsp;|&nbsp;";
 					$my_data .= "By " . $author . ")&nbsp;";
 					$my_data .= '<a id="need_help_'.$k.'" class="clicker" alt="res_details_'.$k.'"><strong>Details</strong></a><br />';
@@ -1012,7 +1019,7 @@ error_log('>>>>>>branch='.$resource['repo_branch']);
 					
 					$new_version = substr($resource['git_data']['head_commit']['id'], 0, 7); //strtotime($resource['git_data']['head_commit']['timestamp']);
 				}
-				if ( ($new_version != $current_plugin_version) && ($new_version != false) ) {
+				if ( ($new_version != $current_plugin_version) && ('-' != $current_plugin_version) && ('' != $current_plugin_version)  && ($new_version != false) ) {
 					$my_data .= "<strong>New Version: </strong>" . $new_version . "<br />";
 
 				$my_data .= '</div>';
@@ -1027,9 +1034,13 @@ error_log('>>>>>>branch='.$resource['repo_branch']);
 				$my_data .= "<strong>" . git2wp_get_theme_header($theme_dirname, "Name") . "</strong>&nbsp;(";
 				$author = git2wp_get_theme_header($theme_file, "Author");
 				$author_uri = git2wp_get_theme_header($theme_file, "AuthorURI");
+				
 				if ( $author_uri != '-' && $author_uri != '' )
 					$author = '<a href="' . $author_uri . '" target="_blank">' . $author . '</a>';
+				
 				$current_theme_version = git2wp_get_theme_version($theme_dirname);
+				$new_version = false;
+				
 				$my_data .= "Version " . $current_theme_version . "&nbsp;|&nbsp;";
 				$my_data .= "By " . $author . ")&nbsp;";
 				$my_data .= '<a id="need_help_'.$k.'" class="clicker" alt="res_details_'.$k.'"><strong>Details</strong></a><br />';
@@ -1041,14 +1052,15 @@ error_log('>>>>>>branch='.$resource['repo_branch']);
 					$my_data .= $theme_description . "<br />";
 
 				$new_version = substr($resource['git_data']['head_commit']['id'], 0, 7); //strtotime($resource['git_data']['head_commit']['timestamp']);
-				if ( ($new_version != $current_theme_version) && ($new_version != false) ) {
+				
+				if ( $new_version != $current_theme_version && $new_version != false && $current_plugin_version > '-' && $current_plugin_version > '' ) {
 					$my_data .= "<strong>New Version: </strong>" . $new_version . "<br />";
 
-				$my_data .= '</div>';
+					$my_data .= '</div>';
 
-				$action .= '<p><input name="submit_update_resource_'.($k-1) // Update resource button
-					.'" type="submit" class="button" value="'
-					.esc_attr('Update') . '" /></p>';
+					$action .= '<p><input name="submit_update_resource_'.($k-1) // Update resource button
+						.'" type="submit" class="button" value="'
+						.esc_attr('Update') . '" /></p>';
 				}
 
 				if ( ! (($current_theme_version > '-') && ($current_theme_version > '')) ) {
@@ -1440,6 +1452,5 @@ function git2wp_install_from_wp_hash($hash) {
 		unlink($upload_dir_zip);
 	}
 }
-
 
 
