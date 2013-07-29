@@ -974,7 +974,7 @@ function git2wp_setting_resources_list() {
 			
 			if ( ! $dir_exists ) {
 				$zipball_url = GIT2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']) .'.zip';
-				$my_data .= "<p><strong>The resource does not exist on WordPress!</strong></p>";
+				$my_data .= "<p><strong>The resource does not exist on your WordPress!</strong></p>";
 				//if ( file_exists($zipball_url) ) {
 					//
 					// Install resource button
@@ -994,6 +994,10 @@ function git2wp_setting_resources_list() {
 				$new_version = false;
 				if ($current_plugin_version > '-' && $current_plugin_version > '') {
 					$my_data .= "<strong>" . git2wp_get_plugin_header($plugin_file, "Name") . "</strong>&nbsp;(";
+				
+					if($resource['is_on_wp_svn'])
+						$my_data .= "<div class='notification-warning' title='Wordpress has a resource with the same name.\nWe will override its update notifications! ' ></div>";
+						
 					$author = git2wp_get_plugin_header($plugin_file, "Author");
 					$author_uri = git2wp_get_plugin_header($plugin_file, "AuthorURI");
 					if ( $author_uri != '-' && $author_uri != '' )
@@ -1148,7 +1152,7 @@ function git2wp_options_validate($input) {
 												'username' => $resource_owner,
 												'is_on_wp_svn' => $on_wp
 											);
-						
+						error_log(serialize($on_wp));
 						add_settings_error( 'git2wp_settings_errors', 'repo_connected', "Connection was established.", "updated" );
 						delete_transient('git2wp_branches');
 					}else
