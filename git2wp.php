@@ -104,20 +104,20 @@ function git2wp_update_check_themes($transient) {
                     $new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
                     $trans_new_version = $transient->response[ $response_index ]->new_version;
 			
-		    if( isset($trans_new_version) && (strlen($trans_new_version) != 7 || strpos($trans_new_version, ".") != FALSE) )
-			unset($transient->response[ $response_index ]);
-					
-                    if ( ($current_version != '-') && ($current_version != '') && ($current_version != $new_version) && ($new_version != false) ) {
-                        $update_url = 'http://themes.svn.wordpress.org/responsive/1.9.3.2/readme.txt';
-                        //$zipball = GIT2WP_ZIPBALL_URL . '/' . $resource['repo_name'].'.zip';
-                        $zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
-                        $theme = array(
-                                'new_version' => $new_version,
-                                "url" => $update_url,
-                                'package' => $zipball
-                        );
-                        $transient->response[ $response_index ] = $theme;
-                    }
+					if( isset($trans_new_version) && (strlen($trans_new_version) != 7 || strpos($trans_new_version, ".") != FALSE) )
+					unset($transient->response[ $response_index ]);
+						
+						if ( ($current_version != '-') && ($current_version != '') && ($current_version != $new_version) && ($new_version != false) ) {
+							$update_url = 'http://themes.svn.wordpress.org/responsive/1.9.3.2/readme.txt';
+							//$zipball = GIT2WP_ZIPBALL_URL . '/' . $resource['repo_name'].'.zip';
+							$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
+							$theme = array(
+									'new_version' => $new_version,
+									"url" => $update_url,
+									'package' => $zipball
+							);
+							$transient->response[ $response_index ] = $theme;
+						}
                 }else
                     unset($transient->response[ $response_index ]);
             }
