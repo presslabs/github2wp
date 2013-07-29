@@ -1,6 +1,6 @@
 <?php
 /*
- * Plugin Name: Git2WP
+ * Plugin Name: github2wp
  * Plugin URI: http://wordpress.org/extend/plugins/git2wp/ 
  * Description: Managing themes and plugins from github.
  * Author: PressLabs
@@ -82,7 +82,7 @@ function git2wp_token_cron() {
 //------------------------------------------------------------------------------
 // Dashboard integration
 function git2wp_menu() {
-	add_dashboard_page('Git to WordPress Options Page', 'Git2WP', 
+	add_dashboard_page('Git to WordPress Options Page', 'GitHub2WP', 
 					   'manage_options', __FILE__, 'git2wp_options_page');
 }
 add_action('admin_menu', 'git2wp_menu');
