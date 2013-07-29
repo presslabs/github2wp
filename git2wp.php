@@ -89,9 +89,6 @@ add_action('admin_menu', 'git2wp_menu');
 
 //------------------------------------------------------------------------------
 function git2wp_update_check_themes($transient) {
-    if ( empty( $transient->checked ) )
-            return $transient;
-
     $options = get_option('git2wp_options');
     $resource_list = $options['resource_list'];
 
@@ -262,10 +259,7 @@ function git2wp_inject_info($result, $action = null, $args = null) {
 add_filter('plugins_api', 'git2wp_inject_info', 20, 3);
 
 //------------------------------------------------------------------------------
-function git2wp_update_check_plugins($transient) {
-    if ( empty( $transient->checked ) ) 
-	return $transient;
-	
+function git2wp_update_check_plugins($transient) {	
     $options = get_option('git2wp_options');
     $resource_list = $options['resource_list'];
 
@@ -278,27 +272,27 @@ function git2wp_update_check_plugins($transient) {
                 $response_index = $resource['repo_name'] . "/" . $resource['repo_name'] . ".php";
                 $current_version = git2wp_get_plugin_version($response_index);
                 if($git_data['head_commit']['id']) {
-			$new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
-			$trans_new_version = $transient->response[ $response_index ]->new_version;
-			
-			if( isset($trans_new_version) && (strlen($trans_new_version) != 7 || strpos($trans_new_version, ".") != FALSE) )
-				unset($transient->response[ $response_index ]);
-			
-			if ( ($current_version != '-') && ($current_version != '') && ($current_version != $new_version) && ($new_version != false) ) {
-					$homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
-					//$zipball = GIT2WP_ZIPBALL_URL . '/' . wp_hash($resource['repo_name']) . '.zip';
-					$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
-					$plugin = array(
-										'slug' => dirname( $response_index ),
-										'new_version' => $new_version,
-										"url" => $homepage,
-										'package'    => $zipball
-									);
-				$transient->response[ $response_index ] = (object) $plugin;
-			}
-			
-		}else
-                    unset($transient->response[ $response_index ]);
+					$new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
+					$trans_new_version = $transient->response[ $response_index ]->new_version;
+					
+					if( isset($trans_new_version) && (strlen($trans_new_version) != 7 || strpos($trans_new_version, ".") != FALSE) )
+						unset($transient->response[ $response_index ]);
+					
+					if ( ($current_version != '-') && ($current_version != '') && ($current_version != $new_version) && ($new_version != false) ) {
+							$homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
+							//$zipball = GIT2WP_ZIPBALL_URL . '/' . wp_hash($resource['repo_name']) . '.zip';
+							$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
+							$plugin = array(
+												'slug' => dirname( $response_index ),
+												'new_version' => $new_version,
+												"url" => $homepage,
+												'package'    => $zipball
+											);
+						$transient->response[ $response_index ] = (object) $plugin;
+					}
+					
+				}else
+							unset($transient->response[ $response_index ]);
             }
         }
     }
