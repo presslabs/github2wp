@@ -8,7 +8,7 @@
  * Version: 1.3.5
  */
 
-define('GIT2WP_MAX_COMMIT_HIST_COUNT', 5);
+define('GIT2WP_MAX_COMMIT_HIST_COUNT', 100);
 define('GIT2WP_ZIPBALL_DIR_PATH', ABSPATH . '/wp-content/uploads/' . basename(dirname(__FILE__)) . '/' );
 define('GIT2WP_ZIPBALL_URL', home_url() . '/wp-content/uploads/' . basename(dirname(__FILE__)) );
 
@@ -129,7 +129,7 @@ function git2wp_update_check_themes($transient) {
     return $transient;
 }
 add_filter("pre_set_site_transient_update_themes","git2wp_update_check_themes", 10, 1); //WP 3.0+
-//to be changed
+
 //------------------------------------------------------------------------------
 // Transform plugin info into the format used by the native WordPress.org API
 function git2wp_toWpFormat($data){
@@ -1231,7 +1231,7 @@ function git2wp_options_validate($input) {
 				"client_secret" => $default['client_secret'],
 				"access_token" => $default['access_token'],
 				"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
-				"source" => $resource['repo_branch']
+				"source" => $resource['git_data']['head_commit']['id']
 			));
 			$sw = $git->store_git_archive();
 
@@ -1346,20 +1346,20 @@ function git2wp_init() {
 						
 							foreach($commits as $key => $data)	{
 								$unique = true;
-								if($git_data['commit_history']) {
-									foreach($git_data['commit_history'] as $key2 => $data2)
-										if($data['id'] === $data2['sha']) {
-											$unique = false;
-											break;
-										}
 								
-										if($unique)
-											$git_data['commit_history'][] = array('sha' => $data['id'],
-																				  'message' => $data['message'],
-																				  'timestamp' => $data['timestamp'],
-																				  'git_url' => $data['url']
-																			     );
-								}
+								foreach($git_data['commit_history'] as $key2 => $data2)
+									if($data['id'] === $data2['sha']) {
+										$unique = false;
+										break;
+									}
+							
+								if($unique)
+									$git_data['commit_history'][] = array('sha' => $data['id'],
+																							'message' => $data['message'],
+																							'timestamp' => $data['timestamp'],
+																							'git_url' => $data['url']
+																						   );
+								
 							}
 							
 							if(count($git_data['commit_history']) > GIT2WP_MAX_COMMIT_HIST_COUNT)
