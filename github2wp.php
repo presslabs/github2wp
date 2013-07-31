@@ -939,7 +939,7 @@ function git2wp_setting_resources_list() {
 			$endpoint = home_url() . '/' . '?git2wp=' . md5( str_replace(home_url(), '', $resource['resource_link']) );
 
 			$url = "https://github.com/".$resource['username']."/".$resource['repo_name']."/settings/hooks/";
-			$not_synced_message = '<br /><div id="need_help_'.$k.'" class="slider home-border-center">In order to sync the resource with Github you must copy <strong><i>\'Endpoint URL\'</i></strong> and put it on <strong><i>\'WebHook URLs\'</i></strong> at this link: <a href=\'$url\' target=\'_blank\'>$url</a> then press <strong><i>\'Test hook\'</i></strong>.</div>';
+			$not_synced_message = '<br /><div id="need_help_'.$k.'" class="slider home-border-center">In order to sync the resource with Github you must copy <strong><i>\'Endpoint URL\'</i></strong> and put it on <strong><i>\'WebHook URLs\'</i></strong> at this link: <a href=\''.$url.'\' target=\'_blank\'>'.$url.'</a> then press <strong><i>\'Test hook\'</i></strong>.</div>';
 
 			(!empty($resource['git_data']['head_commit']['id'])) ? $synced_resources = '<span style="color:green;">This resource is synced with Github.</span>' : $synced_resources = '<span style="color:red;">This resource is NOT synced with Github!</span> <a id="need_help_'.$k.'" class="clicker" alt="need_help_'.$k.'"><strong>Need help?</strong></a>' . $not_synced_message ;
 			$endpoint .= '<br />' . $synced_resources;
