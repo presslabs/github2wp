@@ -1424,8 +1424,7 @@ function git2wp_install_from_wp_hash($hash) {
 		$zip_url = $git->store_git_archive();
 		$upload = wp_upload_dir();
 		
-		$upload_dir = $upload['basedir'];
-		$upload_dir = $upload_dir . '/git2wp/';
+		$upload_dir = GIT2WP_ZIPBALL_DIR_PATH;
 		$upload_dir_zip .= $upload_dir . wp_hash($git->config['repo']) . ".zip";
 			
 		ob_start();

@@ -1,5 +1,10 @@
 <?php
 if ( !class_exists('Git2WP') ):
+	if( !defined('GIT2WP_ZIPBALL_URL') )
+		define('GIT2WP_ZIPBALL_URL', home_url() . '/wp-content/uploads/' . basename(dirname(__FILE__)) );
+	if( !defined('GIT2WP_ZIPBALL_DIR_PATH') )
+		define('GIT2WP_ZIPBALL_DIR_PATH', ABSPATH . '/wp-content/uploads/' . basename(dirname(__FILE__)) . '/' );
+		
 
 //------------------------------------------------------------------------------
 /*
@@ -52,9 +57,9 @@ class Git2WP {
 
 		$upload = wp_upload_dir();
 
-		$upload_dir = $upload['basedir'];
-		$upload_dir = $upload_dir . '/git2wp/';
-		$upload_url = str_replace($upload['subdir'], '', $upload['url']) . '/git2wp/';
+		
+		$upload_dir = GIT2WP_ZIPBALL_DIR_PATH;
+		$upload_url = GIT2WP_ZIPBALL_URL;
 
 		if (! is_dir($upload_dir)) 
 		   mkdir( $upload_dir, 0777, true );
