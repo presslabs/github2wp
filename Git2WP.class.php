@@ -103,7 +103,7 @@ class Git2WP {
 
 				if ($res === TRUE) {
 					for($i = 0; $i < $zip->numFiles; $i++) {   
-				$name = $zip->getNameIndex($i);
+						$name = $zip->getNameIndex($i);
 
 						if(strpos($folder_name, $name) == 0) {
 							$name = substr($name, 0, -1);
@@ -122,8 +122,8 @@ class Git2WP {
 
 				if($created)
 					$this->addDirectoryToZip($zip, $upload_dir.$this->config['repo'], strlen($upload_dir),
-					substr($upload_dir.$name, -7) );
-
+					substr(strrchr($upload_dir.$name, '-'), 1, 7) );
+				
 				$zip->close();
 				git2wp_rmdir($upload_dir.$this->config['repo']);
 

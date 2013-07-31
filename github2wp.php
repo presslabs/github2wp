@@ -1051,7 +1051,7 @@ function git2wp_setting_resources_list() {
 
 				$new_version = substr($resource['git_data']['head_commit']['id'], 0, 7); //strtotime($resource['git_data']['head_commit']['timestamp']);
 				
-				if ( $new_version != $current_theme_version && $new_version != false && $current_plugin_version > '-' && $current_plugin_version > '' ) {
+				if ( ($new_version != $current_theme_version) && ($new_version != false) && ($current_theme_version != '-') && ($current_theme_version != '') ) {
 					$my_data .= "<strong>New Version: </strong>" . $new_version . "<br />";
 
 					$my_data .= '</div>';
@@ -1062,7 +1062,7 @@ function git2wp_setting_resources_list() {
 				}
 
 				if ( ! (($current_theme_version > '-') && ($current_theme_version > '')) ) {
-					$my_data = "<strong>The resource may not be a WordPress " 
+					$my_data = "<strong>The resource does not exist on your WordPress!" 
 						. ucfirst($repo_type) . ".</strong>";
 					//$alternate = ' style="background-color:#EDC5C0;"';
 				}
