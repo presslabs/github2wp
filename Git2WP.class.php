@@ -278,6 +278,7 @@ class Git2WP {
 		return $branches;
 	}
 
+
 	public function addDirectoryToZip(&$zip, $dir, $base = 0, $version) {
 		foreach(glob($dir . '/*') as $file) {
 		  if(is_dir($file))
@@ -378,12 +379,9 @@ class Git2WP {
 			if (is_wp_error( $response ) || wp_remote_retrieve_response_code($response) != 200)
 				return false;
 			
-			$folder_name = wp_remote_retrieve_header( $response, 'content-disposition');
-			$folder_name = git2wp_str_between('filename=','.zip',$folder_name);
-			
 			$bit_count = file_put_contents(GIT2WP_ZIPBALL_DIR_PATH."submodule.zip", wp_remote_retrieve_body($response));
 			
-			if(!bit_count)
+			if(!$bit_count)
 				return false;
 			else {
 				$zip = new ZipArchive();
@@ -393,6 +391,9 @@ class Git2WP {
 						rmdir($target);
 						
 					$zip->extractTo(dirname($target));
+					
+					$folder_name = $zip->getNameIndex(0);
+					
 					rename(dirname($target)."/".$folder_name, dirname($target)."/".basename($path));
 					unlink(GIT2WP_ZIPBALL_DIR_PATH."submodule.zip");
 					$zip->close();
