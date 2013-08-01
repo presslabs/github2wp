@@ -65,7 +65,7 @@ class Git2WP {
 		   mkdir( $upload_dir, 0777, true );
 
 		$upload_dir_zip .= $upload_dir . wp_hash($this->config['repo']) . ".zip";	
-		$upload_url_zip .= $upload_url . wp_hash($this->config['repo']) . ".zip";	
+		$upload_url_zip .= $upload_url . wp_hash($this->config['repo']) . ".zip";
 
 		$args = array(
 			'method'      =>    'GET',
@@ -115,19 +115,46 @@ class Git2WP {
 				$zip->close();
 				unlink($upload_dir_zip);
 
-				if( is_dir($upload_dir.$name))
+				if( is_dir($upload_dir.$name) )
 					rename($upload_dir.$name, $upload_dir.$this->config['repo']);
 
 				$created = $zip->open( $upload_dir_zip, ZIPARCHIVE::CREATE );
-
-				if($created)
-					$this->addDirectoryToZip($zip, $upload_dir.$this->config['repo'], strlen($upload_dir),
-					substr(strrchr($upload_dir.$name, '-'), 1, 7) );
+				
+				if($created) {
+					if(file_exists($upload_dir.$this->config['repo']."/.gitmodules")) {
+						$submodules = Git2WP::parse_git_submodule_file($upload_dir.$this->config['repo']."/.gitmodules");
+						$error_free = true;
+						
+						foreach($submodules as $module) {
+							if(!$error_free)
+								break;
+							
+							$sub_repo = basename($module['url'], '.git');
+							$sub_user = basename(dirname($module['url'])); 
+							$sub_commit = $this->get_submodule_active_commit($sub_user, $module['path']);
+							
+							if(!$sub_commit)
+								$error_free = false;
+							else {
+								$sub_url = $this->config['git_api_base_url'].sprintf("repos/%s/%s/zipball/%s?access_token=%s", $sub_user, $sub_repo, $sub_commit, $this->config['access_token']);
+								$sw = Git2WP::get_submodule_data($sub_url, $upload_dir.$this->config['repo']."/".$module['path'], $module['path']);
+								if(!$sw)
+									$error_free = false;
+							}
+						}
+					}
+					
+					if($error_free)
+						$this->addDirectoryToZip($zip, $upload_dir.$this->config['repo'], strlen($upload_dir), substr(strrchr($upload_dir.$name, '-'), 1, 7) );
+				}
 				
 				$zip->close();
 				git2wp_rmdir($upload_dir.$this->config['repo']);
-
-				return $upload_url_zip;
+				
+				if($error_free)
+					return $upload_url_zip;
+				else
+					return false;
 			}
 			}else {
 				$error_message = wp_remote_retrieve_response_message($response);
@@ -214,6 +241,31 @@ class Git2WP {
 			return null;
 		}
 
+		$branches = null;
+		$args = array(
+				'method'      =>    'GET',
+				'timeout'     =>    50,
+				'redirection' =>    5,
+				'httpversion' =>    '1.0',
+				'blocking'    =>    true,
+				'headers'     =>    array(),
+				'body'        =>    null,
+				'cookies'     =>    array()
+				);
+
+
+		$response = wp_remote_get( $url, $args );
+
+		if( is_wp_error( $response ) ) {
+			$error_message = $response->get_error_message();
+			add_settings_error( 'git2wp_settings_errors', 
+						'repo_archive_error', 
+						"An error has occured: $error_message", 
+						'error' );
+
+			return null;
+		}
+
 		$result = wp_remote_retrieve_body( $response );
 
 		$result = json_decode($result, true);
@@ -227,33 +279,33 @@ class Git2WP {
 	}
 
 	public function addDirectoryToZip(&$zip, $dir, $base = 0, $version) {
-					foreach(glob($dir . '/*') as $file) {
-					  if(is_dir($file))
-						$this->addDirectoryToZip($zip, $file, $base, $version);
-					  else {
-												$file_name = substr($file, $base);
+		foreach(glob($dir . '/*') as $file) {
+		  if(is_dir($file))
+			$this->addDirectoryToZip($zip, $file, $base, $version);
+		  else {
+				$file_name = substr($file, $base);
 
-												$repo_file_name = $this->config['repo'].'.php';
-												if ( $this->config['repo_type'] == 'theme' )
-														$repo_file_name = 'style.css';
+				$repo_file_name = $this->config['repo'].'.php';
+				if ( $this->config['repo_type'] == 'theme' )
+						$repo_file_name = 'style.css';
 
-												if ( basename($file_name) == $repo_file_name ) {
-														$tag_version = "Version: ";
-														$zip_filename = basename($file_name);
+				if ( basename($file_name) == $repo_file_name ) {
+						$tag_version = "Version: ";
+						$zip_filename = basename($file_name);
 
-														$file_content = file_get_contents($file);
-														$old_version = $tag_version . git2wp_str_between($tag_version, "\n", $file_content);
-														$new_version = $tag_version . $version;
+						$file_content = file_get_contents($file);
+						$old_version = $tag_version . git2wp_str_between($tag_version, "\n", $file_content);
+						$new_version = $tag_version . $version;
 
-														$new_file_content = str_replace($old_version, $new_version, $file_content);
-														$zip->addFromString($file_name, $new_file_content);
-												} else
-								$zip->addFile($file, $file_name);
-										}
-						}
+						$new_file_content = str_replace($old_version, $new_version, $file_content);
+						$zip->addFromString($file_name, $new_file_content);
+				} else
+					$zip->addFile($file, $file_name);
+			}
+		}
 	}
 
-	  public function check_user() {
+	public function check_user() {
 		$url = "https://api.github.com/user?access_token=".$this->config['access_token'];
 
 		$args = array(
@@ -277,30 +329,112 @@ class Git2WP {
 		if(empty($result['message'])) {
 			return true;
 		}
-		
+	
 		return false;
-	  }
+	}
 		
-		public static function check_svn_avail( $resource_name, $type ) {
-				$url = "http://".$type."s.svn.wordpress.org/".$resource_name."/";
-				
-				$args = array(
-					'method'      =>    'GET',
-					'timeout'     =>    50,
-					'redirection' =>    5,
-					'httpversion' =>    '1.0',
-					'blocking'    =>    true,
-					'headers'     =>    array(),
-					'body'        =>    null,
-					'cookies'     =>    array()
-				);
-				
-				$response = wp_remote_get( $url, $args );
+	public static function check_svn_avail( $resource_name, $type ) {
+			$url = "http://".$type."s.svn.wordpress.org/".$resource_name."/";
+			
+			$args = array(
+				'method'      =>    'GET',
+				'timeout'     =>    50,
+				'redirection' =>    5,
+				'httpversion' =>    '1.0',
+				'blocking'    =>    true,
+				'headers'     =>    array(),
+				'body'        =>    null,
+				'cookies'     =>    array()
+			);
+			
+			$response = wp_remote_get( $url, $args );
 
-				if(wp_remote_retrieve_response_code( $response ) == '200')
-					return true;
+			if(wp_remote_retrieve_response_code( $response ) == '200')
+				return true;
+			return false;
+	}
+	
+	public static function parse_git_submodule_file($file_path) {
+		$submodules = parse_ini_file($file_path, true);
+		
+		return $submodules;
+		
+	}
+	
+	public static function get_submodule_data($url, $target, $path) {
+		$args = array(
+				'method'      =>    'GET',
+				'timeout'     =>    50,
+				'redirection' =>    5,
+				'httpversion' =>    '1.0',
+				'blocking'    =>    true,
+				'headers'     =>    array(),
+				'body'        =>    null,
+				'cookies'     =>    array()
+			);
+			
+			$response = wp_remote_get( $url, $args );
+			
+			if (is_wp_error( $response ) || wp_remote_retrieve_response_code($response) != 200)
 				return false;
-		}
+			
+			$folder_name = wp_remote_retrieve_header( $response, 'content-disposition');
+			$folder_name = git2wp_str_between('filename=','.zip',$folder_name);
+			
+			$bit_count = file_put_contents(GIT2WP_ZIPBALL_DIR_PATH."submodule.zip", wp_remote_retrieve_body($response));
+			
+			if(!bit_count)
+				return false;
+			else {
+				$zip = new ZipArchive();
+		
+				if ($zip->open(GIT2WP_ZIPBALL_DIR_PATH."submodule.zip") === TRUE) {
+					if(is_dir($target))
+						rmdir($target);
+						
+					$zip->extractTo(dirname($target));
+					rename(dirname($target)."/".$folder_name, dirname($target)."/".basename($path));
+					unlink(GIT2WP_ZIPBALL_DIR_PATH."submodule.zip");
+					$zip->close();
+					
+					return true;
+				}else
+					return false;
+			}
+	}
+	
+	public function get_submodule_active_commit($sub_user, $path) {
+		$url = sprintf('https://api.github.com/repos/%s/%s/contents/%s?access_token=%s', $sub_user, $this->config['repo'], $path, $this->config['access_token']);
+		$commit = null;
+		
+		$args = array(
+				'method'      =>    'GET',
+				'timeout'     =>    50,
+				'redirection' =>    5,
+				'httpversion' =>    '1.0',
+				'blocking'    =>    true,
+				'headers'     =>    array(),
+				'body'        =>    null,
+				'cookies'     =>    array()
+			);
+			
+		$response = wp_remote_get( $url, $args );
+		
+		if( is_wp_error( $response ) || wp_remote_retrieve_response_code($response) != 200)
+			return null;
+		
+		$result = json_decode(wp_remote_retrieve_body($response), true);
+		
+		if($result['message'])
+			return null;
+		
+		if($result['type'] == 'submodule')
+			$commit = $result['sha'];
+		else
+			return null;
+	
+		return $commit;
+	}
 }
 
 endif;
