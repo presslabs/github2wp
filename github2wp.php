@@ -9,7 +9,7 @@
  */
 
 define('GIT2WP_MAX_COMMIT_HIST_COUNT', 100);
-define('GIT2WP_ZIPBALL_DIR_PATH', ABSPATH . '/wp-content/uploads/' . basename(dirname(__FILE__)) . '/' );
+define('GIT2WP_ZIPBALL_DIR_PATH', ABSPATH . 'wp-content/uploads/' . basename(dirname(__FILE__)) . '/' );
 define('GIT2WP_ZIPBALL_URL', home_url() . '/wp-content/uploads/' . basename(dirname(__FILE__)) );
 
 require_once('Git2WP.class.php');
