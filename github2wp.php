@@ -14,6 +14,7 @@ define('GIT2WP_ZIPBALL_URL', home_url() . '/wp-content/uploads/' . basename(dirn
 
 require_once('Git2WP.class.php');
 require_once('Git2WpFile.class.php');
+require_once('git2wp_render.php');
 
 //------------------------------------------------------------------------------
 function git2wp_activate() {
@@ -385,7 +386,12 @@ function git2wp_options_page() {
 		wp_die( __('You do not have sufficient permissions to access this page.') );
 	}
 	$options = get_option('git2wp_options');
+	
+	$nav_bar_tabs = array('resources', 'settings', 'history');
 	isset($_GET['tab']) ? $tab = $_GET['tab'] : $tab = 'resources';
+	
+	if( ! in_array($tab, $nav_bar_tabs))
+		$tab = 'resources';
 ?>
 
 <div class="wrap">
@@ -394,9 +400,11 @@ function git2wp_options_page() {
 	
 	<h2 class="nav-tab-wrapper">
 		<a class="nav-tab<?php if($tab=='resources')
-		echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=resources'); ?>">Github resources</a>
+		echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=resources'); ?>">Resources</a>
+		<a class="nav-tab<?php if($tab=='history')
+		echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=history'); ?>">History</a>
 		<a class="nav-tab<?php if($tab=='settings')
-		echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=settings'); ?>">Github settings</a>
+		echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=settings'); ?>">Settings</a>
 	</h2>	
 
 	<?php if ( $tab == 'resources' ) { ?>
@@ -590,8 +598,47 @@ function git2wp_options_page() {
 	</form>
 	<?php } ?>
 	
+	<?php if ( $tab == 'history' ) { ?>
+	
+	<form action="options.php" method="post">
+		<?php
+				settings_fields('git2wp_options');
+				do_settings_sections('git2wp_history');
+				$options = get_option('git2wp_options');
+				$resource_list = $options['resource_list'];
+		?>
+		
+		<?php
+			$plugin_render = '';
+			$theme_render = '';
+			
+			foreach($resource_list as $key => $resource) {
+				$type = git2wp_get_repo_type($resource['resource_link']);
+				
+				if($type == 'plugin') 
+					$plugin_render .= git2wp_render_resource_history( $resource , $key);
+					
+				if($type == 'theme') 
+					$theme_render .= git2wp_render_resource_history( $resource , $key);
+			}
+		?>
+		<table class="form-table" >
+			<tbody>
+				<tr><th colspan='2'><h3>Plugins</h3></th></tr> 
+				<?php echo $plugin_render; ?>
+			</tbody>
+		</table>
+		<br /><br /><br />
+		<table class="form-table">
+			<tbody>
+				<tr><th colspan='2'><h3>Themes</h3></th></tr> 
+				<?php echo $theme_render; ?>
+			</tbody>
+		</table>
+	</form>
+	<?php } ?>
+	
 </div><!-- .wrap -->
-
 
 <?php
 }
@@ -610,7 +657,7 @@ function git2wp_admin_init() {
 	//
 	// Resources tab
 	//
-	add_settings_section('git2wp_main_section', 'Git to WordPress - Resource',
+	add_settings_section('git2wp_main_section', 'Git to WordPress - Resources',
 						 'git2wp_main_section_description', 'git2wp');
 	add_settings_section('git2wp_resource_display_section', 'Your current Git resources', 
 						 'git2wp_resource_display_section_description', 'git2wp_list');
@@ -619,6 +666,11 @@ function git2wp_admin_init() {
 	//
 	add_settings_section('git2wp_second_section', 'Git to WordPress - Settings', 
 						 'git2wp_second_section_description', 'git2wp_settings');
+	//
+	// History tab
+	//
+	add_settings_section('git2wp_main_history_section', 'Git to WordPress - History', 
+						 'git2wp_main_history_section_description', 'git2wp_history');
 	//
 	// Add Settings notice
 	//
@@ -638,6 +690,11 @@ add_action('admin_init', 'git2wp_admin_init');
 //------------------------------------------------------------------------------
 function git2wp_second_section_description() {
 	echo '<p>Enter here the default settings for the Github connexion.</p>';
+}
+
+//------------------------------------------------------------------------------
+function git2wp_main_history_section_description() {
+	echo '<p>You can revert to an older version of a resource at any time.</p>';
 }
 
 //------------------------------------------------------------------------------

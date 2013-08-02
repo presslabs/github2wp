@@ -1,3 +1,18 @@
+.quarter {
+	width: 25em;
+}
+
+.history-slider {
+	cursor: pointer;
+	padding: 2px 0;
+	width: 25em;
+	display: inline-block;
+	border-color: #DFDFDF;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+}
+
 .ajax-loader {
 	background-image: url('./resources/ajax-loader.gif');
 	background-repeat: no-repeat;
