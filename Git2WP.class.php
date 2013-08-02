@@ -143,6 +143,7 @@ class Git2WP {
 								else {
 									$sub_url = $this->config['git_api_base_url'].sprintf("repos/%s/%s/zipball/%s?access_token=%s", $sub_user, $sub_repo, $sub_commit, $this->config['access_token']);
 									$sw = Git2WP::get_submodule_data($sub_url, $upload_dir.$this->config['repo']."/".$module['path'], $module['path']);
+									
 									if(!$sw) {
 										$error_free = false;
 										
@@ -158,32 +159,42 @@ class Git2WP {
 					
 					if($error_free)
 						$this->addDirectoryToZip($zip, $upload_dir.$this->config['repo'], strlen($upload_dir), substr(strrchr($upload_dir.$name, '-'), 1, 7) );
+				
+					$zip->close();
+					git2wp_rmdir($upload_dir.$this->config['repo']);
 				}
 				
-				$zip->close();
-				git2wp_rmdir($upload_dir.$this->config['repo']);
-				
 				if($error_free)
-					return $upload_url_zip;
+						return $upload_url_zip;
 				else {
 					if(file_exists($upload_dir_zip))
 						unlink($upload_dir_zip);
-						
+							
 					return false;
 				}
-			}
-			}else {
-				$error_message = wp_remote_retrieve_response_message($response);
+			} else {
+				if(file_exists($upload_dir_zip))
+						unlink($upload_dir_zip);
+						
 				add_settings_error( 'git2wp_settings_errors', 
-							'repo_archive_error', 
-							"An error has occured: $code - $error_message", 
-							'error' );
-
+												'repo_archive_error', 
+												"Empty archive. ", 
+												'error' );
 				return false;
 			}
+		}else {
+			$error_message = wp_remote_retrieve_response_message($response);
+			add_settings_error( 'git2wp_settings_errors', 
+						'repo_archive_error', 
+						"An error has occured: $code - $error_message", 
+						'error' );
+
 			return false;
 		}
+		return false;
 	}
+	
+
 
 	public function check_repo_availability() {
 		$url = $this->config['git_api_base_url']."repos/".$this->config['user']
