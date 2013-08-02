@@ -111,35 +111,47 @@ class Git2WP {
 						}
 					}
 
-				$zip->extractTo($upload_dir);
-				$zip->close();
-				unlink($upload_dir_zip);
+					$zip->extractTo($upload_dir);
+					$zip->close();
+					unlink($upload_dir_zip);
+	
+					if( is_dir($upload_dir.$name) )
+						rename($upload_dir.$name, $upload_dir.$this->config['repo']);
 
-				if( is_dir($upload_dir.$name) )
-					rename($upload_dir.$name, $upload_dir.$this->config['repo']);
-
-				$created = $zip->open( $upload_dir_zip, ZIPARCHIVE::CREATE );
+					$created = $zip->open( $upload_dir_zip, ZIPARCHIVE::CREATE );
 				
-				if($created) {
-					if(file_exists($upload_dir.$this->config['repo']."/.gitmodules")) {
-						$submodules = Git2WP::parse_git_submodule_file($upload_dir.$this->config['repo']."/.gitmodules");
-						$error_free = true;
-						
-						foreach($submodules as $module) {
-							if(!$error_free)
-								break;
+					if($created) {
+						if(file_exists($upload_dir.$this->config['repo']."/.gitmodules")) {
+							$submodules = Git2WP::parse_git_submodule_file($upload_dir.$this->config['repo']."/.gitmodules");
+							$error_free = true;
 							
-							$sub_repo = basename($module['url'], '.git');
-							$sub_user = basename(dirname($module['url'])); 
-							$sub_commit = $this->get_submodule_active_commit($sub_user, $module['path']);
-							
-							if(!$sub_commit)
-								$error_free = false;
-							else {
-								$sub_url = $this->config['git_api_base_url'].sprintf("repos/%s/%s/zipball/%s?access_token=%s", $sub_user, $sub_repo, $sub_commit, $this->config['access_token']);
-								$sw = Git2WP::get_submodule_data($sub_url, $upload_dir.$this->config['repo']."/".$module['path'], $module['path']);
-								if(!$sw)
+							foreach($submodules as $module) {
+								if(!$error_free)
+									break;
+								
+								$sub_repo = basename($module['url'], '.git');
+								$sub_user = basename(dirname($module['url'])); 
+								$sub_commit = $this->get_submodule_active_commit($sub_user, $module['path'], $this->config['source']); 
+								
+								if(!$sub_commit) {
 									$error_free = false;
+									add_settings_error( 'git2wp_settings_errors', 
+																	'repo_archive_submodule_error', 
+																	"At least one of the submodules included in the resource failed to be retrieved! No permissions or repo does not exist. ", 
+																	'error' );
+								}
+								else {
+									$sub_url = $this->config['git_api_base_url'].sprintf("repos/%s/%s/zipball/%s?access_token=%s", $sub_user, $sub_repo, $sub_commit, $this->config['access_token']);
+									$sw = Git2WP::get_submodule_data($sub_url, $upload_dir.$this->config['repo']."/".$module['path'], $module['path']);
+									if(!$sw) {
+										$error_free = false;
+										
+										add_settings_error( 'git2wp_settings_errors', 
+																		'repo_archive_submodule_error', 
+																		"At least one of the submodules included in the resource failed to be retrieved! No data retrieved. ", 
+																		'error' );
+									}
+								}
 							}
 						}
 					}
@@ -153,8 +165,12 @@ class Git2WP {
 				
 				if($error_free)
 					return $upload_url_zip;
-				else
+				else {
+					if(file_exists($upload_dir_zip))
+						unlink($upload_dir_zip);
+						
 					return false;
+				}
 			}
 			}else {
 				$error_message = wp_remote_retrieve_response_message($response);
@@ -399,13 +415,16 @@ class Git2WP {
 					$zip->close();
 					
 					return true;
-				}else
+				}else {
+					unlink(GIT2WP_ZIPBALL_DIR_PATH."submodule.zip");
+					
 					return false;
+				}
 			}
 	}
 	
-	public function get_submodule_active_commit($sub_user, $path) {
-		$url = sprintf('https://api.github.com/repos/%s/%s/contents/%s?access_token=%s', $sub_user, $this->config['repo'], $path, $this->config['access_token']);
+	public function get_submodule_active_commit($sub_user, $path, $ref) {
+		$url = sprintf('https://api.github.com/repos/%s/%s/contents/%s?access_token=%s&ref=%s', $sub_user, $this->config['repo'], $path, $this->config['access_token'], $ref);
 		$commit = null;
 		
 		$args = array(
