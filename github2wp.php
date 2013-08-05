@@ -1247,14 +1247,15 @@ function git2wp_options_validate($input) {
 				"source" => $resource['repo_branch']
 			));
 			$sw = $git->store_git_archive();
-
-			if ( $repo_type == 'plugin' )
-				git2wp_uploadPlguinFile($zipball_path);
-			else
-				git2wp_uploadThemeFile($zipball_path);
-
-			if ( file_exists($zipball_path) ) unlink($zipball_path);
-
+			
+			if($sw) {
+				if ( $repo_type == 'plugin' )
+					git2wp_uploadPlguinFile($zipball_path);
+				else
+					git2wp_uploadThemeFile($zipball_path);
+				if ( file_exists($zipball_path) ) unlink($zipball_path);
+			}
+			/*
 			$dir = plugin_dir_path( __FILE__ ) . '/../';
 			$scandir_files = scandir($dir, 1);
 			foreach($scandir_files as $sc_file) {
@@ -1265,6 +1266,7 @@ function git2wp_options_validate($input) {
 				if ( $sc_file == $file_name )
 					rename($dir . '/' . $sc_file, $dir . '/' . $resource['repo_name']);
 			}
+			*/
 		}
 
 	// update resources
@@ -1287,13 +1289,15 @@ function git2wp_options_validate($input) {
 				"source" => $resource['git_data']['head_commit']['id']
 			));
 			$sw = $git->store_git_archive();
+			
+			if($sw) {
+				if ( $repo_type == 'plugin' )
+					git2wp_uploadPlguinFile($zipball_path, 'update');
+				else
+					git2wp_uploadThemeFile($zipball_path, 'update');
 
-			if ( $repo_type == 'plugin' )
-				git2wp_uploadPlguinFile($zipball_path, 'update');
-			else
-				git2wp_uploadThemeFile($zipball_path, 'update');
-
-			if ( file_exists($zipball_path) ) unlink($zipball_path);
+				if ( file_exists($zipball_path) ) unlink($zipball_path);
+			}
 		}
 
 	// delete resources
@@ -1475,14 +1479,12 @@ function git2wp_install_from_wp_hash($hash) {
 			"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
 			"source" => $resource['repo_branch']
 		));
-		//header('Location: ' . $git->return_git_archive_url());
 		
 		$zip_url = $git->store_git_archive();
-		$upload = wp_upload_dir();
 		
 		$upload_dir = GIT2WP_ZIPBALL_DIR_PATH;
 		$upload_dir_zip .= $upload_dir . wp_hash($git->config['repo']) . ".zip";
-			
+		
 		ob_start();
 		$mm_type="application/octet-stream";
 		header("Cache-Control: public, must-revalidate");
@@ -1492,8 +1494,7 @@ function git2wp_install_from_wp_hash($hash) {
 		header('Content-Disposition: attachment; filename="'.basename($zip_url).'"');
 		header("Content-Transfer-Encoding: binary\n");
 		ob_end_clean();         
-		
-		
+	
 		
 		readfile($upload_dir_zip);
 		unlink($upload_dir_zip);
