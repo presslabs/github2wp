@@ -54,9 +54,6 @@ class Git2WP {
 
 	public function store_git_archive() {
 		$url = $this->config['zip_url'];
-
-		$upload = wp_upload_dir();
-
 		
 		$upload_dir = GIT2WP_ZIPBALL_DIR_PATH;
 		$upload_url = GIT2WP_ZIPBALL_URL;
@@ -119,53 +116,56 @@ class Git2WP {
 						rename($upload_dir.$name, $upload_dir.$this->config['repo']);
 
 					$created = $zip->open( $upload_dir_zip, ZIPARCHIVE::CREATE );
-				
+					
 					if($created) {
+						$error_free = true;
+						
 						if(file_exists($upload_dir.$this->config['repo']."/.gitmodules")) {
 							$submodules = Git2WP::parse_git_submodule_file($upload_dir.$this->config['repo']."/.gitmodules");
-							$error_free = true;
 							
-							foreach($submodules as $module) {
-								if(!$error_free)
-									break;
-								
-								$sub_repo = basename($module['url'], '.git');
-								$sub_user = basename(dirname($module['url'])); 
-								$sub_commit = $this->get_submodule_active_commit($sub_user, $module['path'], $this->config['source']); 
-								
-								if(!$sub_commit) {
-									$error_free = false;
-									add_settings_error( 'git2wp_settings_errors', 
-																	'repo_archive_submodule_error', 
-																	"At least one of the submodules included in the resource failed to be retrieved! No permissions or repo does not exist. ", 
-																	'error' );
-								}
-								else {
-									$sub_url = $this->config['git_api_base_url'].sprintf("repos/%s/%s/zipball/%s?access_token=%s", $sub_user, $sub_repo, $sub_commit, $this->config['access_token']);
-									$sw = Git2WP::get_submodule_data($sub_url, $upload_dir.$this->config['repo']."/".$module['path'], $module['path']);
+							if(is_array($submodules) && !empty($submodules))
+								foreach($submodules as $module) {
+									if(!$error_free)
+										break;
 									
-									if(!$sw) {
+									$sub_repo = basename($module['url'], '.git');
+									$sub_user = basename(dirname($module['url'])); 
+									$sub_commit = $this->get_submodule_active_commit($sub_user, $module['path'], $this->config['source']); 
+									
+									if(!$sub_commit) {
 										$error_free = false;
-										
 										add_settings_error( 'git2wp_settings_errors', 
 																		'repo_archive_submodule_error', 
-																		"At least one of the submodules included in the resource failed to be retrieved! No data retrieved. ", 
+																		"At least one of the submodules included in the resource failed to be retrieved! No permissions or repo does not exist. ", 
 																		'error' );
 									}
+									else {
+										$sub_url = $this->config['git_api_base_url'].sprintf("repos/%s/%s/zipball/%s?access_token=%s", $sub_user, $sub_repo, $sub_commit, $this->config['access_token']);
+										$sw = Git2WP::get_submodule_data($sub_url, $upload_dir.$this->config['repo']."/".$module['path'], $module['path']);
+										
+										if(!$sw) {
+											$error_free = false;
+											
+											add_settings_error( 'git2wp_settings_errors', 
+																			'repo_archive_submodule_error', 
+																			"At least one of the submodules included in the resource failed to be retrieved! No data retrieved. ", 
+																			'error' );
+										}
+									}
 								}
-							}
 						}
-					}
 					
 					if($error_free)
 						$this->addDirectoryToZip($zip, $upload_dir.$this->config['repo'], strlen($upload_dir), substr(strrchr($upload_dir.$name, '-'), 1, 7) );
 				
 					$zip->close();
+					}
 					git2wp_rmdir($upload_dir.$this->config['repo']);
 				}
 				
-				if($error_free)
+				if($error_free) 
 						return $upload_url_zip;
+				
 				else {
 					if(file_exists($upload_dir_zip))
 						unlink($upload_dir_zip);
@@ -384,7 +384,7 @@ class Git2WP {
 	
 	public static function parse_git_submodule_file($file_path) {
 		$submodules = parse_ini_file($file_path, true);
-		
+
 		return $submodules;
 		
 	}
@@ -408,8 +408,10 @@ class Git2WP {
 			
 			$bit_count = file_put_contents(GIT2WP_ZIPBALL_DIR_PATH."submodule.zip", wp_remote_retrieve_body($response));
 			
-			if(!$bit_count)
+			if(!$bit_count) {
+				
 				return false;
+			}
 			else {
 				$zip = new ZipArchive();
 		
@@ -420,6 +422,7 @@ class Git2WP {
 					$zip->extractTo(dirname($target));
 					
 					$folder_name = $zip->getNameIndex(0);
+
 					
 					rename(dirname($target)."/".$folder_name, dirname($target)."/".basename($path));
 					unlink(GIT2WP_ZIPBALL_DIR_PATH."submodule.zip");

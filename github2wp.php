@@ -852,9 +852,8 @@ function git2wp_uploadThemeFile($path, $mode = 'install') {
 	
 	if($file->checkFtr()):
 		$file->writeToFile();
+		git2wp_installTheme($file->pathFtw());
 	endif;
-	
-	git2wp_installTheme($file->pathFtw());
 }
 
 //------------------------------------------------------------------------------
@@ -877,9 +876,9 @@ function git2wp_uploadPlguinFile($path, $mode = 'install') {
 	
 	if($file->checkFtr()):
 		$file->writeToFile();
+		git2wp_installPlugin($file->pathFtw());
 	endif;
 	
-	git2wp_installPlugin($file->pathFtw());
 }
 
 
