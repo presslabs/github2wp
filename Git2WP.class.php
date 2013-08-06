@@ -381,10 +381,11 @@ class Git2WP {
 			return false;
 
 		$result = json_decode(wp_remote_retrieve_body( $response ), true);
-		if(empty($result['message'])) {
-			return true;
-		}
-	
+		
+		if(wp_remote_retrieve_response_code( $response ) == '200')
+			if(empty($result['message'])) 
+				return true;
+		
 		return false;
 	}
 		
