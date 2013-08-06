@@ -12,9 +12,9 @@
 			<td>
 				<?php
 				$commit_history = $resource['git_data']['commit_history'];
-				$commit_history = array_reverse($commit_history);
-				
+
 				if(count($commit_history) != 0):
+					$commit_history = array_reverse($commit_history);
 				?>
 			
 				<span class="history-slider clicker button-primary" alt="<?php echo "history_expand_$resource_id"; ?>" ><center>Expand</center></span>		
