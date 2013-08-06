@@ -10,13 +10,29 @@
 				<label><strong><?php echo $resource['repo_name']; ?></strong></label>
 			</th>
 			<td>
+				<?php
+				$commit_history = $resource['git_data']['commit_history'];
+				$commit_history = array_reverse($commit_history);
+				
+				if(count($commit_history) != 0):
+				?>
+			
 				<span class="history-slider clicker button-primary" alt="<?php echo "history_expand_$resource_id"; ?>" ><center>Expand</center></span>		
-				<div class="slider home-border-center quarter" id="<?php echo "history_expand_$resource_id"; ?>">
+					<div class="slider home-border-center half" id="<?php echo "history_expand_$resource_id"; ?>">
+						<table class='wp-list-table widefat plugins' style='padding-top: 5px;'>
+							<thead>
+								<tr>
+									<th scope='col' width="10%;"><b>SHA</b></th>
+									<th scope='col' width="70%;"><b>Message</b></th>
+									<th scope='col' width="10%;"><b>Date</b></th>
+									<th scope='col' width="10%;"><b>Select</b></th>
+								</tr>
+							</thead>
+							<tbody>
 					<?php
-					$commit_history = $resource['git_data']['commit_history'];
-					$commit_history = array_reverse($commit_history);
 					
 					foreach($commit_history as $key => $commit) {
+						$k++;
 						$str_date = '';
 						$date = date_parse($commit['timestamp']);
 						$date['day'] = str_pad($date['day'], 2, '0' , STR_PAD_LEFT);
@@ -26,19 +42,21 @@
 						
 						$str_date .= $date['day'].".".$date['month'].".".$date['year']."   ".$date['hour'].":".$date['minute'];
 						?>
-						<div>
-							<label for="downgrade_resource_<?php echo $resource_id."_".$key; ?>">
-								<a href="<?php echo $commit['git_url']; ?>" target='_blank'><?php echo substr($commit['sha'], 0, 7); ?></a>
-								<span style='padding-left: 5px;'><?php echo ucfirst($commit['message']); ?></span>
-								<span style='padding-left: 5px;'><?php echo $str_date; ?></span>
-							</label>
-							<input type="checkbox" name="downgrade_resource_<?php echo $resource_id."_".$key; ?>" >
-						</div>
 						
-					<?php
-					}
-					?>
-				</div>
+								<tr class="<?php echo ($k % 2) ? 'inactive' : '';?>">
+									<td width="10%;"><a href="<?php echo $commit['git_url']; ?>" target='_blank'><?php echo substr($commit['sha'], 0, 7); ?></a></td>
+									<td width="70%;"><?php echo ucfirst($commit['message']); ?></td>
+									<td width="10%;"><?php echo $str_date; ?></td>
+									<td width="10%;"><input type="checkbox" name="downgrade_resource_<?php echo $resource_id."_".$key; ?>" ></td>
+								</tr>
+
+						<?php } ?>
+							</tbody>
+						</table>						
+				<?php else: ?>
+					<div class='half centered'>Nope no history yet :D</div>
+				<?php endif; ?>
+					</div>
 			</td>
 		</tr>
 	<?php

@@ -1,11 +1,17 @@
-.quarter {
-	width: 25em;
+.half {
+	width: 50em;
+}
+
+.centered {
+	left: auto;
+	right:  auto;
+	text-align: center;
 }
 
 .history-slider {
 	cursor: pointer;
 	padding: 2px 0;
-	width: 25em;
+	width: 50em;
 	display: inline-block;
 	border-color: #DFDFDF;
 	-webkit-border-radius: 3px;
