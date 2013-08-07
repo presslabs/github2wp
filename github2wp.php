@@ -311,8 +311,8 @@ function git2wp_ajax_callback() {
 	$default = $options['default'];
 	$response = array('success'=> false, 'error_messges'=>array(), 'success_messages'=>array());
 
-	if( isset($_POST['id']) and isset($_POST['branch']) and isset($_POST['git2wp_action'])){
-		if( $_POST['git2wp_action'] == 'set_branch' ) {
+	if( $_POST['git2wp_action'] == 'set_branch' ) {
+		if( isset($_POST['id']) and isset($_POST['branch']) and isset($_POST['git2wp_action'])) {	
 			$resource = &$resource_list[$_POST['id']];
 			
 			$git = new Git2WP( array(
@@ -348,8 +348,26 @@ function git2wp_ajax_callback() {
 			die();
 		}
 	}
+	
+	if( $_POST['git2wp_action'] == 'downgrade' ) {
+		if( isset($_POST['sha']) and isset($_POST['res_id']) and isset($_POST['git2wp_action'])) {
+			
+			$resource = $resource_list[$_POST['res_id']];
+			
+			$git = new Git2WP( array(
+				"user" => $resource['username'],
+				"repo" => $resource['repo_name'],
+				"access_token" => $default['access_token'],
+				"source" => $_POST['sha'] 
+			));
+			
+			header("Content-type: application/json");
+			echo json_encode($response);
+			die();
+		}
+	}
 }
-add_action('wp_ajax_git2wp_add', 'git2wp_ajax_callback');
+add_action('wp_ajax_git2wp_ajax', 'git2wp_ajax_callback');
 
 //-----------------------------------------------------------------------------
 function git2wp_update_options($where,$data) {

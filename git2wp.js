@@ -1,6 +1,7 @@
 var j = jQuery.noConflict();
 
 j(document).ready(function($) {
+    //toggler
     j(".slider").hide();
 
     j(".clicker").click(function(){
@@ -9,7 +10,9 @@ j(document).ready(function($) {
     			//on completion
     		});
     });    
-
+		
+		
+		//branch updater
     j(".resource_set_branch").change(function() {
     	var id = j(this).attr("resource_id");
     	var branch = j(this).val();    	
@@ -19,7 +22,7 @@ j(document).ready(function($) {
     	j.ajax(ajaxurl,{
     		type: 'post',
 			async: true,
-  			data: {action: 'git2wp_add', 'id': id, 'branch': branch, 'git2wp_action': 'set_branch'},
+  			data: {action: 'git2wp_ajax', 'id': id, 'branch': branch, 'git2wp_action': 'set_branch'},
   			
   			success: function(response){
   							 	if(response['success']) {
@@ -45,5 +48,35 @@ j(document).ready(function($) {
   			dataType: 'json'
 			});
 		})
+		
+		//downgrader
+		
+		j(".downgrade").click( function(e) {
+			e.preventDefault();
+			var array = j(this).attr('id').split('-');
+			
+			var res_id = array[2];
+			var sha = array[3];
+			var self = j(this);
+			
+			j(this).attr('disabled', 'disabled');
+			
+			j.ajax(ajaxurl,{
+				type: 'post',
+				async: true,
+				data: {action: 'git2wp_ajax', 'res_id': res_id, 'sha': sha, 'git2wp_action': 'downgrade'},
+				
+				success: function(response){
+									self.removeAttr("disabled");
+									alert(response['success']);
+								},
+				
+				error: function(response) {
+													alert ( " Can't do because: " + response['error_messages'] );
+												},
+				dataType: 'json'
+			});					
+		});
+		
 		
 });

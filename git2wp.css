@@ -2,6 +2,10 @@
 	width: 50em;
 }
 
+.widefat .s-inactive {
+	background-color:  #f4f4f4;
+}
+
 .centered {
 	left: auto;
 	right:  auto;

@@ -18,8 +18,8 @@
 				?>
 			
 				<span class="history-slider clicker button-primary" alt="<?php echo "history_expand_$resource_id"; ?>" ><center>Expand</center></span>		
-					<div class="slider home-border-center half" id="<?php echo "history_expand_$resource_id"; ?>">
-						<table class='wp-list-table widefat plugins' style='padding-top: 5px;'>
+					<div class="slider home-border-center half" id="<?php echo "history_expand_$resource_id"; ?>" style='padding-top: 5px;'>
+						<table class='wp-list-table widefat plugins' >
 							<thead>
 								<tr>
 									<th scope='col' width="10%;"><b>SHA</b></th>
@@ -43,11 +43,11 @@
 						$str_date .= $date['day'].".".$date['month'].".".$date['year']."   ".$date['hour'].":".$date['minute'];
 						?>
 						
-								<tr class="<?php echo ($k % 2) ? 'inactive' : '';?>">
+								<tr class="<?php echo ($k % 2) ? 's-inactive' : '';?>">
 									<td width="10%;"><a href="<?php echo $commit['git_url']; ?>" target='_blank'><?php echo substr($commit['sha'], 0, 7); ?></a></td>
 									<td width="70%;"><?php echo ucfirst($commit['message']); ?></td>
 									<td width="10%;"><?php echo $str_date; ?></td>
-									<td width="10%;"><input type="checkbox" name="downgrade_resource_<?php echo $resource_id."_".$key; ?>" ></td>
+									<td width="10%;"><input type='submit' value='Revert' class="downgrade button-secondary" id="downgrade-resource-<?php echo $resource_id."-".$key; ?>" /></td>
 								</tr>
 
 						<?php } ?>
