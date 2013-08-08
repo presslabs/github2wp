@@ -309,7 +309,7 @@ function git2wp_ajax_callback() {
 	$options = get_option('git2wp_options');
 	$resource_list = &$options['resource_list'];
 	$default = $options['default'];
-	$response = array('success'=> false, 'error_messges'=>array(), 'success_messages'=>array());
+	$response = array('success'=> false, 'error_messge'=>'', 'success_message'=>'');
 
 	if( $_POST['git2wp_action'] == 'set_branch' ) {
 		if( isset($_POST['id']) and isset($_POST['branch']) and isset($_POST['git2wp_action'])) {	
@@ -341,7 +341,7 @@ function git2wp_ajax_callback() {
 			}
 			
 			if(!$branch_set)
-				$response['error_messages'][] = 'Branch not set';  
+				$response['error_messages'] = 'Branch not set';  
 		
 			header("Content-type: application/json");
 			echo json_encode($response);
@@ -350,16 +350,44 @@ function git2wp_ajax_callback() {
 	}
 	
 	if( $_POST['git2wp_action'] == 'downgrade' ) {
-		if( isset($_POST['sha']) and isset($_POST['res_id']) and isset($_POST['git2wp_action'])) {
+		if( isset($_POST['commit_id']) and isset($_POST['res_id']) and isset($_POST['git2wp_action'])) {
 			
 			$resource = $resource_list[$_POST['res_id']];
+			$version = $resource['git_data']['commit_history'][$_POST['commit_id']] ['sha'];
 			
 			$git = new Git2WP( array(
 				"user" => $resource['username'],
 				"repo" => $resource['repo_name'],
 				"access_token" => $default['access_token'],
-				"source" => $_POST['sha'] 
+				"source" => $version
 			));
+			
+			$version = substr($version, 0, 7);
+			
+			$type = git2wp_get_repo_type($resource['resource_link']);
+			$zipball_path = GIT2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']).'.zip';
+			
+			$sw = $git->store_git_archive();
+			
+			if($sw) {
+				
+				if ( $type == 'plugin' ) 
+					if( file_exists(ABSPATH . 'wp-content/plugins/' . $resource['repo_name']) ) 
+						git2wp_uploadPlguinFile($zipball_path, 'update');
+					else
+						git2wp_uploadPlguinFile($zipball_path);
+				else
+					if( file_exists(ABSPATH . 'wp-content/themes/' . $resource['repo_name']) )
+						git2wp_uploadThemeFile($zipball_path, 'update');
+					else
+						git2wp_uploadThemeFile($zipball_path);
+				
+				if ( file_exists($zipball_path) ) unlink($zipball_path);
+				
+				$response['success'] = true;
+				$response['success_message'] = "The resource <b>{$resource['repo_name']}<b> has been updated to $version .";
+			}else
+				$response['error_message'] = "The resource <b>{$resource['repo_name']}<b> has FAILED to updated to $version .";
 			
 			header("Content-type: application/json");
 			echo json_encode($response);
@@ -385,7 +413,7 @@ function git2wp_add_javascript($hook) {
 		return;
 
 	$script_file_name_url = plugins_url('git2wp.js', __FILE__);
-	$script_file_name_path = plugin_dir_path(__FILE__) . '/git2wp.js';
+	$script_file_name_path = plugin_dir_path(__FILE__) . 'git2wp.js';
 	wp_enqueue_script('git2wp_js', $script_file_name_url, array('jquery'), filemtime($script_file_name_path) ); 
 } 
 add_action('admin_enqueue_scripts','git2wp_add_javascript'); 
@@ -393,7 +421,7 @@ add_action('admin_enqueue_scripts','git2wp_add_javascript');
 //------------------------------------------------------------------------------
 function git2wp_add_style() {
 	$style_file_name_url = plugins_url('git2wp.css', __FILE__);
-	$style_file_name_path = plugin_dir_path(__FILE__) . '/git2wp.css';
+	$style_file_name_path = plugin_dir_path(__FILE__) . 'git2wp.css';
 	wp_enqueue_style('git2wp_css', $style_file_name_url, null, filemtime($style_file_name_path) );
 }
 add_action('admin_enqueue_scripts','git2wp_add_style'); 
@@ -617,6 +645,7 @@ function git2wp_options_page() {
 	<?php } ?>
 	
 	<?php if ( $tab == 'history' ) { ?>
+	<div id="git2wp_history_messages" style="text-align: center;"></div>
 	
 	<form action="options.php" method="post">
 		<?php
@@ -738,16 +767,6 @@ function git2wp_str_between( $start, $end, $content ) {
 
 //------------------------------------------------------------------------------
 function git2wp_get_repo_name_from_hash( $hash ) {
-/*	require_once( ABSPATH . '/wp-admin/includes/plugin.php' );
-	require_once( ABSPATH . '/wp-includes/pluggable.php' );
-	$allPlugins = get_plugins();
-	foreach($allPlugins as $plugin_index => $plugin_value) {
-		$pluginFile = $plugin_index;
-		$repo_name = substr( basename($plugin_index), 0, -4 );
-		if ( ($repo_name == $hash) || ($pluginFile == $hash) || (wp_hash($repo_name) == $hash) )
-			return $repo_name;
-	}
-*/
 	$options = get_option('git2wp_options');
 	$resource_list = $options['resource_list'];
 	foreach( $resource_list as $res ) {
@@ -852,17 +871,16 @@ function git2wp_rmdir($dir) {
 
 //------------------------------------------------------------------------------
 function git2wp_uploadThemeFile($path, $mode = 'install') {
-	require_once(ABSPATH . 'wp-admin/includes/class-wp-upgrader.php');
-	
 	//set destination dir
 	$destDir = ABSPATH.'wp-content/themes/';
 	
 	//set new file name
 	$ftw = $destDir . basename($path);
-	$ftr = $path;
+	$ftr = $path;	
 	
 	$theme_dirname = str_replace('.zip', '', basename($path));
 	$theme_dirname = $destDir . git2wp_get_repo_name_from_hash($theme_dirname) . '/';
+	
 	if ( $mode == 'update' ) // remove old files
 		git2wp_rmdir($theme_dirname);
 
@@ -876,8 +894,6 @@ function git2wp_uploadThemeFile($path, $mode = 'install') {
 
 //------------------------------------------------------------------------------
 function git2wp_uploadPlguinFile($path, $mode = 'install') {
-	require_once(ABSPATH . 'wp-admin/includes/class-wp-upgrader.php');
-	
 	//set destination dir
 	$destDir = ABSPATH.'wp-content/plugins/';
 	
@@ -902,52 +918,30 @@ function git2wp_uploadPlguinFile($path, $mode = 'install') {
 
 //------------------------------------------------------------------------------
 function git2wp_installTheme($file) {
-	$title = __('Upload Theme');
-	$parent_file = 'themes.php';
-	$submenu_file = 'theme-install.php';
-	add_thickbox();
-	wp_enqueue_script('theme-preview');
-	require_once(ABSPATH . 'wp-admin/admin-header.php');
-	
-	$filename = str_replace('.zip', '', basename( $file ));
-	$repo_name = git2wp_get_repo_name_from_hash($filename);
-	$new_filename = $repo_name . '.zip';
-	$title = sprintf( __('Installing Theme from file: %s'), $new_filename );
-	$nonce = 'theme-upload';
-	//path$url = add_query_arg(array('package' => $file_upload->id), 'update.php?action=upload-theme');
-	$type = 'upload';
+	require_once(ABSPATH . 'wp-admin/includes/class-wp-upgrader.php');
 	
 	$upgrader = new Theme_Upgrader( new Theme_Installer_Skin( compact('type', 'title', 'nonce') ) );
+
+	require_once(ABSPATH . 'wp-admin/admin-header.php');
 	$result = $upgrader->install( $file );
+	require_once(ABSPATH . 'wp-admin/admin-footer.php');
 	
 	if ( $result )
 		git2wp_cleanup($file);
-	
-	include(ABSPATH . 'wp-admin/admin-footer.php');
 }
 
 //------------------------------------------------------------------------------
 function git2wp_installPlugin($file) {
-	$title = __('Upload Plugin');
-	$parent_file = 'plugins.php';
-	$submenu_file = 'plugin-install.php';
-	require_once(ABSPATH . 'wp-admin/admin-header.php');
-	
-	$filename = str_replace('.zip', '', basename( $file ));
-	$repo_name = git2wp_get_repo_name_from_hash($filename);
-	$new_filename = $repo_name . '.zip';
-	$title = sprintf( __('Installing Plugin from file: %s'), $new_filename );
-		$nonce = 'plugin-upload';
-	//$url = add_query_arg(array('package' => $file_upload->id), 'update.php?action=upload-plugin');
-	$type = 'upload'; //Install plugin type, From Web or an Upload.
+	require_once(ABSPATH . 'wp-admin/includes/class-wp-upgrader.php');
 	
 	$upgrader = new Plugin_Upgrader( new Plugin_Installer_Skin( compact('type', 'title', 'nonce') ) );
+	
+	require_once(ABSPATH . 'wp-admin/admin-header.php');	
 	$result = $upgrader->install( $file );
+	require_once(ABSPATH . 'wp-admin/admin-footer.php');
 	
-	if ( $result )
+	if ( $result ) 
 		git2wp_cleanup($file);
-	
-	include(ABSPATH . 'wp-admin/admin-footer.php');
 } 
 
 //------------------------------------------------------------------------------
@@ -1273,18 +1267,6 @@ function git2wp_options_validate($input) {
 					git2wp_uploadThemeFile($zipball_path);
 				if ( file_exists($zipball_path) ) unlink($zipball_path);
 			}
-			/*
-			$dir = plugin_dir_path( __FILE__ ) . '/../';
-			$scandir_files = scandir($dir, 1);
-			foreach($scandir_files as $sc_file) {
-				$file_name_array = explode('-', $sc_file);
-				$file_name = $resource['username'] . '-' 
-					. $resource['repo_name'] . '-' 
-					. $file_name_array[count($file_name_array)-1];
-				if ( $sc_file == $file_name )
-					rename($dir . '/' . $sc_file, $dir . '/' . $resource['repo_name']);
-			}
-			*/
 		}
 
 	// update resources

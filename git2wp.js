@@ -43,7 +43,7 @@ j(document).ready(function($) {
   							 },
   			
   			error: function(response) {
- 												alert ( " Can't do because: " + response['error_messages'] );
+ 												alert ( " Can't do because: " + response['error_message'] );
 											},
   			dataType: 'json'
 			});
@@ -56,7 +56,7 @@ j(document).ready(function($) {
 			var array = j(this).attr('id').split('-');
 			
 			var res_id = array[2];
-			var sha = array[3];
+			var commit_id = array[3];
 			var self = j(this);
 			
 			j(this).attr('disabled', 'disabled');
@@ -64,15 +64,23 @@ j(document).ready(function($) {
 			j.ajax(ajaxurl,{
 				type: 'post',
 				async: true,
-				data: {action: 'git2wp_ajax', 'res_id': res_id, 'sha': sha, 'git2wp_action': 'downgrade'},
+				data: {action: 'git2wp_ajax', 'res_id': res_id, 'commit_id': commit_id, 'git2wp_action': 'downgrade'},
 				
-				success: function(response){
-									self.removeAttr("disabled");
-									alert(response['success']);
-								},
-				
+				success: function(response){},
 				error: function(response) {
-													alert ( " Can't do because: " + response['error_messages'] );
+													var res = response.responseText.toString().split("</html>")[1];
+													var jres = jQuery.parseJSON(res);
+													
+													if (jres['success']) {
+														self.removeAttr("disabled");
+														var elem = j("<p style='color: green;' >" + jres['success_message']+ "</p>").appendTo("#git2wp_history_messages");
+														setTimeout(function() { elem.fadeOut(1000, function() { elem.remove(); });
+																						}, 2500); 		
+													}else {
+														var elem = j("<p style='color: red;' >" + jres['error_message']+ "</p>").appendTo("#git2wp_history_messages");
+														setTimeout(function() { elem.fadeOut(1000, function() { elem.remove(); });
+																						}, 2500); 		
+													}
 												},
 				dataType: 'json'
 			});					
