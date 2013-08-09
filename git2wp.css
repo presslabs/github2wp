@@ -23,6 +23,19 @@
 	border-radius: 3px;
 }
 
+.slider > .ajax-loader {
+	min-width: 50em;
+	min-height: 64px;
+	background-image: url('./resources/ajax-loader.gif');
+	background-repeat: no-repeat;
+	background-position: center;
+	margin: 0px;
+	padding: 0px;
+	background-size: 32px 32px;
+	display: inline-block;
+	vertical-align: middle;
+}
+
 .ajax-loader {
 	background-image: url('./resources/ajax-loader.gif');
 	background-repeat: no-repeat;
