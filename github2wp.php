@@ -311,8 +311,8 @@ function git2wp_ajax_callback() {
 	$default = $options['default'];
 	$response = array('success'=> false, 'error_messge'=>'', 'success_message'=>'');
 
-	if( $_POST['git2wp_action'] == 'set_branch' ) {
-		if( isset($_POST['id']) and isset($_POST['branch']) and isset($_POST['git2wp_action'])) {	
+	if( isset($_POST['git2wp_action']) and $_POST['git2wp_action'] == 'set_branch' ) {
+		if( isset($_POST['id']) and isset($_POST['branch'])) {	
 			$resource = &$resource_list[$_POST['id']];
 			
 			$git = new Git2WP( array(
@@ -349,11 +349,11 @@ function git2wp_ajax_callback() {
 		}
 	}
 	
-	if( $_POST['git2wp_action'] == 'downgrade' ) {
-		if( isset($_POST['commit_id']) and isset($_POST['res_id']) and isset($_POST['git2wp_action'])) {
+	if( isset($_POST['git2wp_action']) and  $_POST['git2wp_action'] == 'downgrade' ) {
+		if( isset($_POST['commit_id']) and isset($_POST['res_id'])) {
 			
 			$resource = $resource_list[$_POST['res_id']];
-			$version = $resource['git_data']['commit_history'][$_POST['commit_id']] ['sha'];
+			$version = $_POST['commit_id'];
 			
 			$git = new Git2WP( array(
 				"user" => $resource['username'],
@@ -391,6 +391,19 @@ function git2wp_ajax_callback() {
 			
 			header("Content-type: application/json");
 			echo json_encode($response);
+			die();
+		}
+	}
+	
+	if( isset($_POST['git2wp_action']) and $_POST['git2wp_action'] == 'fetch_history' ) {
+		if(isset($_POST['res_id'])) {
+			header("Content-Type: text/html");
+			
+			$resource = $resource_list[$_POST['res_id']];
+			$commit_history = array_reverse($resource['git_data']['commit_history'], true); //remove this in favor of git fresh commits
+			
+			git2wp_render_resource_history($resource['repo_name'], $_POST['res_id'], $commit_history);
+			
 			die();
 		}
 	}
@@ -663,10 +676,30 @@ function git2wp_options_page() {
 				$type = git2wp_get_repo_type($resource['resource_link']);
 				
 				if($type == 'plugin') 
-					$plugin_render .= git2wp_render_resource_history( $resource , $key);
+					$plugin_render .= "<tr valign='top'>
+												<th scope='row'>
+													<label><strong>{$resource['repo_name']}</strong></label>
+												</th>
+												<td>
+													<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>Expand</center></span>
+														<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
+														</div>
+													</span>
+												</td>
+											</tr>";
 					
 				if($type == 'theme') 
-					$theme_render .= git2wp_render_resource_history( $resource , $key);
+					$theme_render .= "<tr valign='top'>
+												<th scope='row'>
+													<label><strong>{$resource['repo_name']}</strong></label>
+												</th>
+												<td>
+													<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>Expand</center></span>
+														<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
+														</div>
+													</span>
+												</td>
+											</tr>";
 			}
 		?>
 		<table class="form-table" >
