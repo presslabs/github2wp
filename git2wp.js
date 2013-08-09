@@ -65,26 +65,66 @@ j(document).ready(function($) {
 				type: 'post',
 				async: true,
 				data: {action: 'git2wp_ajax', 'res_id': res_id, 'commit_id': commit_id, 'git2wp_action': 'downgrade'},
-				
-				success: function(response){},
-				error: function(response) {
-													var res = response.responseText.toString().split("</html>")[1];
-													var jres = jQuery.parseJSON(res);
-													
-													if (jres['success']) {
-														self.removeAttr("disabled");
-														var elem = j("<p style='color: green;' >" + jres['success_message']+ "</p>").appendTo("#git2wp_history_messages");
-														setTimeout(function() { elem.fadeOut(1000, function() { elem.remove(); });
-																						}, 2500); 		
-													}else {
-														var elem = j("<p style='color: red;' >" + jres['error_message']+ "</p>").appendTo("#git2wp_history_messages");
-														setTimeout(function() { elem.fadeOut(1000, function() { elem.remove(); });
-																						}, 2500); 		
+				dataFilter: function (rawresponse, type) {
+													if (type == "json") {
+														var res = rawresponse.split("</html>")[1];
+														
+														return res;
 													}
+													
+													return rawresponse;
+												},
+												
+				success: function(response){
+																if (response['success']) {
+																	self.removeAttr("disabled");
+																	var elem = j("<p style='color: green;' >" + response['success_message']+ "</p>").appendTo("#git2wp_history_messages");
+																	setTimeout(function() { elem.fadeOut(1000, function() { elem.remove(); });
+																									}, 2500); 		
+																}else {
+																	var elem = j("<p style='color: red;' >" + response['error_message']+ "</p>").appendTo("#git2wp_history_messages");
+																	setTimeout(function() { elem.fadeOut(1000, function() { elem.remove(); });
+																									}, 2500); 		
+																}
+															},
+				error: function(data, error) {
+													var elem = j("<p style='color: red;' > Ajax response error: " + error + "</p>").appendTo("#git2wp_history_messages");
+																	setTimeout(function() { elem.fadeOut(1000, function() { elem.remove(); });
+																									}, 2500); 	
 												},
 				dataType: 'json'
 			});					
 		});
 		
-		
+		// Downgrade fetch
+	j(".history-slider").click( function(e) {
+		var self = j(this);
+		var alt = self.attr("alt");
+		var container = j(".slider[id='" + alt + "']");
+
+    	if (container.css('display') != 'none') {
+			var res_id = alt.split('-')[2];
+			container.empty();
+			container.append('<div class="ajax-loader"></div>');
+			
+			/*
+			j.ajax(ajaxurl,{
+					type: 'post',
+					async: true,
+					data: {action: 'git2wp_ajax', 'res_id': res_id, 'git2wp_action': 'fetch_history'},
+					success: function(response){
+																	if (response['success']) {
+																		
+																	}else {
+																		
+																	}
+																},
+					error: function(data, error) {
+														
+																},
+					dataType: 'html'
+			});
+			*/
+		}
+	});
 });
