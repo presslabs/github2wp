@@ -17,8 +17,8 @@
 					$commit_history = array_reverse($commit_history, true);
 				?>
 			
-				<span class="history-slider clicker button-primary" alt="<?php echo "history_expand_$resource_id"; ?>" ><center>Expand</center></span>		
-					<div class="slider home-border-center half" id="<?php echo "history_expand_$resource_id"; ?>" style='padding-top: 5px;'>
+				<span class="history-slider clicker button-primary" alt="<?php echo "history-expand-$resource_id"; ?>"><center>Expand</center></span>
+					<div class="slider home-border-center half" id="<?php echo "history-expand-$resource_id"; ?>" style='padding-top: 5px;'>
 						<table class='wp-list-table widefat plugins' >
 							<thead>
 								<tr>
