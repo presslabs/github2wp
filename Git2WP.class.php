@@ -4,6 +4,8 @@ if ( !class_exists('Git2WP') ):
 		define('GIT2WP_ZIPBALL_URL', home_url() . '/wp-content/uploads/' . basename(dirname(__FILE__)) );
 	if( !defined('GIT2WP_ZIPBALL_DIR_PATH') )
 		define('GIT2WP_ZIPBALL_DIR_PATH', ABSPATH . '/wp-content/uploads/' . basename(dirname(__FILE__)) . '/' );
+	if( !defined('GIT2WP_MAX_COMMIT_HIST_COUNT'))
+		define('GIT2WP_MAX_COMMIT_HIST_COUNT', 100);
 		
 
 //------------------------------------------------------------------------------
@@ -512,6 +514,70 @@ class Git2WP {
 									);
 			return $data;
 		}
+		
+		return null;
+	}
+	
+	public function get_commits() {
+		$commits = null;
+		
+		$url = sprintf('https://api.github.com/repos/%s/%s/commits?sha=%s&access_token=%s&per_page=%s',
+					   $this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token'], GIT2WP_MAX_COMMIT_HIST_COUNT);
+		
+		$args = array(
+				'method'      =>    'GET',
+				'timeout'     =>    50,
+				'redirection' =>    5,
+				'httpversion' =>    '1.0',
+				'blocking'    =>    true,
+				'headers'     =>    array(),
+				'body'        =>    null,
+				'cookies'     =>    array()
+			);
+			
+		$response = wp_remote_get( $url, $args );
+		
+		if( is_wp_error( $response ) || wp_remote_retrieve_response_code($response) != 200)
+			return null;
+		
+		$result = json_decode(wp_remote_retrieve_body($response), true);
+		
+		if(is_array($result))
+			foreach($result as $commit)
+				$commits[] = array(
+													'sha' => $commit['sha'],
+													'message' => $commit['commit']['message'],
+													'git_url' => $commit['html_url'],
+													'timestamp' => $commit['commit']['author']['date']
+												);
+		
+		return $commits;
+	}
+	
+	public function get_head_commit() {
+		$url = sprintf('https://api.github.com/repos/%s/%s/commits/%s?access_token=%s',
+					   $this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token']);
+		
+		$args = array(
+				'method'      =>    'GET',
+				'timeout'     =>    50,
+				'redirection' =>    5,
+				'httpversion' =>    '1.0',
+				'blocking'    =>    true,
+				'headers'     =>    array(),
+				'body'        =>    null,
+				'cookies'     =>    array()
+			);
+			
+		$response = wp_remote_get( $url, $args );
+		
+		if( is_wp_error( $response ) || wp_remote_retrieve_response_code($response) != 200)
+			return null;
+		
+		$result = json_decode(wp_remote_retrieve_body($response), true);
+		
+		if($result)
+			return $result['sha'];
 		
 		return null;
 	}

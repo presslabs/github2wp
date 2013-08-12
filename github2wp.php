@@ -400,7 +400,15 @@ function git2wp_ajax_callback() {
 			header("Content-Type: text/html");
 			
 			$resource = $resource_list[$_POST['res_id']];
-			$commit_history = array_reverse($resource['git_data']['commit_history'], true); //remove this in favor of git fresh commits
+			
+			$git = new Git2WP( array(
+				"user" => $resource['username'],
+				"repo" => $resource['repo_name'],
+				"access_token" => $default['access_token'],
+				"source" => $resource['repo_branch']
+			));
+			
+			$commit_history = $git->get_commits();
 			
 			git2wp_render_resource_history($resource['repo_name'], $_POST['res_id'], $commit_history);
 			
@@ -658,7 +666,7 @@ function git2wp_options_page() {
 	<?php } ?>
 	
 	<?php if ( $tab == 'history' ) { ?>
-	<div id="git2wp_history_messages" style="text-align: center;"></div>
+	<div id="git2wp_history_messages"></div>
 	
 	<form action="options.php" method="post">
 		<?php
