@@ -1517,20 +1517,26 @@ function git2wp_install_from_wp_hash($hash) {
 		
 		$upload_dir = GIT2WP_ZIPBALL_DIR_PATH;
 		$upload_dir_zip .= $upload_dir . wp_hash($git->config['repo']) . ".zip";
-		
-		ob_start();
-		$mm_type="application/octet-stream";
-		header("Cache-Control: public, must-revalidate");
-		header("Pragma: GIT2WP");
-		header("Content-Type: " . $mm_type);
-		header("Content-Length: " .filesize($upload_dir_zip) );
-		header('Content-Disposition: attachment; filename="'.basename($zip_url).'"');
-		header("Content-Transfer-Encoding: binary\n");
-		ob_end_clean();         
 	
-		
-		readfile($upload_dir_zip);
-		unlink($upload_dir_zip);
+		if($zip_url) {			
+			$filename = basename($upload_dir_zip);
+
+			// http headers for zip downloads
+			header("Pragma: GIT2WP");
+			header("Expires: 0");
+			header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+			header("Cache-Control: public");
+			header("Content-Description: File Transfer");
+			header("Content-type: application/octet-stream");
+			header("Content-Disposition: attachment; filename=\"".$filename."\"");
+			header("Content-Transfer-Encoding: binary");
+			header("Content-Length: ".filesize($upload_dir_zip));
+			ob_end_flush();
+			
+			@readfile($upload_dir_zip);
+			unlink($upload_dir_zip);
+		} else
+			header('HTTP/1.0 404 Not Found');
 	}
 }
 
