@@ -108,17 +108,17 @@ j(document).ready(function($) {
 																				success: function(response){
 																																if (response['success']) {
 																																	self.removeAttr("disabled");
-																																	var elem = j("<p style='color: green;' >" + response['success_message']+ "</p>").appendTo("#git2wp_history_messages");
+																																	var elem = j("<div style='color: green;' class='updated' >" + response['success_message']+ "</div>").appendTo("#git2wp_history_messages");
 																																	setTimeout(function() { elem.fadeOut(1000, function() { elem.remove(); });
 																																									}, 2500); 		
 																																}else {
-																																	var elem = j("<p style='color: red;' >" + response['error_message']+ "</p>").appendTo("#git2wp_history_messages");
+																																	var elem = j("<div style='color: red;' class='updated'>" + response['error_message']+ "</div>").appendTo("#git2wp_history_messages");
 																																	setTimeout(function() { elem.fadeOut(1000, function() { elem.remove(); });
 																																									}, 2500); 		
 																																}
 																															},
 																				error: function(data, error) {
-																													var elem = j("<p style='color: red;' > Ajax response error: " + error + "</p>").appendTo("#git2wp_history_messages");
+																													var elem = j("<div style='color: red;' class='updated'> Ajax response error: " + error + "</div>").appendTo("#git2wp_history_messages");
 																																	setTimeout(function() { elem.fadeOut(1000, function() { elem.remove(); });
 																																									}, 2500); 	
 																												},

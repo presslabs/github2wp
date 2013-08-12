@@ -1,3 +1,10 @@
+#git2wp_history_messages {
+	text-align: center;
+	width: 50em;
+	position: fixed;
+	left: 33em;
+}
+
 .half {
 	width: 50em;
 }
