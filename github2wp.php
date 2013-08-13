@@ -815,7 +815,7 @@ function git2wp_main_history_section_description() {
 
 //------------------------------------------------------------------------------
 function git2wp_resource_display_section_description() {
-	echo '<p>Here you can retreive the endpoints that need to be set in GitHub\'s repo settings->service hooks->web hook->url.</p>';
+	echo '<p>Here you can manage your Github resources.</p>';
 }
 
 //------------------------------------------------------------------------------
@@ -1030,7 +1030,7 @@ function git2wp_setting_resources_list() {
 <br />
 <table id="the-list" class="wp-list-table widefat plugins" cellpadding='5' border='1' cellspacing='0' >
 	<thead>
-		<tr><th></th><th>Resource</th><th>Endpoint</th><th>Options</th></tr>
+		<tr><th></th><th>Resource</th><th>Options</th></tr>
 	</thead>
 	<tbody>
 <?php 
@@ -1071,15 +1071,6 @@ function git2wp_setting_resources_list() {
 						$branch_dropdown .= "<option value=".$branch.">".$branch."</option>";
 			}
 			$branch_dropdown .= "</select>";
-			
-			
-			$endpoint = home_url() . '/' . '?git2wp=' . md5( str_replace(home_url(), '', $resource['resource_link']) );
-
-			$url = "https://github.com/".$resource['username']."/".$resource['repo_name']."/settings/hooks/";
-			$not_synced_message = '<br /><div id="need_help_'.$k.'" class="slider home-border-center">In order to sync the resource with Github you must copy <strong><i>\'Endpoint URL\'</i></strong> and put it on <strong><i>\'WebHook URLs\'</i></strong> at this link: <a href=\''.$url.'\' target=\'_blank\'>'.$url.'</a> then press <strong><i>\'Test hook\'</i></strong>.</div>';
-
-			(!empty($resource['head_commit'])) ? $synced_resources = '<span style="color:green;">This resource is synced with Github.</span>' : $synced_resources = '<span style="color:red;">This resource is NOT synced with Github!</span> <a id="need_help_'.$k.'" class="clicker" alt="need_help_'.$k.'"><strong>Need help?</strong></a>' . $not_synced_message ;
-			$endpoint .= '<br />' . $synced_resources;
 
 			$repo_type = git2wp_get_repo_type($resource['resource_link']);
 			
@@ -1208,7 +1199,6 @@ function git2wp_setting_resources_list() {
 
 			echo "<tr".$alternate."><td>".$k."</td>"
 				."<td>" . $my_data . "<br />".$github_resource."<br />".$wordpress_resource."<br />".$branch_dropdown."</td>"
-				."<td>".$endpoint."</td>"
 				."<td>".$action."</td></tr>";
 		}
 		
