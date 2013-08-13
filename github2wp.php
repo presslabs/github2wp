@@ -1093,7 +1093,7 @@ function git2wp_setting_resources_list() {
 			// Dismiss resource button
 			//
 			$action = '<p><input name="submit_delete_resource_'.($k-1)
-				.'" type="submit" class="button button-red" value="'.esc_attr('Dismiss')
+				.'" type="submit" class="button button-red btn-medium" value="'.esc_attr('Dismiss')
 				.'" onclick="return confirm(\'Do you really want to disconect from Github: '
 				.$github_resource_url . '?\');"/></p>';
 			
@@ -1108,7 +1108,7 @@ function git2wp_setting_resources_list() {
 					//
 					//$alternate = ' style="background-color:#EDC5C0;"';
 					$action .= '<p><input name="submit_install_resource_'.($k-1)
-						.'" type="submit" class="button button-primary" value="'
+						.'" type="submit" class="button button-primary btn-medium" value="'
 						.esc_attr('Install') . '" /></p>';
 				//}
 			}
@@ -1150,7 +1150,7 @@ function git2wp_setting_resources_list() {
 				$my_data .= '</div>';
 
 					$action .= '<p><input name="submit_update_resource_'.($k-1) // Update resource button
-						.'" type="submit" class="button" value="'
+						.'" type="submit" class="button btn-medium" value="'
 						.esc_attr('Update') . '" /></p>';
 				}
 			}
@@ -1184,7 +1184,7 @@ function git2wp_setting_resources_list() {
 					$my_data .= '</div>';
 
 					$action .= '<p><input name="submit_update_resource_'.($k-1) // Update resource button
-						.'" type="submit" class="button" value="'
+						.'" type="submit" class="button btn-medium" value="'
 						.esc_attr('Update') . '" /></p>';
 				}
 
