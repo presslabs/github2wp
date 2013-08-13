@@ -740,14 +740,14 @@ function git2wp_options_page() {
 		?>
 		<table class="form-table" >
 			<tbody>
-				<tr><th colspan='2'><h3>Plugins</h3></th></tr> 
+				<tr><th colspan='2'><h2>Plugins</h2><br /></th></tr> 
 				<?php echo $plugin_render; ?>
 			</tbody>
 		</table>
 		<br /><br /><br />
 		<table class="form-table">
 			<tbody>
-				<tr><th colspan='2'><h3>Themes</h3></th></tr> 
+				<tr><th colspan='2'><h2>Themes</h2><br /></th></tr> 
 				<?php echo $theme_render; ?>
 			</tbody>
 		</table>
