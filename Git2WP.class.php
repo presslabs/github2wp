@@ -501,14 +501,14 @@ class Git2WP {
 	}
 	
 	public static function get_data_from_git_clone_link($url) {
-		if(strpos($url, "https") === 0) {
+		if(strpos($url, "https://github.com/") === 0) {
 			$data = array ('repo' => basename($url, '.git'),
 									'user'  => basename(dirname($url))
 									);
 			return $data;
 		}
 		
-		if(strpos($url, "git@github.com") === 0) {
+		if(strpos($url, "git@github.com:") === 0) {
 			$data = array ('repo' => basename($url, '.git'),
 									'user'  =>  git2wp_str_between("git@github.com:", "/", $url)
 									);

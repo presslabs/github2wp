@@ -1218,6 +1218,7 @@ function git2wp_options_validate($input) {
 	if( isset($_POST['submit_resource']) && !git2wp_needs_configuration() ) {
 		$resource_list = &$options['resource_list'];
 		$git_base = 'https://github.com/';
+		$git_base_ssh = 'git@github.com:';
 		
 		$repo_link = $_POST['resource_link'];
 		$repo_branch = $_POST['master_branch'];
@@ -1227,16 +1228,12 @@ function git2wp_options_validate($input) {
 		
 		if ($repo_link != '') {
 			$repo_link = trim($repo_link);
+			
+			$data = Git2WP::get_data_from_git_clone_link($repo_link);
 
-			if(strpos($repo_link, $git_base) === 0) {
-
-				$repo_link = trim($repo_link);
-				$repo_link = substr($repo_link, strlen($git_base));
-				
-				$resource_details = explode("/", $repo_link);
-				
-				$resource_owner = $resource_details[0];
-				$resource_repo_name = substr($resource_details[1], 0, -4);
+			if(isset($data['user']) && isset($data['repo'])) {
+				$resource_owner = $data['user'];
+				$resource_repo_name = $data['repo'];
 				
 				$text_resource = "/" . $resource_repo_name;
 				
