@@ -20,6 +20,7 @@ require_once('git2wp_render.php');
 function git2wp_activate() {
     add_option('git2wp_options', array());
     wp_schedule_event( current_time ( 'timestamp' ), 'twicedaily', 'git2wp_token_cron' );
+	wp_schedule_event( current_time ( 'timestamp' ), 'twicedaily', 'git2wp_head_commit_cron' );
 }
 register_activation_hook(__FILE__,'git2wp_activate');
 
@@ -28,6 +29,7 @@ function git2wp_deactivate() {
 	git2wp_delete_options();
 	delete_transient('git2wp_branches');
 	wp_clear_scheduled_hook( 'git2wp_token_cron' );
+	wp_clear_scheduled_hook( 'git2wp_head_commit_cron' );
 }
 register_deactivation_hook(__FILE__,'git2wp_deactivate');
 
@@ -55,6 +57,31 @@ add_filter("plugin_action_links_".plugin_basename(__FILE__), 'git2wp_settings_li
 //------------------------------------------------------------------------------
 function git2wp_return_settings_link($query_vars = '') {
 	return admin_url('index.php?page=' . plugin_basename(__FILE__) . $query_vars);
+}
+
+//----------------------------------------------------------------------------
+function git2wp_head_commit_cron() {
+	$options = get_option('git2wp_options');
+	$default = &$options['default'];
+	
+	$resource_list = &$options['resource_list'];
+	
+	foreach($resource_list as &$resource) {
+		$args = array(
+			'user' => $resource['username'],
+			'repo' => $resource['repo_name'],
+			'source' => $resource['repo_branch'],
+			'access_token' => $default['access_token']
+		);
+		
+		$git = new Git2WP($args);
+		$head = $git->get_head_commit();
+		
+		if($head)
+			$resource['head_commit'] = $head;
+	}
+	
+	update_option('git2wp_options', $options);
 }
 
 //------------------------------------------------------------------------------
@@ -95,14 +122,13 @@ function git2wp_update_check_themes($transient) {
 
     if ( count($resource_list) > 0 ) {
         foreach ($resource_list as $resource) {
-            $git_data = $resource['git_data'];
             $repo_type = git2wp_get_repo_type($resource['resource_link']);
 
             if ( ($repo_type == 'theme') ) {
                 $response_index = $resource['repo_name'];
                 $current_version = git2wp_get_theme_version($response_index);
-                if($git_data['head_commit']['id']) {
-                    $new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
+                if($resource['head_commit']) {
+                    $new_version = substr($resource['head_commit'], 0, 7); //strval (strtotime($resource['head_commit']) );
                     $trans_new_version = $transient->response[ $response_index ]->new_version;
 			
 					if( isset($trans_new_version) && (strlen($trans_new_version) != 7 || strpos($trans_new_version, ".") != FALSE) )
@@ -191,14 +217,13 @@ function git2wp_inject_info($result, $action = null, $args = null) {
 
 	if ( is_array($resource_list)  and  !empty($resource_list)) {
 		foreach($resource_list as $resource) {
-			$git_data = $resource['git_data'];
 
 			$repo_type = git2wp_get_repo_type($resource['resource_link']);
 
 			if ( ($repo_type == 'plugin') ) {
 				$response_index = $resource['repo_name'] . "/" . $resource['repo_name'] . ".php";
 				//$current_version = git2wp_get_plugin_version($response_index);
-				$new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
+				$new_version = substr($resource['head_commit'], 0, 7);
 				$homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
 				//$zipball = GIT2WP_ZIPBALL_URL . '/' . $resource['repo_name'].'.zip';
 				$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
@@ -209,10 +234,12 @@ function git2wp_inject_info($result, $action = null, $args = null) {
 						//. date("d/m/Y (h:m)", $new_version);
 
 				$changelog = 'No changelog found';
+				/*
 				if ( $git_data['payload'] )
 					$changelog = "<h4>".$changelog_head."</h4>"
 						. git2wp_get_commits($git_data['payload']);
 ////////////COMMITS TAKEN FROM HISTORY NOT PAYLOAD
+				*/
 				$sections = array(
 					"description" => git2wp_get_plugin_header($response_index, "Description"),
 					//"installation" => "(Recommended) Installation instructions.",
@@ -266,14 +293,13 @@ function git2wp_update_check_plugins($transient) {
 
     if ( count($resource_list) > 0 ) {
         foreach($resource_list as $resource) {
-            $git_data = $resource['git_data'];			
             $repo_type = git2wp_get_repo_type($resource['resource_link']);
 
             if ( ($repo_type == 'plugin') ) {
                 $response_index = $resource['repo_name'] . "/" . $resource['repo_name'] . ".php";
                 $current_version = git2wp_get_plugin_version($response_index);
-                if($git_data['head_commit']['id']) {
-					$new_version = substr($git_data['head_commit']['id'], 0, 7); //strval (strtotime($git_data['head_commit']['timestamp']) );
+                if($resource['head_commit']) {
+					$new_version = substr($resource['head_commit'], 0, 7); 
 					$trans_new_version = $transient->response[ $response_index ]->new_version;
 					
 					if( isset($trans_new_version) && (strlen($trans_new_version) != 7 || strpos($trans_new_version, ".") != FALSE) )
@@ -474,7 +500,9 @@ function git2wp_options_page() {
 		echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=settings'); ?>">Settings</a>
 	</h2>	
 
-	<?php if ( $tab == 'resources' ) { ?>
+	<?php if ( $tab == 'resources' ) {
+		git2wp_head_commit_cron();			
+	?>
 	
 	<form action="options.php" method="post">
 		<?php 
@@ -1050,7 +1078,7 @@ function git2wp_setting_resources_list() {
 			$url = "https://github.com/".$resource['username']."/".$resource['repo_name']."/settings/hooks/";
 			$not_synced_message = '<br /><div id="need_help_'.$k.'" class="slider home-border-center">In order to sync the resource with Github you must copy <strong><i>\'Endpoint URL\'</i></strong> and put it on <strong><i>\'WebHook URLs\'</i></strong> at this link: <a href=\''.$url.'\' target=\'_blank\'>'.$url.'</a> then press <strong><i>\'Test hook\'</i></strong>.</div>';
 
-			(!empty($resource['git_data']['head_commit']['id'])) ? $synced_resources = '<span style="color:green;">This resource is synced with Github.</span>' : $synced_resources = '<span style="color:red;">This resource is NOT synced with Github!</span> <a id="need_help_'.$k.'" class="clicker" alt="need_help_'.$k.'"><strong>Need help?</strong></a>' . $not_synced_message ;
+			(!empty($resource['head_commit'])) ? $synced_resources = '<span style="color:green;">This resource is synced with Github.</span>' : $synced_resources = '<span style="color:red;">This resource is NOT synced with Github!</span> <a id="need_help_'.$k.'" class="clicker" alt="need_help_'.$k.'"><strong>Need help?</strong></a>' . $not_synced_message ;
 			$endpoint .= '<br />' . $synced_resources;
 
 			$repo_type = git2wp_get_repo_type($resource['resource_link']);
@@ -1078,7 +1106,6 @@ function git2wp_setting_resources_list() {
 				.'" onclick="return confirm(\'Do you really want to delete: '
 				.$github_resource_url . '?\');"/></p>';
 			
-			$git_data = $resource['git_data'];
 			$my_data = "";
 			
 			if ( ! $dir_exists ) {
@@ -1124,7 +1151,7 @@ function git2wp_setting_resources_list() {
 					//$zipball = home_url() . '/wp-content/uploads/' . basename(dirname(__FILE__)) . '/' . $resource['repo_name'].'.zip';
 					//$my_data .= "<strong>zipball: </strong>" . $zipball . "<br />";
 					
-					$new_version = substr($resource['git_data']['head_commit']['id'], 0, 7); //strtotime($resource['git_data']['head_commit']['timestamp']);
+					$new_version = substr($resource['head_commit'], 0, 7); 
 				}
 				if ( ($new_version != $current_plugin_version) && ('-' != $current_plugin_version) && ('' != $current_plugin_version)  && ($new_version != false) ) {
 					$my_data .= "<strong>New Version: </strong>" . $new_version . "<br />";
@@ -1158,7 +1185,7 @@ function git2wp_setting_resources_list() {
 				if ( ($theme_description != '') && ($theme_description != '-') )
 					$my_data .= $theme_description . "<br />";
 
-				$new_version = substr($resource['git_data']['head_commit']['id'], 0, 7); //strtotime($resource['git_data']['head_commit']['timestamp']);
+				$new_version = substr($resource['head_commit'], 0, 7);
 				
 				if ( ($new_version != $current_theme_version) && ($new_version != false) && ($current_theme_version != '-') && ($current_theme_version != '') ) {
 					$my_data .= "<strong>New Version: </strong>" . $new_version . "<br />";
@@ -1251,13 +1278,15 @@ function git2wp_options_validate($input) {
 					
 					if ($sw) {
 						$on_wp = Git2WP::check_svn_avail($resource_repo_name, substr($_POST['resource_type_dropdown'], 0, -1));
+						$head = $git->get_head_commit();
 						
 						$resource_list[] = array(
 												'resource_link' => $link,
 												'repo_name' => $resource_repo_name,
 												'repo_branch' => $repo_branch,
 												'username' => $resource_owner,
-												'is_on_wp_svn' => $on_wp
+												'is_on_wp_svn' => $on_wp,
+												'head_commit' => $head
 											);
 						
 						add_settings_error( 'git2wp_settings_errors', 'repo_connected', "Connection was established.", "updated" );
@@ -1327,7 +1356,7 @@ function git2wp_options_validate($input) {
 				"client_secret" => $default['client_secret'],
 				"access_token" => $default['access_token'],
 				"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
-				"source" => $resource['git_data']['head_commit']['id']
+				"source" => $resource['head_commit']
 			));
 			$sw = $git->store_git_archive();
 			
@@ -1417,56 +1446,6 @@ function git2wp_init() {
 	$resource_list = &$options['resource_list'];
 	
 	$default = &$options['default'];
-	
-	if ( isset($_GET['git2wp']) ) {
-		foreach($resource_list as &$resource) {
-			if ( $_GET['git2wp'] == md5(str_replace(home_url(), "", $resource['resource_link'])) ) {
-				
-				if ( isset($_POST['payload']) ) {
-					$git_data = &$resource['git_data'];
-					
-					$raw = stripslashes($_POST['payload']);
-					$obj = json_decode($raw, true);
-					
-					if($resource['repo_branch'] == substr ($obj['ref'], strlen("refs/heads/")))
-						if(sprintf("https://github.com/%s/%s", $resource['username'], $resource['repo_name']) === $obj['repository']['url']) {
-							$git_data['head_commit'] = $obj["head_commit"];
-						
-							$commits = $obj['commits'];
-						
-							if(count($commits) > GIT2WP_MAX_COMMIT_HIST_COUNT)
-								$commits = array_slice($obj['commits'], -GIT2WP_MAX_COMMIT_HIST_COUNT);
-						
-							foreach($commits as $key => $data)	{
-								$unique = true;
-								
-								foreach($git_data['commit_history'] as $key2 => $data2)
-									if($data['id'] === $data2['sha']) {
-										$unique = false;
-										break;
-									}
-							
-								if($unique)
-									$git_data['commit_history'][] = array('sha' => $data['id'],
-																							'message' => $data['message'],
-																							'timestamp' => $data['timestamp'],
-																							'git_url' => $data['url']
-																						   );
-								
-							}
-							
-							if(count($git_data['commit_history']) > GIT2WP_MAX_COMMIT_HIST_COUNT)
-								$git_data['commit_history'] = array_slice($git_data['commit_history'], -GIT2WP_MAX_COMMIT_HIST_COUNT);
-
-						
-							$git_data['payload'] = $raw;
-						}
-				}
-				break;
-			}
-		}
-		update_option("git2wp_options", $options);
-	}
 
 	// get token from GitHub
 	if ( isset($_GET['code']) and  isset($_GET['git2wp_auth']) and $_GET['git2wp_auth'] == 'true' ) {
