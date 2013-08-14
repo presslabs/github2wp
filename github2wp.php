@@ -110,7 +110,7 @@ function git2wp_token_cron() {
 //------------------------------------------------------------------------------
 // Dashboard integration
 function git2wp_menu() {
-	add_dashboard_page('Git to WordPress Options Page', 'GitHub2WP', 
+	add_management_page('Git to WordPress Options Page', 'GitHub2WP', 
 					   'manage_options', __FILE__, 'git2wp_options_page');
 }
 add_action('admin_menu', 'git2wp_menu');
@@ -278,10 +278,10 @@ function git2wp_inject_info($result, $action = null, $args = null) {
 				if ($pluginInfo){
 					return $pluginInfo;
 				}
-				return $result;
 			}
 		}
 	}
+	return $result;
 }
 //Override requests for plugin information
 add_filter('plugins_api', 'git2wp_inject_info', 20, 3);
