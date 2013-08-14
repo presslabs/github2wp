@@ -56,7 +56,7 @@ add_filter("plugin_action_links_".plugin_basename(__FILE__), 'git2wp_settings_li
 
 //------------------------------------------------------------------------------
 function git2wp_return_settings_link($query_vars = '') {
-	return admin_url('index.php?page=' . plugin_basename(__FILE__) . $query_vars);
+	return admin_url('tools.php?page=' . plugin_basename(__FILE__) . $query_vars);
 }
 
 //----------------------------------------------------------------------------
@@ -455,10 +455,7 @@ function git2wp_update_options($where,$data) {
 }
 
 //------------------------------------------------------------------------------
-function git2wp_add_javascript($hook) {
-	if( 'dashboard_page_github2wp/github2wp' != $hook )
-		return;
-
+function git2wp_add_javascript() {
 	$script_file_name_url = plugins_url('git2wp.js', __FILE__);
 	$script_file_name_path = plugin_dir_path(__FILE__) . 'git2wp.js';
 	wp_enqueue_script('git2wp_js', $script_file_name_url, array('jquery'), filemtime($script_file_name_path) ); 
