@@ -66,20 +66,21 @@ function git2wp_head_commit_cron() {
 	
 	$resource_list = &$options['resource_list'];
 	
-	foreach($resource_list as &$resource) {
-		$args = array(
-			'user' => $resource['username'],
-			'repo' => $resource['repo_name'],
-			'source' => $resource['repo_branch'],
-			'access_token' => $default['access_token']
-		);
-		
-		$git = new Git2WP($args);
-		$head = $git->get_head_commit();
-		
-		if($head)
-			$resource['head_commit'] = $head;
-	}
+	if(is_array($resource_list) && !empty($resource_list))
+		foreach($resource_list as &$resource) {
+			$args = array(
+				'user' => $resource['username'],
+				'repo' => $resource['repo_name'],
+				'source' => $resource['repo_branch'],
+				'access_token' => $default['access_token']
+			);
+			
+			$git = new Git2WP($args);
+			$head = $git->get_head_commit();
+			
+			if($head)
+				$resource['head_commit'] = $head;
+		}
 	
 	update_option('git2wp_options', $options);
 }
@@ -712,36 +713,36 @@ function git2wp_options_page() {
 		<?php
 			$plugin_render = '';
 			$theme_render = '';
-			
-			foreach($resource_list as $key => $resource) {
-				$type = git2wp_get_repo_type($resource['resource_link']);
-				
-				if($type == 'plugin') 
-					$plugin_render .= "<tr valign='top'>
-												<th scope='row'>
-													<label><strong>{$resource['repo_name']}</strong></label>
-												</th>
-												<td>
-													<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>Expand</center></span>
-														<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
-														</div>
-													</span>
-												</td>
-											</tr>";
+			if(is_array($resource_list) && !empty($resource_list))
+				foreach($resource_list as $key => $resource) {
+					$type = git2wp_get_repo_type($resource['resource_link']);
 					
-				if($type == 'theme') 
-					$theme_render .= "<tr valign='top'>
-												<th scope='row'>
-													<label><strong>{$resource['repo_name']}</strong></label>
-												</th>
-												<td>
-													<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>Expand</center></span>
-														<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
-														</div>
-													</span>
-												</td>
-											</tr>";
-			}
+					if($type == 'plugin') 
+						$plugin_render .= "<tr valign='top'>
+													<th scope='row'>
+														<label><strong>{$resource['repo_name']}</strong></label>
+													</th>
+													<td>
+														<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>Expand</center></span>
+															<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
+															</div>
+														</span>
+													</td>
+												</tr>";
+						
+					if($type == 'theme') 
+						$theme_render .= "<tr valign='top'>
+													<th scope='row'>
+														<label><strong>{$resource['repo_name']}</strong></label>
+													</th>
+													<td>
+														<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>Expand</center></span>
+															<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
+															</div>
+														</span>
+													</td>
+												</tr>";
+				}
 		?>
 		<table class="form-table" >
 			<tbody>
@@ -1043,169 +1044,170 @@ function git2wp_setting_resources_list() {
 		$new_transient = array();
 		$transient = get_transient('git2wp_branches');
 		$default = $options['default'];
-				
-		foreach($resource_list as $index => $resource) {
-			$k++;
-			
-			$git = new Git2WP(array(
-				"user" => $resource['username'],
-				"repo" => $resource['repo_name'],
-				"access_token" => $default['access_token'],
-				"source" => $resource['repo_branch'] 
-			));
-			
-									
-			if(false === $transient){
-				$branches = $git->fetch_branches();
-				$new_transient[] = array('repo_name' => $resource['repo_name'],
-						'branches' => $branches);
-			}else
-				foreach($transient as $tran_res)
-					if($tran_res['repo_name'] == $resource['repo_name']){
-						$branches = $tran_res['branches'];
-						break;
-					}
-			
-			$branch_dropdown = "<strong>Branch: </strong><select style='width: 125px;' class='resource_set_branch' resource_id='$index'>";
 
-			if(is_array($branches) and count($branches) > 0) {
-				foreach($branches as $branch)
-					if($resource['repo_branch'] == $branch)
-						$branch_dropdown .= "<option value=".$branch." selected>".$branch."</option>";
-					else
-						$branch_dropdown .= "<option value=".$branch.">".$branch."</option>";
-			}
-			$branch_dropdown .= "</select>";
-
-			$repo_type = git2wp_get_repo_type($resource['resource_link']);
-			
-			$alternate = '';
-			if ( ($k % 2) == 0 )
-				$alternate = ' class="inactive"';
-			
-			$selected_resource_checkbox = "<input type='checkbox' name='selected_resource_".$k
-				."' id='selected_resource_".$k
-				."' value=''>";
-			
-			$github_resource_url = "https://github.com/".$resource['username']."/".$resource['repo_name'].".git";
-			$github_resource = "<strong>Github:</strong> "
-				."<a target='_blank' href='".$github_resource_url."'>".$github_resource_url."</a>";
-			
-			$resource_path = str_replace( home_url(), ABSPATH, $resource['resource_link'] );
-			$dir_exists = is_dir($resource_path);
-			$wordpress_resource = "<strong>WP:</strong> /wp-content/" . $repo_type . "s/" . $resource['repo_name'];
-			//
-			// Dismiss resource button
-			//
-			$action = '<p><input name="submit_delete_resource_'.($k-1)
-				.'" type="submit" class="button button-red btn-medium" value="'.esc_attr('Dismiss')
-				.'" onclick="return confirm(\'Do you really want to disconect from Github: '
-				.$github_resource_url . '?\');"/></p>';
-			
-			$my_data = "";
-			
-			if ( ! $dir_exists ) {
-				$zipball_url = GIT2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']) .'.zip';
-				$my_data .= "<p><strong>The resource does not exist on your WordPress!</strong></p>";
-				//if ( file_exists($zipball_url) ) {
-					//
-					// Install resource button
-					//
-					//$alternate = ' style="background-color:#EDC5C0;"';
-					$action .= '<p><input name="submit_install_resource_'.($k-1)
-						.'" type="submit" class="button button-primary btn-medium" value="'
-						.esc_attr('Install') . '" /></p>';
-				//}
-			}
-			
-			//$my_data .= $repo_type . "<br />"; // for debug
-			
-			if ( ($repo_type == 'plugin') ) {
-				$plugin_file = $resource['repo_name'] . "/" . $resource['repo_name'] . ".php";
-				$current_plugin_version = git2wp_get_plugin_version($plugin_file);
-				$new_version = false;
-				if ($current_plugin_version > '-' && $current_plugin_version > '') {
-					$my_data .= "<strong>" . git2wp_get_plugin_header($plugin_file, "Name") . "</strong>&nbsp;(";
+		if(is_array($resource_list) && !empty($resource_list))		
+			foreach($resource_list as $index => $resource) {
+				$k++;
 				
-					if($resource['is_on_wp_svn'])
-						$my_data .= "<div class='notification-warning' title='Wordpress has a resource with the same name.\nWe will override its update notifications! ' ></div>";
+				$git = new Git2WP(array(
+					"user" => $resource['username'],
+					"repo" => $resource['repo_name'],
+					"access_token" => $default['access_token'],
+					"source" => $resource['repo_branch'] 
+				));
+				
+										
+				if(false === $transient){
+					$branches = $git->fetch_branches();
+					$new_transient[] = array('repo_name' => $resource['repo_name'],
+							'branches' => $branches);
+				}else
+					foreach($transient as $tran_res)
+						if($tran_res['repo_name'] == $resource['repo_name']){
+							$branches = $tran_res['branches'];
+							break;
+						}
+				
+				$branch_dropdown = "<strong>Branch: </strong><select style='width: 125px;' class='resource_set_branch' resource_id='$index'>";
+	
+				if(is_array($branches) and count($branches) > 0) {
+					foreach($branches as $branch)
+						if($resource['repo_branch'] == $branch)
+							$branch_dropdown .= "<option value=".$branch." selected>".$branch."</option>";
+						else
+							$branch_dropdown .= "<option value=".$branch.">".$branch."</option>";
+				}
+				$branch_dropdown .= "</select>";
+	
+				$repo_type = git2wp_get_repo_type($resource['resource_link']);
+				
+				$alternate = '';
+				if ( ($k % 2) == 0 )
+					$alternate = ' class="inactive"';
+				
+				$selected_resource_checkbox = "<input type='checkbox' name='selected_resource_".$k
+					."' id='selected_resource_".$k
+					."' value=''>";
+				
+				$github_resource_url = "https://github.com/".$resource['username']."/".$resource['repo_name'].".git";
+				$github_resource = "<strong>Github:</strong> "
+					."<a target='_blank' href='".$github_resource_url."'>".$github_resource_url."</a>";
+				
+				$resource_path = str_replace( home_url(), ABSPATH, $resource['resource_link'] );
+				$dir_exists = is_dir($resource_path);
+				$wordpress_resource = "<strong>WP:</strong> /wp-content/" . $repo_type . "s/" . $resource['repo_name'];
+				//
+				// Dismiss resource button
+				//
+				$action = '<p><input name="submit_delete_resource_'.($k-1)
+					.'" type="submit" class="button button-red btn-medium" value="'.esc_attr('Dismiss')
+					.'" onclick="return confirm(\'Do you really want to disconect from Github: '
+					.$github_resource_url . '?\');"/></p>';
+				
+				$my_data = "";
+				
+				if ( ! $dir_exists ) {
+					$zipball_url = GIT2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']) .'.zip';
+					$my_data .= "<p><strong>The resource does not exist on your WordPress!</strong></p>";
+					//if ( file_exists($zipball_url) ) {
+						//
+						// Install resource button
+						//
+						//$alternate = ' style="background-color:#EDC5C0;"';
+						$action .= '<p><input name="submit_install_resource_'.($k-1)
+							.'" type="submit" class="button button-primary btn-medium" value="'
+							.esc_attr('Install') . '" /></p>';
+					//}
+				}
+				
+				//$my_data .= $repo_type . "<br />"; // for debug
+				
+				if ( ($repo_type == 'plugin') ) {
+					$plugin_file = $resource['repo_name'] . "/" . $resource['repo_name'] . ".php";
+					$current_plugin_version = git2wp_get_plugin_version($plugin_file);
+					$new_version = false;
+					if ($current_plugin_version > '-' && $current_plugin_version > '') {
+						$my_data .= "<strong>" . git2wp_get_plugin_header($plugin_file, "Name") . "</strong>&nbsp;(";
+					
+						if($resource['is_on_wp_svn'])
+							$my_data .= "<div class='notification-warning' title='Wordpress has a resource with the same name.\nWe will override its update notifications! ' ></div>";
+							
+						$author = git2wp_get_plugin_header($plugin_file, "Author");
+						$author_uri = git2wp_get_plugin_header($plugin_file, "AuthorURI");
+						if ( $author_uri != '-' && $author_uri != '' )
+							$author = '<a href="' . $author_uri . '" target="_blank">' . $author . '</a>';
+						$my_data .= "Version " . $current_plugin_version . "&nbsp;|&nbsp;";
+						$my_data .= "By " . $author . ")&nbsp;";
+						$my_data .= '<a id="need_help_'.$k.'" class="clicker" alt="res_details_'.$k.'"><strong>Details</strong></a><br />';
+	
+						$my_data .= "<div id='res_details_".$k."' class='slider home-border-center'>";
+	
+						$plugin_description = git2wp_get_plugin_header($plugin_file, "Description");
+						if ( ($plugin_description != '') && ($plugin_description != '-') )
+							$my_data .= $plugin_description . "<br />";
+	
+						//$zipball = home_url() . '/wp-content/uploads/' . basename(dirname(__FILE__)) . '/' . $resource['repo_name'].'.zip';
+						//$my_data .= "<strong>zipball: </strong>" . $zipball . "<br />";
 						
-					$author = git2wp_get_plugin_header($plugin_file, "Author");
-					$author_uri = git2wp_get_plugin_header($plugin_file, "AuthorURI");
+						$new_version = substr($resource['head_commit'], 0, 7); 
+					}
+					if ( ($new_version != $current_plugin_version) && ('-' != $current_plugin_version) && ('' != $current_plugin_version)  && ($new_version != false) ) {
+						$my_data .= "<strong>New Version: </strong>" . $new_version . "<br />";
+	
+					$my_data .= '</div>';
+	
+						$action .= '<p><input name="submit_update_resource_'.($k-1) // Update resource button
+							.'" type="submit" class="button btn-medium" value="'
+							.esc_attr('Update') . '" /></p>';
+					}
+				}
+				else if ( ($repo_type == 'theme') ) {
+					$theme_dirname = $resource['repo_name'];
+					$my_data .= "<strong>" . git2wp_get_theme_header($theme_dirname, "Name") . "</strong>&nbsp;(";
+					$author = git2wp_get_theme_header($theme_file, "Author");
+					$author_uri = git2wp_get_theme_header($theme_file, "AuthorURI");
+					
 					if ( $author_uri != '-' && $author_uri != '' )
 						$author = '<a href="' . $author_uri . '" target="_blank">' . $author . '</a>';
-					$my_data .= "Version " . $current_plugin_version . "&nbsp;|&nbsp;";
+					
+					$current_theme_version = git2wp_get_theme_version($theme_dirname);
+					$new_version = false;
+					
+					$my_data .= "Version " . $current_theme_version . "&nbsp;|&nbsp;";
 					$my_data .= "By " . $author . ")&nbsp;";
 					$my_data .= '<a id="need_help_'.$k.'" class="clicker" alt="res_details_'.$k.'"><strong>Details</strong></a><br />';
-
+	
 					$my_data .= "<div id='res_details_".$k."' class='slider home-border-center'>";
-
-					$plugin_description = git2wp_get_plugin_header($plugin_file, "Description");
-					if ( ($plugin_description != '') && ($plugin_description != '-') )
-						$my_data .= $plugin_description . "<br />";
-
-					//$zipball = home_url() . '/wp-content/uploads/' . basename(dirname(__FILE__)) . '/' . $resource['repo_name'].'.zip';
-					//$my_data .= "<strong>zipball: </strong>" . $zipball . "<br />";
+	
+					$theme_description = git2wp_get_theme_header($theme_dirname, "Description");
+					if ( ($theme_description != '') && ($theme_description != '-') )
+						$my_data .= $theme_description . "<br />";
+	
+					$new_version = substr($resource['head_commit'], 0, 7);
 					
-					$new_version = substr($resource['head_commit'], 0, 7); 
+					if ( ($new_version != $current_theme_version) && ($new_version != false) && ($current_theme_version != '-') && ($current_theme_version != '') ) {
+						$my_data .= "<strong>New Version: </strong>" . $new_version . "<br />";
+	
+						$my_data .= '</div>';
+	
+						$action .= '<p><input name="submit_update_resource_'.($k-1) // Update resource button
+							.'" type="submit" class="button btn-medium" value="'
+							.esc_attr('Update') . '" /></p>';
+					}
+	
+					if ( ! (($current_theme_version > '-') && ($current_theme_version > '')) ) {
+						$my_data = "<strong>The resource does not exist on your WordPress!" 
+							. ucfirst($repo_type) . ".</strong>";
+						//$alternate = ' style="background-color:#EDC5C0;"';
+					}
 				}
-				if ( ($new_version != $current_plugin_version) && ('-' != $current_plugin_version) && ('' != $current_plugin_version)  && ($new_version != false) ) {
-					$my_data .= "<strong>New Version: </strong>" . $new_version . "<br />";
-
-				$my_data .= '</div>';
-
-					$action .= '<p><input name="submit_update_resource_'.($k-1) // Update resource button
-						.'" type="submit" class="button btn-medium" value="'
-						.esc_attr('Update') . '" /></p>';
-				}
+	
+				//echo "<tr".$alternate."><td>".$k."</td><td><div class='update-message'>" . $my_data . "</div></td><td></td><td></td></tr>";
+	
+				echo "<tr".$alternate."><td>".$k."</td>"
+					."<td>" . $my_data . "<br />".$github_resource."<br />".$wordpress_resource."<br />".$branch_dropdown."</td>"
+					."<td>".$action."</td></tr>";
 			}
-			else if ( ($repo_type == 'theme') ) {
-				$theme_dirname = $resource['repo_name'];
-				$my_data .= "<strong>" . git2wp_get_theme_header($theme_dirname, "Name") . "</strong>&nbsp;(";
-				$author = git2wp_get_theme_header($theme_file, "Author");
-				$author_uri = git2wp_get_theme_header($theme_file, "AuthorURI");
-				
-				if ( $author_uri != '-' && $author_uri != '' )
-					$author = '<a href="' . $author_uri . '" target="_blank">' . $author . '</a>';
-				
-				$current_theme_version = git2wp_get_theme_version($theme_dirname);
-				$new_version = false;
-				
-				$my_data .= "Version " . $current_theme_version . "&nbsp;|&nbsp;";
-				$my_data .= "By " . $author . ")&nbsp;";
-				$my_data .= '<a id="need_help_'.$k.'" class="clicker" alt="res_details_'.$k.'"><strong>Details</strong></a><br />';
-
-				$my_data .= "<div id='res_details_".$k."' class='slider home-border-center'>";
-
-				$theme_description = git2wp_get_theme_header($theme_dirname, "Description");
-				if ( ($theme_description != '') && ($theme_description != '-') )
-					$my_data .= $theme_description . "<br />";
-
-				$new_version = substr($resource['head_commit'], 0, 7);
-				
-				if ( ($new_version != $current_theme_version) && ($new_version != false) && ($current_theme_version != '-') && ($current_theme_version != '') ) {
-					$my_data .= "<strong>New Version: </strong>" . $new_version . "<br />";
-
-					$my_data .= '</div>';
-
-					$action .= '<p><input name="submit_update_resource_'.($k-1) // Update resource button
-						.'" type="submit" class="button btn-medium" value="'
-						.esc_attr('Update') . '" /></p>';
-				}
-
-				if ( ! (($current_theme_version > '-') && ($current_theme_version > '')) ) {
-					$my_data = "<strong>The resource does not exist on your WordPress!" 
-						. ucfirst($repo_type) . ".</strong>";
-					//$alternate = ' style="background-color:#EDC5C0;"';
-				}
-			}
-
-			//echo "<tr".$alternate."><td>".$k."</td><td><div class='update-message'>" . $my_data . "</div></td><td></td><td></td></tr>";
-
-			echo "<tr".$alternate."><td>".$k."</td>"
-				."<td>" . $my_data . "<br />".$github_resource."<br />".$wordpress_resource."<br />".$branch_dropdown."</td>"
-				."<td>".$action."</td></tr>";
-		}
 		
 		if($transient === false)
 			set_transient('git2wp_branches', $new_transient, 5*60);
@@ -1222,8 +1224,6 @@ function git2wp_options_validate($input) {
 	
 	if( isset($_POST['submit_resource']) && !git2wp_needs_configuration() ) {
 		$resource_list = &$options['resource_list'];
-		$git_base = 'https://github.com/';
-		$git_base_ssh = 'git@github.com:';
 		
 		$repo_link = $_POST['resource_link'];
 		$repo_branch = $_POST['master_branch'];
@@ -1247,11 +1247,12 @@ function git2wp_options_validate($input) {
 				
 				$unique = true;
 				
-				foreach($resource_list as $resource) {
-					if($resource['repo_name'] === $resource_repo_name) {
-						$unique = false;
-						break;
-					}
+				if(is_array($resource_list) && !empty($resource_list))
+					foreach($resource_list as $resource) {
+						if($resource['repo_name'] === $resource_repo_name) {
+							$unique = false;
+							break;
+						}
 				}
 				
 				if($unique) {
@@ -1304,70 +1305,75 @@ function git2wp_options_validate($input) {
 	// install resources
 	$resource_list = &$options['resource_list'];
 	$k = 0;
-	foreach($resource_list as $key => $resource)
-		if ( isset($_POST['submit_install_resource_'.$k++]) ) {
-			$repo_type = git2wp_get_repo_type($resource['resource_link']);
-			$zipball_path = GIT2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']).'.zip';
-
-			$default = $options['default'];
-			$git = new Git2WP(array(
-				"user" => $resource['username'],
-				"repo" => $resource['repo_name'],
-				"repo_type" => $repo_type,
-				"client_id" => $default['client_id'],
-				"client_secret" => $default['client_secret'],
-				"access_token" => $default['access_token'],
-				"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
-				"source" => $resource['repo_branch']
-			));
-			$sw = $git->store_git_archive();
-			
-			if($sw) {
-				if ( $repo_type == 'plugin' )
-					git2wp_uploadPlguinFile($zipball_path);
-				else
-					git2wp_uploadThemeFile($zipball_path);
-				if ( file_exists($zipball_path) ) unlink($zipball_path);
+	
+	if(is_array($resource_list) && !empty($resource_list))
+		foreach($resource_list as $key => $resource)
+			if ( isset($_POST['submit_install_resource_'.$k++]) ) {
+				$repo_type = git2wp_get_repo_type($resource['resource_link']);
+				$zipball_path = GIT2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']).'.zip';
+	
+				$default = $options['default'];
+				$git = new Git2WP(array(
+					"user" => $resource['username'],
+					"repo" => $resource['repo_name'],
+					"repo_type" => $repo_type,
+					"client_id" => $default['client_id'],
+					"client_secret" => $default['client_secret'],
+					"access_token" => $default['access_token'],
+					"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
+					"source" => $resource['repo_branch']
+				));
+				$sw = $git->store_git_archive();
+				
+				if($sw) {
+					if ( $repo_type == 'plugin' )
+						git2wp_uploadPlguinFile($zipball_path);
+					else
+						git2wp_uploadThemeFile($zipball_path);
+					if ( file_exists($zipball_path) ) unlink($zipball_path);
+				}
 			}
-		}
 
 	// update resources
 	$resource_list = &$options['resource_list'];
 	$k = 0;
-	foreach($resource_list as $key => $resource)
-		if ( isset($_POST['submit_update_resource_'.$k++]) ) {
-			$repo_type = git2wp_get_repo_type($resource['resource_link']);
-			$zipball_path = GIT2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']).'.zip';
-
-			$default = $options['default'];
-			$git = new Git2WP(array(
-				"user" => $resource['username'],
-				"repo" => $resource['repo_name'],
-				"repo_type" => $repo_type,
-				"client_id" => $default['client_id'],
-				"client_secret" => $default['client_secret'],
-				"access_token" => $default['access_token'],
-				"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
-				"source" => $resource['head_commit']
-			));
-			$sw = $git->store_git_archive();
-			
-			if($sw) {
-				if ( $repo_type == 'plugin' )
-					git2wp_uploadPlguinFile($zipball_path, 'update');
-				else
-					git2wp_uploadThemeFile($zipball_path, 'update');
-
-				if ( file_exists($zipball_path) ) unlink($zipball_path);
+	if(is_array($resource_list) && !empty($resource_list))
+		foreach($resource_list as $key => $resource)
+			if ( isset($_POST['submit_update_resource_'.$k++]) ) {
+				$repo_type = git2wp_get_repo_type($resource['resource_link']);
+				$zipball_path = GIT2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']).'.zip';
+	
+				$default = $options['default'];
+				$git = new Git2WP(array(
+					"user" => $resource['username'],
+					"repo" => $resource['repo_name'],
+					"repo_type" => $repo_type,
+					"client_id" => $default['client_id'],
+					"client_secret" => $default['client_secret'],
+					"access_token" => $default['access_token'],
+					"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
+					"source" => $resource['head_commit']
+				));
+				$sw = $git->store_git_archive();
+				
+				if($sw) {
+					if ( $repo_type == 'plugin' )
+						git2wp_uploadPlguinFile($zipball_path, 'update');
+					else
+						git2wp_uploadThemeFile($zipball_path, 'update');
+	
+					if ( file_exists($zipball_path) ) unlink($zipball_path);
+				}
 			}
-		}
 
 	// delete resources
 	$resource_list = &$options['resource_list'];
 	$k = 0;
-	foreach($resource_list as $key => $resource)
-		if ( isset($_POST['submit_delete_resource_'.$k++]) ) 
-			unset($resource_list[$key]);
+	
+	if(is_array($resource_list) && !empty($resource_list))
+		foreach($resource_list as $key => $resource)
+			if ( isset($_POST['submit_delete_resource_'.$k++]) ) 
+				unset($resource_list[$key]);
 		
 	// settings
 	if(isset($_POST['submit_settings'])) {
@@ -1472,11 +1478,12 @@ function git2wp_install_from_wp_hash($hash) {
 
 	$resource = null;
 	$resource_list = $options['resource_list'];
-	foreach( $resource_list as $resource_index => $resource_value )
-		if ( wp_hash($resource_value['repo_name']) == $hash ) {
-			$resource = $resource_value;
-			break;
-		}
+	if(is_array($resource_list) && !empty($resource_list))
+		foreach( $resource_list as $resource_index => $resource_value )
+			if ( wp_hash($resource_value['repo_name']) == $hash ) {
+				$resource = $resource_value;
+				break;
+			}
 
 	if ( $resource != null ) {
 		$zipball_path = GIT2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']).'.zip';

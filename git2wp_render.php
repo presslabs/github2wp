@@ -1,6 +1,4 @@
 <?php
-
-
 	function git2wp_render_resource_history( $resource , $resource_id, $commit_history) {
 		if(count($commit_history) != 0):
 		?>
