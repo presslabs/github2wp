@@ -455,7 +455,11 @@ function git2wp_update_options($where,$data) {
 }
 
 //------------------------------------------------------------------------------
-function git2wp_add_javascript() {
+function git2wp_add_javascript($hook) {
+	if('tools_page_github2wp/github2wp' != $hook) {
+		return;
+	}
+	
 	$script_file_name_url = plugins_url('git2wp.js', __FILE__);
 	$script_file_name_path = plugin_dir_path(__FILE__) . 'git2wp.js';
 	wp_enqueue_script('git2wp_js', $script_file_name_url, array('jquery'), filemtime($script_file_name_path) ); 
@@ -463,7 +467,11 @@ function git2wp_add_javascript() {
 add_action('admin_enqueue_scripts','git2wp_add_javascript'); 
 
 //------------------------------------------------------------------------------
-function git2wp_add_style() {
+function git2wp_add_style($hook) {
+	if('tools_page_github2wp/github2wp' != $hook) {
+		return;
+	}
+	
 	$style_file_name_url = plugins_url('git2wp.css', __FILE__);
 	$style_file_name_path = plugin_dir_path(__FILE__) . 'git2wp.css';
 	wp_enqueue_style('git2wp_css', $style_file_name_url, null, filemtime($style_file_name_path) );
