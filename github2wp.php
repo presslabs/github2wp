@@ -1356,8 +1356,9 @@ function git2wp_options_validate($input) {
 	
 	if(is_array($resource_list) && !empty($resource_list))
 		foreach($resource_list as $key => $resource)
-			if ( isset($_POST['submit_delete_resource_'.$k++]) ) 
-				unset($resource_list[$key]);
+			if ( isset($_POST['submit_delete_resource_'.$k++]) )
+				if($key != 0)
+					unset($resource_list[$key]);
 		
 	// settings
 	if(isset($_POST['submit_settings'])) {
@@ -1396,27 +1397,6 @@ function git2wp_options_validate($input) {
 			$default["access_token"] = NULL;
 			$default["changed"] =  $changed;
 		}
-	}
-	
-	// TEST ARCHIVE
-	if(isset($_POST['submit_test'])) { 
-		$default = $options['default'];
-		
-		$git = new Git2WP(array(
-			"user" => "johnzanussi",
-			"repo" => "Rincon",
-			"client_id" => $default['client_id'],
-			"client_secret" => $default['client_secret'],
-			"access_token" => "f27d48b66827d6cbdb4ca0fa5e11e3097c2dad34",
-			"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
-			"source" => 'master'
-		));
-		
-		$branches = $git->fetch_branches();
-		$sw = $git->check_repo_availability();	
-		$sw = $git->store_git_archive();
-
-		
 	}
 	
 	return $options;
