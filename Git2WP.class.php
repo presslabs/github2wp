@@ -18,12 +18,9 @@ class Git2WP {
 		"user" => "",
 		"repo" => "",
 		"repo_type" => "",
-		"client_secret" => "",
-		"client_id" => "",
 		"access_token" => "",
 		"zip_url" => "",
 		"git_api_base_url" => "https://api.github.com/",
-		"git_endpoint" => "",
 		"source" => ""
 	);
 	

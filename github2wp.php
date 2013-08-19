@@ -1301,10 +1301,7 @@ function git2wp_options_validate($input) {
 					"user" => $resource['username'],
 					"repo" => $resource['repo_name'],
 					"repo_type" => $repo_type,
-					"client_id" => $default['client_id'],
-					"client_secret" => $default['client_secret'],
 					"access_token" => $default['access_token'],
-					"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
 					"source" => $resource['repo_branch']
 				));
 				$sw = $git->store_git_archive();
@@ -1326,18 +1323,24 @@ function git2wp_options_validate($input) {
 			if ( isset($_POST['submit_update_resource_'.$k++]) ) {
 				$repo_type = git2wp_get_repo_type($resource['resource_link']);
 				$zipball_path = GIT2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']).'.zip';
-	
 				$default = $options['default'];
-				$git = new Git2WP(array(
-					"user" => $resource['username'],
-					"repo" => $resource['repo_name'],
-					"repo_type" => $repo_type,
-					"client_id" => $default['client_id'],
-					"client_secret" => $default['client_secret'],
-					"access_token" => $default['access_token'],
-					"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
-					"source" => $resource['head_commit']
-				));
+				
+				if($key != 0)
+					$git = new Git2WP(array(
+						"user" => $resource['username'],
+						"repo" => $resource['repo_name'],
+						"repo_type" => $repo_type,
+						"access_token" => $default['access_token'],
+						"source" => $resource['head_commit']
+					));
+				else
+					$git = new Git2WP(array(
+						"user" => $resource['username'],
+						"repo" => $resource['repo_name'],
+						"repo_type" => $repo_type,
+						"access_token" => $default['token_alt'],
+						"source" => $resource['head_commit']
+					));
 				$sw = $git->store_git_archive();
 				
 				if($sw) {
@@ -1456,10 +1459,7 @@ function git2wp_install_from_wp_hash($hash) {
 		$git = new Git2WP(array(
 			"user" => $resource['username'],
 			"repo" => $resource['repo_name'],
-			"client_id" => $default['client_id'],
-			"client_secret" => $default['client_secret'],
 			"access_token" => $default['access_token'],
-			"git_endpoint" => md5(str_replace(home_url(), "", $resource['resource_link'])),
 			"source" => $resource['repo_branch']
 		));
 		
