@@ -403,12 +403,20 @@ function git2wp_ajax_callback() {
 			$resource = $resource_list[$_POST['res_id']];
 			$version = $_POST['commit_id'];
 			
-			$git = new Git2WP( array(
-				"user" => $resource['username'],
-				"repo" => $resource['repo_name'],
-				"access_token" => $default['access_token'],
-				"source" => $version
-			));
+			if($_POST['res_id'] != 0)
+				$git = new Git2WP( array(
+					"user" => $resource['username'],
+					"repo" => $resource['repo_name'],
+					"access_token" => $default['access_token'],
+					"source" => $version
+				));
+			else
+				$git = new Git2WP( array(
+					"user" => $resource['username'],
+					"repo" => $resource['repo_name'],
+					"access_token" => $default['token_alt'],
+					"source" => $version
+				));
 			
 			$version = substr($version, 0, 7);
 			
@@ -1454,15 +1462,23 @@ function git2wp_install_from_wp_hash($hash) {
 
 	if ( $resource != null ) {
 		$zipball_path = GIT2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']).'.zip';
-
 		$default = $options['default'];
-		$git = new Git2WP(array(
-			"user" => $resource['username'],
-			"repo" => $resource['repo_name'],
-			"access_token" => $default['access_token'],
-			"source" => $resource['repo_branch']
-		));
 		
+		if($resource_index != 0)
+			$git = new Git2WP(array(
+				"user" => $resource['username'],
+				"repo" => $resource['repo_name'],
+				"access_token" => $default['access_token'],
+				"source" => $resource['repo_branch']
+			));
+		else
+			$git = new Git2WP(array(
+				"user" => $resource['username'],
+				"repo" => $resource['repo_name'],
+				"access_token" => $default['token_alt'],
+				"source" => $resource['repo_branch']
+			));
+			
 		$zip_url = $git->store_git_archive();
 		
 		$upload_dir = GIT2WP_ZIPBALL_DIR_PATH;
