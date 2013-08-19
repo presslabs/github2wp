@@ -76,12 +76,15 @@
 	
 	
 	function git2wp_return_resource_dismiss($resource, $index) {
-		$github_resource_url = git2wp_return_resource_url($resource['username'], $resource['repo_name']);
+		if($index != 0) {
+			$github_resource_url = git2wp_return_resource_url($resource['username'], $resource['repo_name']);
 		
-		return '<p><input name="submit_delete_resource_'.$index
+			return '<p><input name="submit_delete_resource_'.$index
 					.'" type="submit" class="button button-red btn-medium" value="'.esc_attr('Dismiss')
 					.'" onclick="return confirm(\'Do you really want to disconect from Github: '
 					.$github_resource_url . '?\');"/></p>';
+		}else
+			return '';
 	}
 	
 	
