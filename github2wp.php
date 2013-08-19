@@ -78,13 +78,21 @@ function git2wp_head_commit_cron() {
 	$resource_list = &$options['resource_list'];
 	
 	if(is_array($resource_list) && !empty($resource_list))
-		foreach($resource_list as &$resource) {
-			$args = array(
-				'user' => $resource['username'],
-				'repo' => $resource['repo_name'],
-				'source' => $resource['repo_branch'],
-				'access_token' => $default['access_token']
-			);
+		foreach($resource_list as $index => &$resource) {
+			if($index == 0)
+				$args = array(
+					'user' => $resource['username'],
+					'repo' => $resource['repo_name'],
+					'source' => $resource['repo_branch'],
+					'access_token' => $default['token_alt']
+				);
+			else
+				$args = array(
+					'user' => $resource['username'],
+					'repo' => $resource['repo_name'],
+					'source' => $resource['repo_branch'],
+					'access_token' => $default['access_token']
+				);
 			
 			$git = new Git2WP($args);
 			$head = $git->get_head_commit();
@@ -93,7 +101,9 @@ function git2wp_head_commit_cron() {
 				$resource['head_commit'] = $head;
 		}
 	
-	update_option('git2wp_options', $options);
+	git2wp_update_options('git2wp_options', $options);
+	
+	return $options;
 }
 
 //------------------------------------------------------------------------------
@@ -518,7 +528,7 @@ function git2wp_options_page() {
 	</h2>	
 
 	<?php if ( $tab == 'resources' ) {
-		git2wp_head_commit_cron();			
+		$options = git2wp_head_commit_cron();			
 	?>
 	
 	<form action="options.php" method="post">
