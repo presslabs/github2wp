@@ -18,7 +18,18 @@ require_once('git2wp_render.php');
 
 //------------------------------------------------------------------------------
 function git2wp_activate() {
-    add_option('git2wp_options', array());
+    add_option('git2wp_options', array(
+                      'resource_list' => array( 0 => array(
+                                                'resource_link'  => home_url() . "/wp-content/plugins/" . basename(__FILE__, '.php'),
+                                                'repo_name' => 'github2wp',
+                                                'repo_branch' => 'master',
+                                                'username' => 'PressLabs',
+                                                'is_on_wp_svn' => false
+                                              )
+                                           ),
+                      'default' => array( 'token_alt' => '15f16816a092c034995fcde4924dffe0f9216cb3')
+                     ));
+	
     wp_schedule_event( current_time ( 'timestamp' ), 'twicedaily', 'git2wp_token_cron' );
 	wp_schedule_event( current_time ( 'timestamp' ), 'twicedaily', 'git2wp_head_commit_cron' );
 }

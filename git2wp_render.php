@@ -32,9 +32,9 @@
 						<?php } ?>
 							</tbody>
 						</table>						
-				<?php else: ?>
-					<div class='half centered'>Nope no history yet :D</div>
-				<?php endif; ?>
+		<?php else: ?>
+			<div class='half centered'>Nope no history yet :D</div>
+		<?php endif; ?>
 	<?php
 	}
 	
