@@ -38,4 +38,63 @@
 	<?php
 	}
 	
+
+	function git2wp_return_branch_dropdown( $index, $branches ) {
+		if($index != 0) {
+			$branch_dropdown = "<strong>Branch: </strong><select style='width: 125px;' class='resource_set_branch' resource_id='$index'>";
+	
+			if(is_array($branches) and count($branches) > 0) {
+				foreach($branches as $branch)
+					if($resource['repo_branch'] == $branch)
+						$branch_dropdown .= "<option value=".$branch." selected>".$branch."</option>";
+					else
+						$branch_dropdown .= "<option value=".$branch.">".$branch."</option>";
+			}
+			$branch_dropdown .= "</select>";
+			
+			return $branch_dropdown;
+		}else
+			return "<p><strong>Branch: </strong>master</p>";
+	}
+	
+	
+	function git2wp_return_resource_url($resource_username, $resource_repo) {
+		return "https://github.com/$resource_username/$resource_repo.git";
+	}
+	
+	
+	function git2wp_return_resource_git_link($resource) {
+		$github_resource_url = git2wp_return_resource_url($resource['username'], $resource['repo_name']);	
+		
+		return "<strong>Github: </strong><a target='_blank' href='".$github_resource_url."'>".$github_resource_url."</a>";
+	}
+	
+	
+	function git2wp_return_wordpress_resource($repo_type, $repo_name) {
+		return "<strong>WP:</strong> /wp-content/" . $repo_type . "s/" . $repo_name;
+	}
+	
+	
+	function git2wp_return_resource_dismiss($resource, $index) {
+		$github_resource_url = git2wp_return_resource_url($resource['username'], $resource['repo_name']);
+		
+		return '<p><input name="submit_delete_resource_'.$index
+					.'" type="submit" class="button button-red btn-medium" value="'.esc_attr('Dismiss')
+					.'" onclick="return confirm(\'Do you really want to disconect from Github: '
+					.$github_resource_url . '?\');"/></p>';
+	}
+	
+	
+	function git2wp_return_resource_install($resource, $index) {
+		return '<p><input name="submit_install_resource_'.$index
+						.'" type="submit" class="button button-primary btn-medium" value="'
+						.esc_attr('Install') . '" /></p>';
+	}
+	
+	function git2wp_return_resource_update($resource, $index) {
+		return  '<p><input name="submit_update_resource_'.$index
+							.'" type="submit" class="button btn-medium" value="'
+							.esc_attr('Update') . '" /></p>';
+	}
+	
 ?>
