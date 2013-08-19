@@ -244,27 +244,14 @@ function git2wp_inject_info($result, $action = null, $args = null) {
 
 			if ( ($repo_type == 'plugin') ) {
 				$response_index = $resource['repo_name'] . "/" . $resource['repo_name'] . ".php";
-				//$current_version = git2wp_get_plugin_version($response_index);
 				$new_version = substr($resource['head_commit'], 0, 7);
 				$homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
-				//$zipball = GIT2WP_ZIPBALL_URL . '/' . $resource['repo_name'].'.zip';
 				$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
 
-				$changelog_head = '';
-				if ( $new_version )
-					$changelog_head = $new_version;
-						//. date("d/m/Y (h:m)", $new_version);
-
 				$changelog = 'No changelog found';
-				/*
-				if ( $git_data['payload'] )
-					$changelog = "<h4>".$changelog_head."</h4>"
-						. git2wp_get_commits($git_data['payload']);
-////////////COMMITS TAKEN FROM HISTORY NOT PAYLOAD
-				*/
+
 				$sections = array(
 					"description" => git2wp_get_plugin_header($response_index, "Description"),
-					//"installation" => "(Recommended) Installation instructions.",
 					"changelog" => $changelog,
 				);
 				$slug = dirname( $response_index );
@@ -278,22 +265,21 @@ function git2wp_inject_info($result, $action = null, $args = null) {
 					'slug' => $slug,
 					'new_version' => $new_version,
 					'package' => $zipball,
-					"url" => $homepage,
-					
+					"url" => null,
 					"name" => git2wp_get_plugin_header($response_index, "Name"),
 					"version" => $new_version,
-					"homepage" => $homepage,
+					"homepage" => null,
 					"sections" => $sections,
 					"download_url" => $zipball,
 					"author" => git2wp_get_plugin_header($response_index, "Author"),
 					"author_homepage" => git2wp_get_plugin_header($response_index, "AuthorURI"),
-					"requires" => "3.0",
-					"tested" => "3.5.1",
+					"requires" => null,
+					"tested" => null,
 					"upgrade_notice" => "Here's why you should upgrade...",
-					"rating" => 100,
-					"num_ratings" => 123,
-					"downloaded" => 100,
-					"last_updated" => date("Y-m-d h:m:i", $new_version) //"2012-10-29 11:09:00"
+					"rating" => null,
+					"num_ratings" => null,
+					"downloaded" => null,
+					"last_updated" => null
 				);
 				
 				$pluginInfo = git2wp_toWpFormat($plugin);
@@ -347,10 +333,7 @@ function git2wp_update_check_plugins($transient) {
     }
     return $transient;
 }
-//Insert our update info into the update array maintained by WP
-add_filter("pre_set_site_transient_update_plugins","git2wp_update_check_plugins", 10, 1); //WP 3.0+
-//add_filter("site_transient_update_plugins","git2wp_update_check_plugins", 10, 1); //WP 3.0+
-//add_filter('transient_update_plugins', 'git2wp_update_check_plugins'); //WP 2.8+
+add_filter("pre_set_site_transient_update_plugins","git2wp_update_check_plugins", 10, 1); 
 
 //------------------------------------------------------------------------------
 function git2wp_ajax_callback() {
