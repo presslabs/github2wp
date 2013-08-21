@@ -40,12 +40,14 @@
 	
 
 	function git2wp_return_branch_dropdown( $index, $branches ) {
+		$options = get_option('git2wp_options');
+		
 		if($index != 0) {
 			$branch_dropdown = "<strong>Branch: </strong><select style='width: 125px;' class='resource_set_branch' resource_id='$index'>";
 	
 			if(is_array($branches) and count($branches) > 0) {
 				foreach($branches as $branch)
-					if($resource['repo_branch'] == $branch)
+					if($options['resource_list'][$index]['repo_branch'] == $branch)
 						$branch_dropdown .= "<option value=".$branch." selected>".$branch."</option>";
 					else
 						$branch_dropdown .= "<option value=".$branch.">".$branch."</option>";

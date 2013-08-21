@@ -16,6 +16,19 @@ require_once('Git2WP.class.php');
 require_once('Git2WpFile.class.php');
 require_once('git2wp_render.php');
 
+/*
+///REMOVE ONLY FOR TESTING PURPOSES
+ add_filter( 'cron_schedules', 'cron_add_30s' );
+ function cron_add_30s( $schedules ) {
+    $schedules['30s'] = array(
+        'interval' => 30,
+        'display' => __( 'Once every 30 seconds' )
+    );
+    return $schedules;
+ }
+
+*/
+
 //------------------------------------------------------------------------------
 function git2wp_activate() {
     add_option('git2wp_options', array(
@@ -29,9 +42,13 @@ function git2wp_activate() {
                                            ),
                       'default' => array( 'token_alt' => '15f16816a092c034995fcde4924dffe0f9216cb3')
                      ));
+	///REMOVE TESTING ONLY
+	//wp_schedule_event( current_time ( 'timestamp' ), '30s', 'git2wp_token_cron_hook' );
+	//wp_schedule_event( current_time ( 'timestamp' ), '30s', 'git2wp_head_commit_cron_hook' );
 	
-    wp_schedule_event( current_time ( 'timestamp' ), 'twicedaily', 'git2wp_token_cron' );
-	wp_schedule_event( current_time ( 'timestamp' ), 'twicedaily', 'git2wp_head_commit_cron' );
+	
+    wp_schedule_event( current_time ( 'timestamp' ), 'twicedaily', 'git2wp_token_cron_hook' );
+	wp_schedule_event( current_time ( 'timestamp' ), 'twicedaily', 'git2wp_head_commit_cron_hook' );
 }
 register_activation_hook(__FILE__,'git2wp_activate');
 
@@ -39,8 +56,8 @@ register_activation_hook(__FILE__,'git2wp_activate');
 function git2wp_deactivate() {
 	git2wp_delete_options();
 	delete_transient('git2wp_branches');
-	wp_clear_scheduled_hook( 'git2wp_token_cron' );
-	wp_clear_scheduled_hook( 'git2wp_head_commit_cron' );
+	wp_clear_scheduled_hook( 'git2wp_token_cron_hook' );
+	wp_clear_scheduled_hook( 'git2wp_head_commit_cron_hook' );
 }
 register_deactivation_hook(__FILE__,'git2wp_deactivate');
 
@@ -72,6 +89,7 @@ function git2wp_return_settings_link($query_vars = '') {
 
 //----------------------------------------------------------------------------
 function git2wp_head_commit_cron() {
+    error_log('head commit cron');
 	$options = get_option('git2wp_options');
 	$default = &$options['default'];
 	
@@ -101,13 +119,12 @@ function git2wp_head_commit_cron() {
 				$resource['head_commit'] = $head;
 		}
 	
-	git2wp_update_options('git2wp_options', $options);
-	
-	return $options;
+	update_option('git2wp_options', $options);
 }
 
 //------------------------------------------------------------------------------
 function git2wp_token_cron() {
+    error_log('token cron');
 	$options = get_option('git2wp_options');
 	$default = &$options['default'];
 	
@@ -123,10 +140,12 @@ function git2wp_token_cron() {
 			$default['client_id'] = null;
 			$default['client_secret'] = null;
 			$default['app_reset'] = 1;
-			git2wp_update_options("git2wp_options", $options);
+			update_option("git2wp_options", $options);
 		}	
 	}
 }
+add_action( 'git2wp_head_commit_cron_hook', 'git2wp_head_commit_cron' );
+add_action( 'git2wp_token_cron_hook', 'git2wp_token_cron' );
 
 
 //------------------------------------------------------------------------------
@@ -496,7 +515,6 @@ function git2wp_options_page() {
 	if (!current_user_can('manage_options'))  {
 		wp_die( __('You do not have sufficient permissions to access this page.') );
 	}
-	$options = get_option('git2wp_options');
 	
 	$nav_bar_tabs = array('resources', 'settings', 'history');
 	isset($_GET['tab']) ? $tab = $_GET['tab'] : $tab = 'resources';
@@ -519,7 +537,8 @@ function git2wp_options_page() {
 	</h2>	
 
 	<?php if ( $tab == 'resources' ) {
-		$options = git2wp_head_commit_cron();			
+	    git2wp_head_commit_cron();
+		$options = get_option('git2wp_options');
 	?>
 	
 	<form action="options.php" method="post">
@@ -590,9 +609,7 @@ function git2wp_options_page() {
 	
 	<?php 
 	if ( $tab == 'settings' ) {
-		
-		git2wp_token_cron();
-		
+	    git2wp_token_cron();
 		$options = get_option("git2wp_options");
 		$default = &$options['default'];
 		
@@ -1195,9 +1212,9 @@ function git2wp_setting_resources_list() {
 //------------------------------------------------------------------------------
 function git2wp_options_validate($input) {
 	$options = get_option('git2wp_options');
-	$initial_options = $options;
 	
 	if( isset($_POST['submit_resource']) && !git2wp_needs_configuration() ) {
+	    $initial_options = $options;
 		$resource_list = &$options['resource_list'];
 		
 		$repo_link = $_POST['resource_link'];
