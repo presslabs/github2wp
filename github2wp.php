@@ -88,11 +88,8 @@ function git2wp_return_settings_link($query_vars = '') {
 
 //----------------------------------------------------------------------------
 function git2wp_head_commit_cron() {
-    error_log('head commit cron');
 	$options = get_option('git2wp_options');
 	$default = &$options['default'];
-	
-	error_log('pre cron data'. print_r($options['resource_list'][0],true));
 	
 	$resource_list = &$options['resource_list'];
 	
@@ -120,7 +117,6 @@ function git2wp_head_commit_cron() {
 				$resource['head_commit'] = $head;
 				
 		}
-	error_log('cron data'. print_r($options['resource_list'][0], true));
 	$t=git2wp_update_options('git2wp_options', $options);
 	
 	if($t) {
@@ -133,7 +129,6 @@ function git2wp_head_commit_cron() {
 	                        wp_cache_set( 'git2wp_options', $options, 'options' );
         }
 	}
-	error_log('cron head updated>'.serialize($t));
 }
 
 //------------------------------------------------------------------------------
@@ -154,7 +149,19 @@ function git2wp_token_cron() {
 			$default['client_id'] = null;
 			$default['client_secret'] = null;
 			$default['app_reset'] = 1;
-			update_option("git2wp_options", $options);
+			
+			$t=git2wp_update_options('git2wp_options', $options);
+	
+	        if($t) {
+	            if ( ! defined( 'WP_INSTALLING' ) ) {
+	                $alloptions = wp_load_alloptions();
+	                if ( isset( $alloptions['git2wp_options'] ) ) {
+	                        $alloptions['git2wp_options'] = $options;
+	                        wp_cache_set( 'alloptions', $alloptions, 'options' );
+	                } else
+	                        wp_cache_set( 'git2wp_options', $options, 'options' );
+                }
+	        }
 		}	
 	}
 }
