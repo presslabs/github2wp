@@ -481,18 +481,19 @@ function git2wp_update_options($where,$data) {
 	if($sw) {
 	    $notoptions = wp_cache_get( 'notoptions', 'options' );
 
-	    if ( is_array( $notoptions ) && isset( $notoptions[$whre] ) ) {
-		unset( $notoptions[$where] );
-	        wp_cache_set( 'notoptions', $notoptions, 'options' );
-	    }
+		if ( is_array( $notoptions ) && isset( $notoptions[$whre] ) ) {
+			unset( $notoptions[$where] );
+			wp_cache_set( 'notoptions', $notoptions, 'options' );
+		}
 	    
 	    if ( ! defined( 'WP_INSTALLING' ) ) {
-	                $alloptions = wp_load_alloptions();
-	                if ( isset( $alloptions[$where] ) ) {
-	                        $alloptions[$where] = $data_array['option_value'];
-	                        wp_cache_set( 'alloptions', $alloptions, 'options' );
-	                } else
-	                        wp_cache_set( $where, $data_array['option_value'], 'options' );
+	        $alloptions = wp_load_alloptions();
+	
+	        if ( isset( $alloptions[$where] ) ) {
+				$alloptions[$where] = $data_array['option_value'];
+				wp_cache_set( 'alloptions', $alloptions, 'options' );
+			} else
+				wp_cache_set( $where, $data_array['option_value'], 'options' );
         }
 	}
 	
@@ -534,278 +535,33 @@ function git2wp_options_page() {
 	
 	if( ! in_array($tab, $nav_bar_tabs))
 		$tab = 'resources';
-?>
 
-<div class="wrap">
-	<div id="icon-plugins" class="icon32">&nbsp;
-	</div>
-	
-	<h2 class="nav-tab-wrapper">
-		<a class="nav-tab<?php if($tab=='resources')
-		echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=resources'); ?>">Resources</a>
-		<a class="nav-tab<?php if($tab=='history')
-		echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=history'); ?>">History</a>
-		<a class="nav-tab<?php if($tab=='settings')
-		echo' nav-tab-active';?>" href="<?php echo git2wp_return_settings_link('&tab=settings'); ?>">Settings</a>
-	</h2>	
 
-	<?php if ( $tab == 'resources' ) {
-	    git2wp_head_commit_cron();
-		$options = get_option('git2wp_options');
-	?>
-	
-	<form action="options.php" method="post">
-		<?php 
-				$disable_resource_fields = '';
-				if ( git2wp_needs_configuration() )
-					$disable_resource_fields = 'disabled="disabled" ';
+	echo '<div class="wrap">';
+		git2wp_render_plugin_icon();
+		git2wp_render_tab_menu($tab);	
 
-				settings_fields('git2wp_options');
-				do_settings_sections('git2wp');				
-		?>
-		<table class="form-table">
-			<tbody>
-				<tr valign="top">
-					<th scope="row">
-						<label>Resource Type:</label>
-					</th>
-					<td>
-						<label for="resource_type_dropdown">
-							<select name='resource_type_dropdown' <?php echo $disable_resource_fields; ?>id='resource_type_dropdown'>
-								<option value='plugins'>Plugin</option>
-								<option value='themes'>Theme</option>
-							</select>
-						</label>
-						<p class="description">Is it a <strong>plugin</strong> or a <strong>theme</strong>?</p>
-					</td>
-				</tr>
-				<tr valign="top">
-					<th scope="row">
-						<label>GitHub clone url:</label>
-					</th>
-					<td>
-						<label for="resource_link">
-							<input name="resource_link" id="resource_link" value="" <?php echo $disable_resource_fields; ?>type="text" size='30'>
-						</label>
-						<p class="description">Github repo link.</p>
-					</tr>
-				<tr valign="top">
-					<th scope="row">
-						<label>Synching Branch:</label>
-					</th>
-					<td>
-						<label for="master_branch">
-							<input name="master_branch" id="master_branch" value="" <?php echo $disable_resource_fields; ?>type="text" size='30'>
-						</label>
-						<p class="description">This will override your account preference only for this resource.</p>
-						<p class="description">Optional: This will set the branch that will dictate whether or not to synch.</p>
-					</td>
-				</tr>
-				
-				<tr valign="top">
-					<td>
-					</td>
-				</tr>
-			</tbody>
-		</table>
-		<input name="submit_resource" <?php echo $disable_resource_fields; ?>type="submit" class="button button-primary" value="<?php esc_attr_e('Add Resource'); ?>" />
+		if ( $tab == 'resources' ) {
+		    git2wp_head_commit_cron();
+			$options = get_option('git2wp_options');
+			git2wp_render_resource_form();
+		}
+	 
+		if ( $tab == 'settings' ) {
+			git2wp_token_cron();
+			$options = get_option("git2wp_options");
+			$default = &$options['default'];
 		
-		<br /><br /><br />
-		<?php 
-				do_settings_sections('git2wp_list');
-				git2wp_setting_resources_list();
-		?>
-	</form>
-	<?php } ?>
-
+			git2wp_render_settings_app_reset_message($default);
+			git2wp_render_settings_form($default);
+		}
 	
+		if ( $tab == 'history' )
+			git2wp_render_history_page();
 	
-	<?php 
-	if ( $tab == 'settings' ) {
-	    git2wp_token_cron();
-		$options = get_option("git2wp_options");
-		$default = &$options['default'];
-		
-		if($default['app_reset'])
-			if(git2wp_needs_configuration())
-				echo "<div class='updated'><p>You've reset/deleted you're GitHub application settings reconfigure them here.</p></div>";
-	?>
-	
-	<form action="options.php" method="post">
-		
-		<?php 
-		settings_fields('git2wp_options');
-		do_settings_sections('git2wp_settings');
-		?>
-		
-		<a class="button-primary clicker" alt="#" >Need help?</a>		
-		<div class="slider home-border-center" id="#">
-				<table class="form-table">
-					<tbody>
-						<tr valign="top">
-							<th scope="row">
-								<label>Follow this link and <br />
-											 fill as shown here:</label>
-							</th>
-							<td>
-								<label><a href="https://github.com/settings/applications/new" target="_blank">Create a new git application</a></label>
-								<p class="description"><strong>Application Name</strong> -> git2wp</p>
-								<p class="description"><strong>Main URL </strong>-> <?php echo home_url();?></p>
-								<p class="description"><strong>Callback URL</strong> -> <?php echo home_url() . '/?git2wp_auth=true';?></p>
-							</td>
-						</tr>
-						<tr valign="top">
-							<th scope="row">
-								<label>Go here and select the <br />
-											 newly created application</label>
-							</th>
-							<td>
-								<label><a href="https://github.com/settings/applications" target="_blank">Application list</a></label>
-								<p class="description"><strong>Here you have all the information that you need to fill in the form.</strong></p>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-				<br /><br /><br />
-		</div>
-				
-		<table class="form-table">
-			<tbody>
-				<tr valign="top">
-					<th scope="row">
-						<label>Github master branch override:</label>
-					</th>
-					<td>
-						<label for="master_branch">
-							<input name='master_branch' id='master_branch'  type="text" size='40' value='<?php echo $default["master_branch"]  ? $default["master_branch"] : "master";
-?>'>
-						</label>
-						<p class="description">In case you don't  want to synch your master branch, change this setting here.</p>
-					</td>
-				</tr>
-				<tr valign="top">
-					<th scope="row">
-						<label>Github client id:</label>
-					</th>
-					<td>
-						<label for="client_id">
-							<input name='client_id' id='client_id'  type="text" size='40' value='<?php echo $default["client_id"]  ? $default["client_id"] : "";
-?>'>
-						</label>
-						<p class="description">The git application client id, created for this plugin.</p>
-					</td>
-				</tr>
-				<tr valign="top">
-					<th scope="row">
-						<label>Github client secret:</label>
-					</th>
-					<td>
-						<label for="client_secret">
-							<input name='client_secret' id='client_secret'  type="text" size='40' value='<?php echo $default["client_secret"]  ? $default["client_secret"] : "";
-?>'>
-						</label>
-						<p class="description">The git application client secret, created for this plugin.</p>
-						<p class="description">Notice: These two should be valid because they are used to authentificate us on behalf of yourself. </p>
-					</td>
-				</tr>
-<?php	if($default['changed']) 
-			echo "<tr valign='top' class='plugin-update-tr'>"
-			. "<th scope='row'>"
-			. "<label>Generate Token:</label>"
-			. "</th>"
-			. "<td>"
-			. "<a onclick='setTimeout(function(){location.reload(true);}, 60*1000)' target='_blank' style='text-decoration: none; color: red; font-weight: bold;' href='https://github.com/login/oauth/authorize" 
-			. "?client_id=" . $default['client_id']
-			. "&client_secret" . $default['client_secret']
-			. "&scope=repo'>" . "Generate!"
-			. "</a>" 
-			. "</td>"
-			. "</tr>";
-		else if($default['access_token'])
-			echo  "<tr valign='top'>"
-			. "<th scope='row'>"
-			. "<label>GitHub Link Status: </lablel>"
-			. "</th>"
-			. "<td>"
-			. "<span style='color: green'><strong>"
-			. "OK"
-			. "</strong></span>"
-			. "</td>"
-			. "</tr>";
-				?>
-			</tbody>
-		</table>
-		
-		<input name="submit_settings" type="submit" class="button button-primary" value="<?php esc_attr_e('Save changes'); ?>" />
-		<!--input name="submit_test" type="submit" class="button button-primary" value="<?php esc_attr_e('GET'); ?>" /-->
-	</form>
-	<?php } ?>
-	
-	<?php if ( $tab == 'history' ) { ?>
-	<div id="git2wp_history_messages"></div>
-	
-	<form action="options.php" method="post">
-		<?php
-				settings_fields('git2wp_options');
-				do_settings_sections('git2wp_history');
-				$options = get_option('git2wp_options');
-				$resource_list = $options['resource_list'];
-		?>
-		
-		<?php
-			$plugin_render = '';
-			$theme_render = '';
-			if(is_array($resource_list) && !empty($resource_list))
-				foreach($resource_list as $key => $resource) {
-					$type = git2wp_get_repo_type($resource['resource_link']);
-					
-					if($type == 'plugin') 
-						$plugin_render .= "<tr valign='top'>
-													<th scope='row'>
-														<label><strong>{$resource['repo_name']}</strong></label>
-													</th>
-													<td>
-														<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>Expand</center></span>
-															<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
-															</div>
-														</span>
-													</td>
-												</tr>";
-						
-					if($type == 'theme') 
-						$theme_render .= "<tr valign='top'>
-													<th scope='row'>
-														<label><strong>{$resource['repo_name']}</strong></label>
-													</th>
-													<td>
-														<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>Expand</center></span>
-															<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
-															</div>
-														</span>
-													</td>
-												</tr>";
-				}
-		?>
-		<table class="form-table" >
-			<tbody>
-				<tr><th colspan='2'><h2>Plugins</h2><br /></th></tr> 
-				<?php echo $plugin_render; ?>
-			</tbody>
-		</table>
-		<br /><br /><br />
-		<table class="form-table">
-			<tbody>
-				<tr><th colspan='2'><h2>Themes</h2><br /></th></tr> 
-				<?php echo $theme_render; ?>
-			</tbody>
-		</table>
-	</form>
-	<?php } ?>
-	
-</div><!-- .wrap -->
-
-<?php
+	echo '</div><!-- .wrap -->';
 }
+
 //------------------------------------------------------------------------------
 function git2wp_needs_configuration() {
 	$options = get_option('git2wp_options');
