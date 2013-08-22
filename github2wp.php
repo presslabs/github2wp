@@ -16,12 +16,12 @@ require_once('Git2WP.class.php');
 require_once('Git2WpFile.class.php');
 require_once('git2wp_render.php');
 
-///REMOVE ONLY FOR TESTING PURPOSES
- add_filter( 'cron_schedules', 'cron_add_30s' );
- function cron_add_30s( $schedules ) {
-    $schedules['30s'] = array(
-        'interval' => 30,
-        'display' => __( 'Once every 30 seconds' )
+
+ add_filter( 'cron_schedules', 'cron_add_6h' );
+ function cron_add_6h( $schedules ) {
+    $schedules['6h'] = array(
+        'interval' => 21600,
+        'display' => __( 'Once every 6 hours' )
     );
     return $schedules;
  }
@@ -41,13 +41,8 @@ function git2wp_activate() {
                                            ),
                       'default' => array( 'token_alt' => '15f16816a092c034995fcde4924dffe0f9216cb3')
                      ));
-	///REMOVE TESTING ONLY
-	//wp_schedule_event( current_time ( 'timestamp' ), '30s', 'git2wp_token_cron_hook' );
-	//wp_schedule_event( current_time ( 'timestamp' ), '30s', 'git2wp_head_commit_cron_hook' );
 	
-	
-    wp_schedule_event( current_time ( 'timestamp' ), 'twicedaily', 'git2wp_token_cron_hook' );
-	wp_schedule_event( current_time ( 'timestamp' ), 'twicedaily', 'git2wp_head_commit_cron_hook' );
+    wp_schedule_event( current_time ( 'timestamp' ), '6h', 'git2wp_cron_hook' );
 }
 register_activation_hook(__FILE__,'git2wp_activate');
 
@@ -55,8 +50,8 @@ register_activation_hook(__FILE__,'git2wp_activate');
 function git2wp_deactivate() {
 	git2wp_delete_options();
 	delete_transient('git2wp_branches');
-	wp_clear_scheduled_hook( 'git2wp_token_cron_hook' );
-	wp_clear_scheduled_hook( 'git2wp_head_commit_cron_hook' );
+	
+	wp_clear_scheduled_hook( 'git2wp_cron_hook' );
 }
 register_deactivation_hook(__FILE__,'git2wp_deactivate');
 
@@ -117,18 +112,7 @@ function git2wp_head_commit_cron() {
 				$resource['head_commit'] = $head;
 				
 		}
-	$t=git2wp_update_options('git2wp_options', $options);
-	
-	if($t) {
-	    if ( ! defined( 'WP_INSTALLING' ) ) {
-	                $alloptions = wp_load_alloptions();
-	                if ( isset( $alloptions['git2wp_options'] ) ) {
-	                        $alloptions['git2wp_options'] = $options;
-	                        wp_cache_set( 'alloptions', $alloptions, 'options' );
-	                } else
-	                        wp_cache_set( 'git2wp_options', $options, 'options' );
-        }
-	}
+	git2wp_update_options('git2wp_options', $options);
 }
 
 //------------------------------------------------------------------------------
@@ -150,23 +134,12 @@ function git2wp_token_cron() {
 			$default['client_secret'] = null;
 			$default['app_reset'] = 1;
 			
-			$t=git2wp_update_options('git2wp_options', $options);
-	
-	        if($t) {
-	            if ( ! defined( 'WP_INSTALLING' ) ) {
-	                $alloptions = wp_load_alloptions();
-	                if ( isset( $alloptions['git2wp_options'] ) ) {
-	                        $alloptions['git2wp_options'] = $options;
-	                        wp_cache_set( 'alloptions', $alloptions, 'options' );
-	                } else
-	                        wp_cache_set( 'git2wp_options', $options, 'options' );
-                }
-	        }
+			git2wp_update_options('git2wp_options', $options);
 		}	
 	}
 }
-add_action( 'git2wp_head_commit_cron_hook', 'git2wp_head_commit_cron' );
-add_action( 'git2wp_token_cron_hook', 'git2wp_token_cron' );
+add_action( 'git2wp_cron_hook', 'git2wp_head_commit_cron' );
+add_action( 'git2wp_cron_hook', 'git2wp_token_cron' );
 
 
 //------------------------------------------------------------------------------
@@ -501,8 +474,27 @@ add_action('wp_ajax_git2wp_ajax', 'git2wp_ajax_callback');
 function git2wp_update_options($where,$data) {
 	$data_array = array('option_value' => serialize($data) );
 	$where_array = array('option_name' => $where);
+	
 	global $wpdb;
 	$sw = $wpdb->update( $wpdb->prefix . 'options', $data_array, $where_array );
+	
+	$notoptions = wp_cache_get( 'notoptions', 'options' );
+
+	if ( is_array( $notoptions ) && isset( $notoptions[$whre] ) ) {
+			unset( $notoptions[$where] );
+			wp_cache_set( 'notoptions', $notoptions, 'options' );
+	}
+
+	if($sw) {
+	    if ( ! defined( 'WP_INSTALLING' ) ) {
+	                $alloptions = wp_load_alloptions();
+	                if ( isset( $alloptions[$where] ) ) {
+	                        $alloptions[$where] = $data_array['option_value'];
+	                        wp_cache_set( 'alloptions', $alloptions, 'options' );
+	                } else
+	                        wp_cache_set( $where, $data_array['option_value'], 'options' );
+        }
+	}
 	
 	return $sw;
 }
