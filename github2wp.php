@@ -477,15 +477,15 @@ function git2wp_update_options($where,$data) {
 	
 	global $wpdb;
 	$sw = $wpdb->update( $wpdb->prefix . 'options', $data_array, $where_array );
-	
-	$notoptions = wp_cache_get( 'notoptions', 'options' );
-
-	if ( is_array( $notoptions ) && isset( $notoptions[$whre] ) ) {
-			unset( $notoptions[$where] );
-			wp_cache_set( 'notoptions', $notoptions, 'options' );
-	}
 
 	if($sw) {
+	    $notoptions = wp_cache_get( 'notoptions', 'options' );
+
+	    if ( is_array( $notoptions ) && isset( $notoptions[$whre] ) ) {
+		unset( $notoptions[$where] );
+	        wp_cache_set( 'notoptions', $notoptions, 'options' );
+	    }
+	    
 	    if ( ! defined( 'WP_INSTALLING' ) ) {
 	                $alloptions = wp_load_alloptions();
 	                if ( isset( $alloptions[$where] ) ) {
