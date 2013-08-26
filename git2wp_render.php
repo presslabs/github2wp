@@ -7,9 +7,9 @@
 				<thead>
 					<tr>
 						<th scope='col' width="10%;"><b>SHA</b></th>
-						<th scope='col' width="70%;"><b>Message</b></th>
-						<th scope='col' width="10%;"><b>Date</b></th>
-						<th scope='col' width="10%;"><b>Select</b></th>
+						<th scope='col' width="70%;"><b><?php _e('Message', GIT2WP);?></b></th>
+						<th scope='col' width="10%;"><b><?php _e('Date', GIT2WP);?></b></th>
+						<th scope='col' width="10%;"><b><?php _e('Select', GIT2WP);?></b></th>
 					</tr>
 				</thead>
 				<tbody>		
@@ -26,7 +26,7 @@
 									<td width="10%;"><a href="<?php echo $commit['git_url']; ?>" target='_blank'><?php echo substr($commit['sha'], 0, 7); ?></a></td>
 									<td width="70%;"><?php echo ucfirst($commit['message']); ?></td>
 									<td width="10%;"><?php echo $date_time; ?></td>
-									<td width="10%;"><input type='submit' value='Revert' class="downgrade button-secondary" id="downgrade-resource-<?php echo $resource_id."-".$commit['sha']; ?>" /></td>
+									<td width="10%;"><input type='submit' value='<?php _e('Revert', GIT2WP);?>' class="downgrade button-secondary" id="downgrade-resource-<?php echo $resource_id."-".$commit['sha']; ?>" /></td>
 								</tr>
 
 						<?php } ?>
