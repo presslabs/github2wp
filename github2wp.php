@@ -604,8 +604,7 @@ function git2wp_admin_init() {
 
 	if ( git2wp_needs_configuration() )
 		add_action('admin_notices', create_function( '', "echo '<div class=\"error\"><p>"
-			.sprintf(__('Git2WP needs configuration information on its <a href="%s">'.__('Settings').'</a> page.', $plugin_page), 
-  					 $plugin_link)."</p></div>';" ) );
+			.sprintf(__('Git2WP needs configuration information on its <a href="%s">Settings</a> page.', GIT2WP), $plugin_link)."</p></div>';" ));
 }
 add_action('admin_init', 'git2wp_admin_init');
 
@@ -626,7 +625,7 @@ function git2wp_resource_display_section_description() {
 
 //------------------------------------------------------------------------------
 function git2wp_main_section_description() {
-	echo '<p>'.__('Enter here the required data to set up a new Git endpoint.').'</p>';
+	echo '<p>'.__('Enter here the required data to set up a new Git endpoint.', GIT2WP).'</p>';
 }
 
 //------------------------------------------------------------------------------
@@ -836,7 +835,7 @@ function git2wp_setting_resources_list() {
 <br />
 <table id="the-list" class="wp-list-table widefat plugins" cellpadding='5' border='1' cellspacing='0' >
 	<thead>
-		<tr><th></th><th><?php _e('Resource', GIT2WP);?></th><th><?php _e('Options');?></th></tr>
+		<tr><th></th><th><?php _e('Resource', GIT2WP);?></th><th><?php _e('Options', GIT2WP);?></th></tr>
 	</thead>
 	<tbody>
 <?php 
@@ -1216,7 +1215,7 @@ function git2wp_init() {
 	if ( isset( $_GET['zipball'] ) )
 		git2wp_install_from_wp_hash($_GET['zipball']);
 		
-	load_plugin_textdomain('github2wp', false, basename(__FILE__));
+	load_plugin_textdomain(basename(__FILE__, '.php'), false, basename(dirname(__FILE__)));
 }
 add_action('init', 'git2wp_init');
 

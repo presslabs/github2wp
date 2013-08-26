@@ -82,7 +82,7 @@
 			$github_resource_url = git2wp_return_resource_url($resource['username'], $resource['repo_name']);
 		
 			return '<p><input name="submit_delete_resource_'.$index
-					.'" type="submit" class="button button-red btn-medium" value="'.esc_attr('Dismiss')
+					.'" type="submit" class="button button-red btn-medium" value="'.__('Dismiss', GIT2WP)
 					.'" onclick="return confirm(\''.__('Do you really want to disconect from Github:', GIT2WP)
 					.$github_resource_url . '?\');"/></p>';
 		}else
@@ -93,13 +93,13 @@
 	function git2wp_return_resource_install($resource, $index) {
 		return '<p><input name="submit_install_resource_'.$index
 						.'" type="submit" class="button button-primary btn-medium" value="'
-						.esc_attr(__('Install')) . '" /></p>';
+						.__('Install') . '" /></p>';
 	}
 	
 	function git2wp_return_resource_update($resource, $index) {
 		return  '<p><input name="submit_update_resource_'.$index
 							.'" type="submit" class="button btn-medium" value="'
-							.esc_attr(__('Update')) . '" /></p>';
+							.__('Update') . '" /></p>';
 	}
 	
 	function git2wp_render_plugin_icon() {
@@ -143,7 +143,7 @@
 								<option value='themes'><?php _e('Theme', GIT2WP);?></option>
 							</select>
 						</label>
-						<p class="description"><?php _e('Is it a <strong>plugin</strong> or a <strong>theme</strong>?</p>');?>
+						<p class="description"><?php _e('Is it a <strong>plugin</strong> or a <strong>theme</strong>?</p>', GIT2WP);?>
 					</td>
 				</tr>
 				<tr valign="top">
@@ -175,7 +175,7 @@
 				</tr>
 			</tbody>
 		</table>
-		<input name="submit_resource" <?php echo $disable_resource_fields; ?>type="submit" class="button button-primary" value="<?php esc_attr_e(__('Add Resource', GIT2WP)); ?>" />
+		<input name="submit_resource" <?php echo $disable_resource_fields; ?>type="submit" class="button button-primary" value="<?php _e('Add Resource', GIT2WP); ?>" />
 		
 		<br /><br /><br />
 		<?php 
@@ -188,14 +188,13 @@
 	
 	function git2wp_render_settings_helper() {
 		?>
-		<a class="button-primary clicker" alt="#" >Need help?</a>		
+		<a class="button-primary clicker" alt="#" ><?php _e('Need help?', GIT2WP);?></a>		
 		<div class="slider home-border-center" id="#">
 				<table class="form-table">
 					<tbody>
 						<tr valign="top">
 							<th scope="row">
-								<label><?php _e('Follow this link and <br />
-											 fill as shown here:', GIT2WP);?></label>
+								<label><?php _e('Follow this link and <br />fill as shown here:', GIT2WP);?></label>
 							</th>
 							<td>
 								<label><a href="https://github.com/settings/applications/new" target="_blank"><?php _e('Create a new git application', GIT2WP);?></a></label>
@@ -206,8 +205,7 @@
 						</tr>
 						<tr valign="top">
 							<th scope="row">
-								<label><?php _e('Go here and select the <br />
-											 newly created application', GIT2WP);?></label>
+								<label><?php _e('Go here and select the <br />newly created application', GIT2WP);?></label>
 							</th>
 							<td>
 								<label><a href="https://github.com/settings/applications" target="_blank"><?php _e('Application list', GIT2WP);?></a></label>
@@ -242,7 +240,7 @@
 				<tbody>
 					<tr valign="top">
 						<th scope="row">
-							<label><?php _e('Github master branch override:');?></label>
+							<label><?php _e('Github master branch override:', GIT2WP);?></label>
 						</th>
 						<td>
 							<label for="master_branch">
@@ -264,7 +262,7 @@
 					</tr>
 					<tr valign="top">
 						<th scope="row">
-							<label><?php _e('Github client secret:');?></label>
+							<label><?php _e('Github client secret:', GIT2WP);?></label>
 						</th>
 						<td>
 							<label for="client_secret">
@@ -277,7 +275,7 @@
 					<?php if($default['changed']): ?>
 						<tr valign='top' class='plugin-update-tr'>
 							<th scope='row'>
-								<label>Generate Token:</label>
+								<label><?php _e('Generate Token:', GIT2WP);?></label>
 							</th>
 							<td>
 								<a onclick='setTimeout(function(){location.reload(true);}, 60*1000)' target='_blank' style='text-decoration: none; color: red; font-weight: bold;'
@@ -302,7 +300,7 @@
 				</tbody>
 			</table>
 			
-			<input name="submit_settings" type="submit" class="button button-primary" value="<?php esc_attr_e(__('Save changes')); ?>" />
+			<input name="submit_settings" type="submit" class="button button-primary" value="<?php _e('Save changes', GIT2WP); ?>" />
 	</form>
 		<?php
 	}
