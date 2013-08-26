@@ -11,6 +11,7 @@
 define('GIT2WP_MAX_COMMIT_HIST_COUNT', 100);
 define('GIT2WP_ZIPBALL_DIR_PATH', ABSPATH . 'wp-content/uploads/' . basename(dirname(__FILE__)) . '/' );
 define('GIT2WP_ZIPBALL_URL', home_url() . '/wp-content/uploads/' . basename(dirname(__FILE__)) );
+define('GIT2WP', 'github2wp');
 
 require_once('Git2WP.class.php');
 require_once('Git2WpFile.class.php');
@@ -145,7 +146,7 @@ add_action( 'git2wp_cron_hook', 'git2wp_token_cron' );
 //------------------------------------------------------------------------------
 // Dashboard integration
 function git2wp_menu() {
-	add_management_page('Git to WordPress Options Page', 'GitHub2WP', 
+	add_management_page(__('Git to WordPress Options Page', GIT2WP), 'GitHub2WP', 
 					   'manage_options', __FILE__, 'git2wp_options_page');
 }
 add_action('admin_menu', 'git2wp_menu');
@@ -261,7 +262,7 @@ function git2wp_inject_info($result, $action = null, $args = null) {
 				$homepage = git2wp_get_plugin_header($plugin_file, "AuthorURI");
 				$zipball = home_url() . '/?zipball=' . wp_hash($resource['repo_name']);
 
-				$changelog = 'No changelog found';
+				$changelog = __('No changelog found', GIT2WP);
 
 				$sections = array(
 					"description" => git2wp_get_plugin_header($response_index, "Description"),
@@ -288,7 +289,7 @@ function git2wp_inject_info($result, $action = null, $args = null) {
 					"author_homepage" => git2wp_get_plugin_header($response_index, "AuthorURI"),
 					"requires" => null,
 					"tested" => null,
-					"upgrade_notice" => "Here's why you should upgrade...",
+					"upgrade_notice" => __("Here's why you should upgrade...", GIT2WP),
 					"rating" => null,
 					"num_ratings" => null,
 					"downloaded" => null,
@@ -385,7 +386,7 @@ function git2wp_ajax_callback() {
 			}
 			
 			if(!$branch_set)
-				$response['error_messages'] = 'Branch not set';  
+				$response['error_messages'] = __('Branch not set', GIT2WP);  
 		
 			header("Content-type: application/json");
 			echo json_encode($response);
@@ -437,9 +438,10 @@ function git2wp_ajax_callback() {
 				if ( file_exists($zipball_path) ) unlink($zipball_path);
 				
 				$response['success'] = true;
-				$response['success_message'] = "The resource <b>{$resource['repo_name']}<b> has been updated to $version .";
+				$response['success_message'] = sprintf(__("The resource <b>%s<b> has been updated to %s .", GIT2WP),
+				                                        $resource['repo_name'], $version);
 			}else
-				$response['error_message'] = "The resource <b>{$resource['repo_name']}<b> has FAILED to updated to $version .";
+				$response['error_message'] = sprintf(__("The resource <b>%s<b> has FAILED to updated to %s .", GIT2WP), $resource['repo_name'], $version);
 			
 			header("Content-type: application/json");
 			echo json_encode($response);
@@ -577,19 +579,19 @@ function git2wp_admin_init() {
 	//
 	// Resources tab
 	//
-	add_settings_section('git2wp_main_section', 'Git to WordPress - Resources',
+	add_settings_section('git2wp_main_section', __('Git to WordPress - Resources', GIT2WP),
 						 'git2wp_main_section_description', 'git2wp');
-	add_settings_section('git2wp_resource_display_section', 'Your current Git resources', 
+	add_settings_section('git2wp_resource_display_section', __('Your current Git resources', GIT2WP), 
 						 'git2wp_resource_display_section_description', 'git2wp_list');
 	//
 	// Settings tab
 	//
-	add_settings_section('git2wp_second_section', 'Git to WordPress - Settings', 
+	add_settings_section('git2wp_second_section', __('Git to WordPress - Settings', GIT2WP), 
 						 'git2wp_second_section_description', 'git2wp_settings');
 	//
 	// History tab
 	//
-	add_settings_section('git2wp_main_history_section', 'Git to WordPress - History', 
+	add_settings_section('git2wp_main_history_section', __('Git to WordPress - History', GIT2WP), 
 						 'git2wp_main_history_section_description', 'git2wp_history');
 	//
 	// Add Settings notice
@@ -609,22 +611,22 @@ add_action('admin_init', 'git2wp_admin_init');
 
 //------------------------------------------------------------------------------
 function git2wp_second_section_description() {
-	echo '<p>Enter here the default settings for the Github connexion.</p>';
+	echo '<p>'.__('Enter here the default settings for the Github connexion.', GIT2WP).'</p>';
 }
 
 //------------------------------------------------------------------------------
 function git2wp_main_history_section_description() {
-	echo '<p>You can revert to an older version of a resource at any time.</p>';
+	echo '<p>'.__('You can revert to an older version of a resource at any time.', GIT2WP).'</p>';
 }
 
 //------------------------------------------------------------------------------
 function git2wp_resource_display_section_description() {
-	echo '<p>Here you can manage your Github resources.</p>';
+	echo '<p>'.__('Here you can manage your Github resources.', GIT2WP).'</p>';
 }
 
 //------------------------------------------------------------------------------
 function git2wp_main_section_description() {
-	echo '<p>Enter here the required data to set up a new Git endpoint.</p>';
+	echo '<p>'.__('Enter here the required data to set up a new Git endpoint.').'</p>';
 }
 
 //------------------------------------------------------------------------------
@@ -834,7 +836,7 @@ function git2wp_setting_resources_list() {
 <br />
 <table id="the-list" class="wp-list-table widefat plugins" cellpadding='5' border='1' cellspacing='0' >
 	<thead>
-		<tr><th></th><th>Resource</th><th>Options</th></tr>
+		<tr><th></th><th><?php _e('Resource', GIT2WP);?></th><th><?php _e('Options');?></th></tr>
 	</thead>
 	<tbody>
 <?php 
@@ -880,7 +882,7 @@ function git2wp_setting_resources_list() {
 				$action = git2wp_return_resource_dismiss($resource, $k-1); // CHANGE HERE AFTER UPDATE INSTALL DELETE USES INDEX
 				
 				if ( ! $dir_exists ) {
-					$my_data .= "<p><strong>The resource does not exist on your site!</strong></p>";
+					$my_data .= "<p><strong>".__('The resource does not exist on your site!', GIT2WP)."</strong></p>";
 					$action .= git2wp_return_resource_install($resource, $k-1); // CHANGE HERE AFTER UPDATE INSTALL DELETE USES INDEX
 				}
 				
@@ -894,7 +896,7 @@ function git2wp_setting_resources_list() {
 						$my_data .= "<strong>" . git2wp_get_plugin_header($plugin_file, "Name") . "</strong>&nbsp;(";
 					
 						if($resource['is_on_wp_svn'])
-							$my_data .= "<div class='notification-warning' title='Wordpress has a resource with the same name.\nWe will override its update notifications! ' ></div>";
+							$my_data .= "<div class='notification-warning' title='".__('Wordpress has a resource with the same name.\nWe will override its update notifications!', GIT2WP)."' ></div>";
 							
 						$author = git2wp_get_plugin_header($plugin_file, "Author");
 						$author_uri = git2wp_get_plugin_header($plugin_file, "AuthorURI");
@@ -903,9 +905,9 @@ function git2wp_setting_resources_list() {
 						if ( $author_uri != '-' && $author_uri != '' )
 							$author = '<a href="' . $author_uri . '" target="_blank">' . $author . '</a>';
 						
-						$my_data .= "Version " . $current_plugin_version . "&nbsp;|&nbsp;";
-						$my_data .= "By " . $author . ")&nbsp;";
-						$my_data .= '<a id="need_help_'.$k.'" class="clicker" alt="res_details_'.$k.'"><strong>Details</strong></a><br />';
+						$my_data .= __("Version ", GIT2WP) . $current_plugin_version . "&nbsp;|&nbsp;";
+						$my_data .= __("By ", GIT2WP) . $author . ")&nbsp;";
+						$my_data .= '<a id="need_help_'.$k.'" class="clicker" alt="res_details_'.$k.'"><strong>'.__('Details', GIT2WP).'</strong></a><br />';
 						$my_data .= "<div id='res_details_".$k."' class='slider home-border-center'>";
 	
 						if ( ($plugin_description != '') && ($plugin_description != '-') )
@@ -915,7 +917,7 @@ function git2wp_setting_resources_list() {
 					}
 					
 					if ( ($new_version != $current_plugin_version) && ('-' != $current_plugin_version) && ('' != $current_plugin_version)  && ($new_version != false) ) {
-						$my_data .= "<strong>New Version: </strong>" . $new_version . "<br /></div>";
+						$my_data .= "<strong>".__('New Version:', GIT2WP). "</strong>" . $new_version . "<br /></div>";
 						$action .= git2wp_return_resource_update($resource, $k-1); // CHANGE HERE AFTER UPDATE INSTALL DELETE USES INDEX
 					}
 				}
@@ -930,7 +932,7 @@ function git2wp_setting_resources_list() {
 							$my_data .= "<strong>" . git2wp_get_theme_header($theme_dirname, "Name") . "</strong>&nbsp;(";
 							
 							if($resource['is_on_wp_svn'])
-								$my_data .= "<div class='notification-warning' title='Wordpress has a resource with the same name.\nWe will override its update notifications! ' ></div>";
+								$my_data .= "<div class='notification-warning' title='".__('Wordpress has a resource with the same name.\nWe will override its update notifications!', GIT2WP)."'></div>";
 							
 							$author = git2wp_get_theme_header($theme_file, "Author");
 							$author_uri = git2wp_get_theme_header($theme_file, "AuthorURI");
@@ -939,9 +941,9 @@ function git2wp_setting_resources_list() {
 							if ( $author_uri != '-' && $author_uri != '' )
 								$author = '<a href="' . $author_uri . '" target="_blank">' . $author . '</a>';
 														
-							$my_data .= "Version " . $current_theme_version . "&nbsp;|&nbsp;";
-							$my_data .= "By " . $author . ")&nbsp;";
-							$my_data .= '<a id="need_help_'.$k.'" class="clicker" alt="res_details_'.$k.'"><strong>Details</strong></a><br />';
+							$my_data .= __("Version ", GIT2WP) . $current_theme_version . "&nbsp;|&nbsp;";
+							$my_data .= __("By ", GIT2WP) . $author . ")&nbsp;";
+							$my_data .= '<a id="need_help_'.$k.'" class="clicker" alt="res_details_'.$k.'"><strong>'.__('Details', GIT2WP).'</strong></a><br />';
 							$my_data .= "<div id='res_details_".$k."' class='slider home-border-center'>";
 							
 							if ( ($theme_description != '') && ($theme_description != '-') )
@@ -951,7 +953,7 @@ function git2wp_setting_resources_list() {
 						}
 						
 						if ( ($new_version != $current_theme_version) && ($new_version != false) && ($current_theme_version != '-') && ($current_theme_version != '') ) {
-							$my_data .= "<strong>New Version: </strong>" . $new_version . "<br /></div>";
+							$my_data .= "<strong>".__('New Version:', GIT2WP)." </strong>" . $new_version . "<br /></div>";
 							$action .= git2wp_return_resource_update($resource, $k-1); // CHANGE HERE AFTER UPDATE INSTALL DELETE USES INDEX
 						}
 					}
@@ -1043,20 +1045,20 @@ function git2wp_options_validate($input) {
 												'head_commit' => $head
 											);
 						
-						add_settings_error( 'git2wp_settings_errors', 'repo_connected', "Connection was established.", "updated" );
+						add_settings_error( 'git2wp_settings_errors', 'repo_connected', __("Connection was established.", GIT2WP), "updated" );
 						delete_transient('git2wp_branches');
 					}else
 						return $initial_options;	
 				} else {
 					add_settings_error( 'git2wp_settings_errors', 'duplicate_endpoint', 
-									   "Duplicate resources! Repositories can't be both themes and plugins ", 
+									   __("Duplicate resources! Repositories can't be both themes and plugins ", GIT2WP), 
 									   "error" );
 					return $initial_options;
 				}
 			}
 			else {
 				add_settings_error( 'git2wp_settings_errors', 'not_git_link', 
-								   "This isn't a git link! eg: https://github.com/dragospl/pressignio.git", 
+								   __("This isn't a git link! eg: https://github.com/dragospl/pressignio.git", GIT2WP), 
 								   "error" );
 				return $initial_options;
 			}
@@ -1213,6 +1215,8 @@ function git2wp_init() {
 
 	if ( isset( $_GET['zipball'] ) )
 		git2wp_install_from_wp_hash($_GET['zipball']);
+		
+	load_plugin_textdomain('github2wp', false, basename(__FILE__));
 }
 add_action('init', 'git2wp_init');
 

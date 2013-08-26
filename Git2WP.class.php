@@ -80,7 +80,7 @@ class Git2WP {
 			$error_message = $response->get_error_message();
 			add_settings_error( 'git2wp_settings_errors', 
 						'repo_archive_error', 
-						"An error has occured: $error_message", 
+						__("An error has occured:", GIT2WP).$error_message, 
 						'error' );
 
 			return false;
@@ -90,19 +90,14 @@ class Git2WP {
 
 		if($code == 200) {
 			$bit_count = file_put_contents($upload_dir_zip, wp_remote_retrieve_body( $response ));
-			
-			error_log("200");
-				
+
 			if($bit_count) {
 				$zip = new ZipArchive;
 				$res = $zip->open($upload_dir_zip);
-				
-				error_log("bitcount ok");
-					
+
 				$folder_name = $this->config['user']."-".$this->config['repo']."-" ;
 
 				if ($res === TRUE) {
-					error_log("res opened OK");
 					for($i = 0; $i < $zip->numFiles; $i++) {   
 						$name = $zip->getNameIndex($i);
 
@@ -123,24 +118,17 @@ class Git2WP {
 					
 					if($created) {
 						$error_free = true;
-						error_log("created new zip pointer");
 						if(file_exists($upload_dir.$this->config['repo']."/.gitmodules")) {
-							error_log("submodules detected");
 							$submodules = Git2WP::parse_git_submodule_file($upload_dir.$this->config['repo']."/.gitmodules");
-							error_log("parsed module file" . print_r($submodules, true));
-							
+
 							if(is_array($submodules) && !empty($submodules))
 								foreach($submodules as $module) {
-									error_log("Entered for each loop");
 									if(!$error_free) {
-										error_log("foreach exit by force error");
 										break;
 									}
 									
 									$data = Git2WP::get_data_from_git_clone_link($module['url']) ;
-									error_log("data from link ". print_r($data, true));
 									if($data) {
-										error_log("submodule data received" . print_r($data,true));
 										$sub_repo = $data['repo'];
 										$sub_user = $data['user'];
 										
@@ -148,25 +136,22 @@ class Git2WP {
 										$sub_commit = $this->get_submodule_active_commit($sub_user, $module['path'], $this->config['source']); 
 										
 										if(!$sub_commit) {
-											error_log("no commit found for submodule");
 											$error_free = false;
 											add_settings_error( 'git2wp_settings_errors', 
 																			'repo_archive_submodule_error', 
-																			"At least one of the submodules included in the resource failed to be retrieved! No permissions or repo does not exist. ", 
+																			__("At least one of the submodules included in the resource failed to be retrieved! No permissions or repo does not exist. ", GIT2WP), 
 																			'error' );
 										}
 										else {
-											error_log("commit found");
 											$sub_url = $this->config['git_api_base_url'].sprintf("repos/%s/%s/zipball/%s?access_token=%s", $sub_user, $sub_repo, $sub_commit, $this->config['access_token']);
 											$sw = Git2WP::get_submodule_data($sub_url, $upload_dir.$this->config['repo']."/".$module['path'], $module['path']);
 											
 											if(!$sw) {
-												error_log("no data");
 												$error_free = false;
 												
 												add_settings_error( 'git2wp_settings_errors', 
 																				'repo_archive_submodule_error', 
-																				"At least one of the submodules included in the resource failed to be retrieved! No data retrieved. ", 
+																				__("At least one of the submodules included in the resource failed to be retrieved! No data retrieved. ", GIT2WP), 
 																				'error' );
 											}
 										}
@@ -176,43 +161,37 @@ class Git2WP {
 						}
 					
 						if($error_free) {
-							error_log("added to new archive");
 							$this->addDirectoryToZip($zip, $upload_dir.$this->config['repo'], strlen($upload_dir), substr(strrchr($upload_dir.$name, '-'), 1, 7) );
 						
 						}
 						$zip->close();
 					}
 					git2wp_rmdir($upload_dir.$this->config['repo']);
-					error_log("removed" . serialize($upload_dir.$this->config['repo']));
 				}
 				
 				if($error_free)  {
-						error_log("returned zip link all ok $upload_url_zip");
 						return $upload_url_zip;
 				}else {
-					error_log("cleaned zip dir error 1");
 					if(file_exists($upload_dir_zip))
 						unlink($upload_dir_zip);
 							
 					return false;
 				}
 			} else {
-				error_log("cleaned zip dir error 2");
 				if(file_exists($upload_dir_zip))
 						unlink($upload_dir_zip);
 						
 				add_settings_error( 'git2wp_settings_errors', 
 												'repo_archive_error', 
-												"Empty archive. ", 
+												__("Empty archive. ", GIT2WP), 
 												'error' );
 				return false;
 			}
 		}else {
-			error_log("remote error");
 			$error_message = wp_remote_retrieve_response_message($response);
 			add_settings_error( 'git2wp_settings_errors', 
 						'repo_archive_error', 
-						"An error has occured: $code - $error_message", 
+						__("An error has occured:", GIT2WP). $code ."-". $error_message, 
 						'error' );
 
 			return false;
@@ -243,7 +222,7 @@ class Git2WP {
 			$error_message = $response->get_error_message();
 			add_settings_error( 'git2wp_settings_errors', 
 						'repo_archive_error', 
-						"An error has occured: $error_message", 
+						__("An error has occured:", GIT2WP). $error_message, 
 						'error' );
 
 			return false;
@@ -256,7 +235,7 @@ class Git2WP {
 		if($result['message'] == 'Not Found'){
 			add_settings_error( 'git2wp_settings_errors', 
 							'repo_no_perm', 
-							'You have insufficient permissions or repo does not exist!', 
+							__('You have insufficient permissions or repo does not exist!', GIT2WP), 
 							'error' );
 
 			return false;
@@ -288,7 +267,7 @@ class Git2WP {
 			$error_message = $response->get_error_message();
 			add_settings_error( 'git2wp_settings_errors', 
 						'repo_archive_error', 
-						"An error has occured: $error_message", 
+						__("An error has occured:", GIT2WP). $error_message, 
 						'error' );
 
 			return null;
@@ -313,7 +292,7 @@ class Git2WP {
 			$error_message = $response->get_error_message();
 			add_settings_error( 'git2wp_settings_errors', 
 						'repo_archive_error', 
-						"An error has occured: $error_message", 
+						__("An error has occured:", GIT2WP). $error_message, 
 						'error' );
 
 			return null;
