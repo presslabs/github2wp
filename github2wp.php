@@ -11,7 +11,7 @@
 define('GIT2WP_MAX_COMMIT_HIST_COUNT', 100);
 define('GIT2WP_ZIPBALL_DIR_PATH', ABSPATH . 'wp-content/uploads/' . basename(dirname(__FILE__)) . '/' );
 define('GIT2WP_ZIPBALL_URL', home_url() . '/wp-content/uploads/' . basename(dirname(__FILE__)) );
-define('GIT2WP', 'github2wp');
+define('GIT2WP', basename(__FILE__, '.php'));
 
 require_once('Git2WP.class.php');
 require_once('Git2WpFile.class.php');
@@ -1215,9 +1215,16 @@ function git2wp_init() {
 	if ( isset( $_GET['zipball'] ) )
 		git2wp_install_from_wp_hash($_GET['zipball']);
 		
-	load_plugin_textdomain(basename(__FILE__, '.php'), false, basename(dirname(__FILE__)));
+	
 }
 add_action('init', 'git2wp_init');
+
+
+function git2wp_language_init() {
+	load_plugin_textdomain( GIT2WP, false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' ); 
+}
+add_action('plugins_loaded', 'git2wp_language_init');
+
 
 function git2wp_install_from_wp_hash($hash) {
 	$options = get_option("git2wp_options");

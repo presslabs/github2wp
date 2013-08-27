@@ -24,7 +24,7 @@
 						
 								<tr class="<?php echo ($k % 2) ? 's-inactive' : '';?>">
 									<td width="10%;"><a href="<?php echo $commit['git_url']; ?>" target='_blank'><?php echo substr($commit['sha'], 0, 7); ?></a></td>
-									<td width="70%;"><?php echo ucfirst($commit['message']); ?></td>
+									<td width="70%;"><?php echo ucfirst( nl2br($commit['message']) ) ; ?></td>
 									<td width="10%;"><?php echo $date_time; ?></td>
 									<td width="10%;"><input type='submit' value='<?php _e('Revert', GIT2WP);?>' class="downgrade button-secondary" id="downgrade-resource-<?php echo $resource_id."-".$commit['sha']; ?>" /></td>
 								</tr>
