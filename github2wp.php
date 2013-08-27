@@ -800,8 +800,7 @@ function git2wp_installTheme($file) {
 	$result = $upgrader->install( $file );
 	require_once(ABSPATH . 'wp-admin/admin-footer.php');
 	
-	if ( $result )
-		git2wp_cleanup($file);
+	git2wp_cleanup($file);
 }
 
 //------------------------------------------------------------------------------
@@ -814,8 +813,7 @@ function git2wp_installPlugin($file) {
 	$result = $upgrader->install( $file );
 	require_once(ABSPATH . 'wp-admin/admin-footer.php');
 	
-	if ( $result ) 
-		git2wp_cleanup($file);
+	git2wp_cleanup($file);
 } 
 
 //------------------------------------------------------------------------------
