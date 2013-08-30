@@ -566,7 +566,7 @@ function github2wp_admin_init() {
 	// Resources tab
 	//
 	add_settings_section('github2wp_main_section', __('GitHub to WordPress - Resources', GITHUB2WP),
-						 'github2wp_main_section_description', 'git2wp');
+						 'github2wp_main_section_description', 'github2wp');
 	add_settings_section('github2wp_resource_display_section', __('Your current GitHub resources', GITHUB2WP), 
 						 'github2wp_resource_display_section_description', 'github2wp_list');
 	//
