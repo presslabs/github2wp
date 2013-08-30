@@ -34,7 +34,7 @@ j(document).ready(function($) {
     	j.ajax(ajaxurl,{
     		type: 'post',
 			async: true,
-  			data: {action: 'git2wp_ajax', 'id': id, 'branch': branch, 'git2wp_action': 'set_branch'},
+  			data: {action: 'github2wp_ajax', 'id': id, 'branch': branch, 'github2wp_action': 'set_branch'},
   			
   			success: function(response){
   							 	if(response['success']) {
@@ -75,7 +75,7 @@ j(document).ready(function($) {
 			j.ajax(ajaxurl,{
 					type: 'post',
 					async: true,
-					data: {action: 'git2wp_ajax', 'res_id': res_id, 'git2wp_action': 'fetch_history'},
+					data: {action: 'github2wp_ajax', 'res_id': res_id, 'github2wp_action': 'fetch_history'},
 					success: function(response){
 													if (response) {
 														container.empty();
@@ -94,7 +94,7 @@ j(document).ready(function($) {
 																			j.ajax(ajaxurl,{
 																				type: 'post',
 																				async: true,
-																				data: {action: 'git2wp_ajax', 'res_id': res_id, 'commit_id': commit_id, 'git2wp_action': 'downgrade'},
+																				data: {action: 'github2wp_ajax', 'res_id': res_id, 'commit_id': commit_id, 'github2wp_action': 'downgrade'},
 																				dataFilter: function (rawresponse, type) {
 																													if (type == "json") {
 																														var res = rawresponse.split("</html>")[1];
@@ -108,17 +108,17 @@ j(document).ready(function($) {
 																				success: function(response){
 																																if (response['success']) {
 																																	self.removeAttr("disabled");
-																																	var elem = j("<div style='color: green;' class='updated' >" + response['success_message']+ "</div>").appendTo("#git2wp_history_messages");
+																																	var elem = j("<div style='color: green;' class='updated' >" + response['success_message']+ "</div>").appendTo("#github2wp_history_messages");
 																																	setTimeout(function() { elem.fadeOut(1000, function() { elem.remove(); });
 																																									}, 2500); 		
 																																}else {
-																																	var elem = j("<div style='color: red;' class='updated'>" + response['error_message']+ "</div>").appendTo("#git2wp_history_messages");
+																																	var elem = j("<div style='color: red;' class='updated'>" + response['error_message']+ "</div>").appendTo("#github2wp_history_messages");
 																																	setTimeout(function() { elem.fadeOut(1000, function() { elem.remove(); });
 																																									}, 2500); 		
 																																}
 																															},
 																				error: function(data, error) {
-																													var elem = j("<div style='color: red;' class='updated'> Ajax response error: " + error + "</div>").appendTo("#git2wp_history_messages");
+																													var elem = j("<div style='color: red;' class='updated'> Ajax response error: " + error + "</div>").appendTo("#github2wp_history_messages");
 																																	setTimeout(function() { elem.fadeOut(1000, function() { elem.remove(); });
 																																									}, 2500); 	
 																												},

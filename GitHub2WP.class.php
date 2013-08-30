@@ -1,18 +1,18 @@
 <?php
-if ( !class_exists('Git2WP') ):
-	if( !defined('GIT2WP_ZIPBALL_URL') )
-		define('GIT2WP_ZIPBALL_URL', home_url() . '/wp-content/uploads/' . basename(dirname(__FILE__)) );
-	if( !defined('GIT2WP_ZIPBALL_DIR_PATH') )
-		define('GIT2WP_ZIPBALL_DIR_PATH', ABSPATH . '/wp-content/uploads/' . basename(dirname(__FILE__)) . '/' );
-	if( !defined('GIT2WP_MAX_COMMIT_HIST_COUNT'))
-		define('GIT2WP_MAX_COMMIT_HIST_COUNT', 100);
+if ( !class_exists('GitHub2WP') ):
+	if( !defined('GITHUB2WP_ZIPBALL_URL') )
+		define('GITHUB2WP_ZIPBALL_URL', home_url() . '/wp-content/uploads/' . basename(dirname(__FILE__)) );
+	if( !defined('GITHUB2WP_ZIPBALL_DIR_PATH') )
+		define('GITHUB2WP_ZIPBALL_DIR_PATH', ABSPATH . '/wp-content/uploads/' . basename(dirname(__FILE__)) . '/' );
+	if( !defined('GITHUB2WP_MAX_COMMIT_HIST_COUNT'))
+		define('GITHUB2WP_MAX_COMMIT_HIST_COUNT', 100);
 		
 
 //------------------------------------------------------------------------------
 /*
 DONT FORGET TO SAVE THE INSTANCE OF THIS CLASS IN THE DATABASE
 */
-class Git2WP {
+class GitHub2WP {
 	
 	public $config = array(
 		"user" => "",
@@ -54,8 +54,8 @@ class Git2WP {
 	public function store_git_archive() {
 		$url = $this->config['zip_url'];
 		
-		$upload_dir = GIT2WP_ZIPBALL_DIR_PATH;
-		$upload_url = GIT2WP_ZIPBALL_URL;
+		$upload_dir = GITHUB2WP_ZIPBALL_DIR_PATH;
+		$upload_url = GITHUB2WP_ZIPBALL_URL;
 
 		if (! is_dir($upload_dir)) 
 		   mkdir( $upload_dir, 0777, true );
@@ -78,9 +78,9 @@ class Git2WP {
 
 		if( is_wp_error( $response ) ) {
 			$error_message = $response->get_error_message();
-			add_settings_error( 'git2wp_settings_errors', 
+			add_settings_error( 'github2wp_settings_errors', 
 						'repo_archive_error', 
-						__("An error has occured:", GIT2WP).$error_message, 
+						__("An error has occured:", GITHUB2WP).$error_message, 
 						'error' );
 
 			return false;
@@ -119,7 +119,7 @@ class Git2WP {
 					if($created) {
 						$error_free = true;
 						if(file_exists($upload_dir.$this->config['repo']."/.gitmodules")) {
-							$submodules = Git2WP::parse_git_submodule_file($upload_dir.$this->config['repo']."/.gitmodules");
+							$submodules = GitHub2WP::parse_git_submodule_file($upload_dir.$this->config['repo']."/.gitmodules");
 
 							if(is_array($submodules) && !empty($submodules))
 								foreach($submodules as $module) {
@@ -127,7 +127,7 @@ class Git2WP {
 										break;
 									}
 									
-									$data = Git2WP::get_data_from_git_clone_link($module['url']) ;
+									$data = GitHub2WP::get_data_from_git_clone_link($module['url']) ;
 									if($data) {
 										$sub_repo = $data['repo'];
 										$sub_user = $data['user'];
@@ -137,21 +137,21 @@ class Git2WP {
 										
 										if(!$sub_commit) {
 											$error_free = false;
-											add_settings_error( 'git2wp_settings_errors', 
+											add_settings_error( 'github2wp_settings_errors', 
 																			'repo_archive_submodule_error', 
-																			__("At least one of the submodules included in the resource failed to be retrieved! No permissions or repo does not exist. ", GIT2WP), 
+																			__("At least one of the submodules included in the resource failed to be retrieved! No permissions or repo does not exist. ", GITHUB2WP), 
 																			'error' );
 										}
 										else {
 											$sub_url = $this->config['git_api_base_url'].sprintf("repos/%s/%s/zipball/%s?access_token=%s", $sub_user, $sub_repo, $sub_commit, $this->config['access_token']);
-											$sw = Git2WP::get_submodule_data($sub_url, $upload_dir.$this->config['repo']."/".$module['path'], $module['path']);
+											$sw = GitHub2WP::get_submodule_data($sub_url, $upload_dir.$this->config['repo']."/".$module['path'], $module['path']);
 											
 											if(!$sw) {
 												$error_free = false;
 												
-												add_settings_error( 'git2wp_settings_errors', 
+												add_settings_error( 'github2wp_settings_errors', 
 																				'repo_archive_submodule_error', 
-																				__("At least one of the submodules included in the resource failed to be retrieved! No data retrieved. ", GIT2WP), 
+																				__("At least one of the submodules included in the resource failed to be retrieved! No data retrieved. ", GITHUB2WP), 
 																				'error' );
 											}
 										}
@@ -166,7 +166,7 @@ class Git2WP {
 						}
 						$zip->close();
 					}
-					git2wp_rmdir($upload_dir.$this->config['repo']);
+					github2wp_rmdir($upload_dir.$this->config['repo']);
 				}
 				
 				if($error_free)  {
@@ -181,17 +181,17 @@ class Git2WP {
 				if(file_exists($upload_dir_zip))
 						unlink($upload_dir_zip);
 						
-				add_settings_error( 'git2wp_settings_errors', 
+				add_settings_error( 'github2wp_settings_errors', 
 												'repo_archive_error', 
-												__("Empty archive. ", GIT2WP), 
+												__("Empty archive. ", GITHUB2WP), 
 												'error' );
 				return false;
 			}
 		}else {
 			$error_message = wp_remote_retrieve_response_message($response);
-			add_settings_error( 'git2wp_settings_errors', 
+			add_settings_error( 'github2wp_settings_errors', 
 						'repo_archive_error', 
-						__("An error has occured:", GIT2WP). $code ."-". $error_message, 
+						__("An error has occured:", GITHUB2WP). $code ."-". $error_message, 
 						'error' );
 
 			return false;
@@ -220,9 +220,9 @@ class Git2WP {
 
 		if( is_wp_error( $response ) ) {
 			$error_message = $response->get_error_message();
-			add_settings_error( 'git2wp_settings_errors', 
+			add_settings_error( 'github2wp_settings_errors', 
 						'repo_archive_error', 
-						__("An error has occured:", GIT2WP). $error_message, 
+						__("An error has occured:", GITHUB2WP). $error_message, 
 						'error' );
 
 			return false;
@@ -233,9 +233,9 @@ class Git2WP {
 		$result = json_decode($result, true);
 
 		if($result['message'] == 'Not Found'){
-			add_settings_error( 'git2wp_settings_errors', 
+			add_settings_error( 'github2wp_settings_errors', 
 							'repo_no_perm', 
-							__('You have insufficient permissions or repo does not exist!', GIT2WP), 
+							__('You have insufficient permissions or repo does not exist!', GITHUB2WP), 
 							'error' );
 
 			return false;
@@ -265,9 +265,9 @@ class Git2WP {
 
 		if( is_wp_error( $response ) ) {
 			$error_message = $response->get_error_message();
-			add_settings_error( 'git2wp_settings_errors', 
+			add_settings_error( 'github2wp_settings_errors', 
 						'repo_archive_error', 
-						__("An error has occured:", GIT2WP). $error_message, 
+						__("An error has occured:", GITHUB2WP). $error_message, 
 						'error' );
 
 			return null;
@@ -290,9 +290,9 @@ class Git2WP {
 
 		if( is_wp_error( $response ) ) {
 			$error_message = $response->get_error_message();
-			add_settings_error( 'git2wp_settings_errors', 
+			add_settings_error( 'github2wp_settings_errors', 
 						'repo_archive_error', 
-						__("An error has occured:", GIT2WP). $error_message, 
+						__("An error has occured:", GITHUB2WP). $error_message, 
 						'error' );
 
 			return null;
@@ -319,15 +319,15 @@ class Git2WP {
 				$file_name = substr($file, $base);
 
 				$repo_file_name = $this->config['repo'].'.php';
+				
 				if ( $this->config['repo_type'] == 'theme' )
 						$repo_file_name = 'style.css';
 
 				if ( basename($file_name) == $repo_file_name ) {
 						$tag_version = "Version: ";
-						$zip_filename = basename($file_name);
 
 						$file_content = file_get_contents($file);
-						$old_version = $tag_version . git2wp_str_between($tag_version, "\n", $file_content);
+						$old_version = $tag_version . github2wp_str_between($tag_version, "\n", $file_content);
 						$new_version = $tag_version . $version;
 
 						$new_file_content = str_replace($old_version, $new_version, $file_content);
@@ -371,7 +371,7 @@ class Git2WP {
 			$url = "http://".$type."s.svn.wordpress.org/".$resource_name."/";
 			
 			$args = array(
-				'method'      =>    'GET',
+				'method'      =>    'GET',-
 				'timeout'     =>    50,
 				'redirection' =>    5,
 				'httpversion' =>    '1.0',
@@ -412,7 +412,7 @@ class Git2WP {
 			if (is_wp_error( $response ) || wp_remote_retrieve_response_code($response) != 200)
 				return false;
 			
-			$bit_count = file_put_contents(GIT2WP_ZIPBALL_DIR_PATH."submodule.zip", wp_remote_retrieve_body($response));
+			$bit_count = file_put_contents(GITHUB2WP_ZIPBALL_DIR_PATH."submodule.zip", wp_remote_retrieve_body($response));
 			
 			if(!$bit_count) {
 				
@@ -421,7 +421,7 @@ class Git2WP {
 			else {
 				$zip = new ZipArchive();
 		
-				if ($zip->open(GIT2WP_ZIPBALL_DIR_PATH."submodule.zip") === TRUE) {
+				if ($zip->open(GITHUB2WP_ZIPBALL_DIR_PATH."submodule.zip") === TRUE) {
 					if(is_dir($target))
 						rmdir($target);
 						
@@ -431,12 +431,12 @@ class Git2WP {
 
 					
 					rename(dirname($target)."/".$folder_name, dirname($target)."/".basename($path));
-					unlink(GIT2WP_ZIPBALL_DIR_PATH."submodule.zip");
+					unlink(GITHUB2WP_ZIPBALL_DIR_PATH."submodule.zip");
 					$zip->close();
 					
 					return true;
 				}else {
-					unlink(GIT2WP_ZIPBALL_DIR_PATH."submodule.zip");
+					unlink(GITHUB2WP_ZIPBALL_DIR_PATH."submodule.zip");
 					
 					return false;
 				}
@@ -486,7 +486,7 @@ class Git2WP {
 		
 		if(strpos($url, "git@github.com:") === 0) {
 			$data = array ('repo' => basename($url, '.git'),
-									'user'  =>  git2wp_str_between("git@github.com:", "/", $url)
+									'user'  =>  github2wp_str_between("git@github.com:", "/", $url)
 									);
 			return $data;
 		}
@@ -498,7 +498,7 @@ class Git2WP {
 		$commits = null;
 		
 		$url = sprintf('https://api.github.com/repos/%s/%s/commits?sha=%s&access_token=%s&per_page=%s',
-					   $this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token'], GIT2WP_MAX_COMMIT_HIST_COUNT);
+					   $this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token'], GITHUB2WP_MAX_COMMIT_HIST_COUNT);
 		
 		$args = array(
 				'method'      =>    'GET',

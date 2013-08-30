@@ -1,4 +1,4 @@
-#git2wp_history_messages {
+#github2wp_history_messages {
 	text-align: center;
 	width: 50em;
 	position: fixed;
@@ -34,7 +34,7 @@
 	border-radius: 3px;
 }
 
-.slider > .ajax-loader {
+.slider > .ajax-loader:first-child {
 	min-width: 50em;
 	min-height: 64px;
 	background-image: url('./resources/ajax-loader.gif');
@@ -47,7 +47,7 @@
 	vertical-align: middle;
 }
 
-.slider > .ajax-fail {
+.slider > .ajax-fail:first-child {
 	min-width: 50em;
 	min-height: 64px;
 	background-image: url('./resources/ajax-fail.png');
@@ -63,9 +63,9 @@
 .ajax-loader {
 	background-image: url('./resources/ajax-loader.gif');
 	background-repeat: no-repeat;
-	background-size: 16px 16px;
-	height: 16px;
-	width: 16px;
+	background-size: 14px 14px;
+	height: 14px;
+	width: 14px;
 	display: inline-block;
 	margin-left: 10px;
 	vertical-align: middle;

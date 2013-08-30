@@ -1,6 +1,6 @@
 <?php
-if ( ! class_exists('Git2WpFile') ):
-class Git2WpFile {
+if ( ! class_exists('GitHub2WPFile') ):
+class GitHub2WPFile {
 	var $ftrHandle;
 	var $ftwHandle;
 	var $ftwPath;
