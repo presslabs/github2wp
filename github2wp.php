@@ -410,16 +410,10 @@ function github2wp_ajax_callback() {
 			
 			if($sw) {
 				
-				if ( $type == 'plugin' ) 
-					if( file_exists(ABSPATH . 'wp-content/plugins/' . $resource['repo_name']) ) 
-						github2wp_uploadPlguinFile($zipball_path, 'update');
-					else
-						github2wp_uploadPlguinFile($zipball_path);
+				if ( $type == 'plugin' )
+					github2wp_uploadPlguinFile($zipball_path, 'update');
 				else
-					if( file_exists(ABSPATH . 'wp-content/themes/' . $resource['repo_name']) )
-						github2wp_uploadThemeFile($zipball_path, 'update');
-					else
-						github2wp_uploadThemeFile($zipball_path);
+					github2wp_uploadThemeFile($zipball_path, 'update');
 				
 				if ( file_exists($zipball_path) ) unlink($zipball_path);
 				

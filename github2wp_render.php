@@ -321,32 +321,35 @@
 				if(is_array($resource_list) && !empty($resource_list))
 					foreach($resource_list as $key => $resource) {
 						$type = github2wp_get_repo_type($resource['resource_link']);
-					
-						if($type == 'plugin') 
-							$plugin_render .= "<tr valign='top'>
-														<th scope='row'>
-															<label><strong>{$resource['repo_name']}</strong></label>
-														</th>
-														<td>
-															<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>".__('Expand', GITHUB2WP)."</center></span>
-																<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
-																</div>
-															</span>
-														</td>
-													</tr>";
 						
-						if($type == 'theme') 
-							$theme_render .= "<tr valign='top'>
-														<th scope='row'>
-															<label><strong>{$resource['repo_name']}</strong></label>
-														</th>
-														<td>
-															<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>".__('Expand', GITHUB2WP)."</center></span>
-																<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
-																</div>
-															</span>
-														</td>
-													</tr>";
+						if(file_exists(	WP_CONTENT_DIR."/".$type."s/".$resource['repo_name'])) {
+					
+							if($type == 'plugin') 
+								$plugin_render .= "<tr valign='top'>
+															<th scope='row'>
+																<label><strong>{$resource['repo_name']}</strong></label>
+															</th>
+															<td>
+																<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>".__('Expand', GITHUB2WP)."</center></span>
+																	<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
+																	</div>
+																</span>
+															</td>
+														</tr>";
+							
+							if($type == 'theme') 
+								$theme_render .= "<tr valign='top'>
+															<th scope='row'>
+																<label><strong>{$resource['repo_name']}</strong></label>
+															</th>
+															<td>
+																<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>".__('Expand', GITHUB2WP)."</center></span>
+																	<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
+																	</div>
+																</span>
+															</td>
+														</tr>";
+						}
 				}
 		?>
 		
