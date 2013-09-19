@@ -585,6 +585,11 @@ function github2wp_admin_init() {
 	if ( github2wp_needs_configuration() )
 		add_action('admin_notices', create_function( '', "echo '<div class=\"error\"><p>"
 			.sprintf(__('GitHub2WP needs configuration information on its <a href="%s">Settings</a> page.', GITHUB2WP), $plugin_link)."</p></div>';" ));
+		
+	if ( is_plugin_active('git2wp/git2wp.php'))
+      add_action('admin_notices', create_function( '', "echo '<div class=\"error\"><p>".
+												  __('Git2WP is a further refined version of this plugin and is already installed on your server deactivate GitHub2WP.', GITHUB2WP)."</p></div>';" ));
+		
 }
 add_action('admin_init', 'github2wp_admin_init');
 
