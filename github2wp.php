@@ -463,7 +463,7 @@ function github2wp_update_options($where,$data) {
 	if($sw) {
 	    $notoptions = wp_cache_get( 'notoptions', 'options' );
 
-		if ( is_array( $notoptions ) && isset( $notoptions[$whre] ) ) {
+		if ( is_array( $notoptions ) && isset( $notoptions[$where] ) ) {
 			unset( $notoptions[$where] );
 			wp_cache_set( 'notoptions', $notoptions, 'options' );
 		}
