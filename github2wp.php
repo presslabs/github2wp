@@ -13,8 +13,8 @@ define( 'GITHUB2WP_ZIPBALL_DIR_PATH', ABSPATH . 'wp-content/uploads/' . basename
 define( 'GITHUB2WP_ZIPBALL_URL', home_url() . '/wp-content/uploads/' . basename( dirname( __FILE__ ) ) );
 define( 'GITHUB2WP', basename( __FILE__, '.php' ) );
 
-require_once( 'GitHub2WP.class.php' );
-require_once( 'GitHub2WPFile.class.php' );
+require_once( 'class-github-2-wp.php' );
+require_once( 'class-github-2-wp-file.php' );
 require_once( 'github2wp_render.php' );
 
 if ( ! function_exists( 'cron_add_6h' ) ):
@@ -110,7 +110,7 @@ function github2wp_head_commit_cron() {
 					'access_token' => $default['access_token']
 				);
 
-			$git = new GitHub2WP( $args );
+			$git = new Github_2_WP( $args );
 			$head = $git->get_head_commit();
 
 			if ( $head )
@@ -131,7 +131,7 @@ function github2wp_token_cron() {
 			access_token => $default['access_token']
 		);
 
-		$git = new GitHub2WP( $args );
+		$git = new Github_2_WP( $args );
 
 		if ( ! $git->check_user() ) {
 			$default['access_token'] = null;
@@ -357,7 +357,7 @@ function github2wp_ajax_callback() {
 		if ( isset( $_POST['id'] ) and isset( $_POST['branch'] ) ) {	
 			$resource = &$resource_list[ $_POST['id'] ];
 
-			$git = new GitHub2WP( array(
+			$git = new Github_2_WP( array(
 				'user'         => $resource['username'],
 				'repo'         => $resource['repo_name'],
 				'access_token' => $default['access_token'],
@@ -399,7 +399,7 @@ function github2wp_ajax_callback() {
 			$version = $_POST['commit_id'];
 
 			if ( 0 != $_POST['res_id'] )
-				$git = new GitHub2WP( array(
+				$git = new Github_2_WP( array(
 					'user'         => $resource['username'],
 					'repo'         => $resource['repo_name'],
 					'access_token' => $default['access_token'],
@@ -407,7 +407,7 @@ function github2wp_ajax_callback() {
 					)
 				);
 			else
-				$git = new GitHub2WP( array(
+				$git = new Github_2_WP( array(
 					'user'         => $resource['username'],
 					'repo'         => $resource['repo_name'],
 					'access_token' => $default['token_alt'],
@@ -450,7 +450,7 @@ function github2wp_ajax_callback() {
 
 			$resource = $resource_list[ $_POST['res_id'] ];
 			
-			$git = new GitHub2WP( array(
+			$git = new Github_2_WP( array(
 				'user'         => $resource['username'],
 				'repo'         => $resource['repo_name'],
 				'access_token' => $default['access_token'],
@@ -780,7 +780,7 @@ function github2wp_uploadThemeFile( $path, $mode = 'install' ) {
 	if ( 'update' == $mode )
 		github2wp_rmdir( $theme_dirname );
 
-	$file = new GitHub2WPFile( $ftr, $ftw );
+	$file = new Github_2_WP_File( $ftr, $ftw );
 
 	if ( $file->checkFtr() ) {
 		$file->writeToFile();
@@ -803,7 +803,7 @@ function github2wp_uploadPlguinFile( $path, $mode = 'install' ) {
 	if ( 'update' == $mode )
 		github2wp_rmdir( $plugin_dirname );
 
-	$file = new GitHub2WPFile( $ftr, $ftw );
+	$file = new Github_2_WP_File( $ftr, $ftw );
 
 	if ( $file->checkFtr() ) {
 		$file->writeToFile();
@@ -871,7 +871,7 @@ function github2wp_setting_resources_list() {
 					foreach ( $resource_list as $index => $resource ) {
 						$k++;
 
-						$git = new GitHub2WP( array(
+						$git = new Github_2_WP( array(
 							'user'         => $resource['username'],
 							'repo'         => $resource['repo_name'],
 							'access_token' => $default['access_token'],
@@ -1012,315 +1012,337 @@ function github2wp_setting_resources_list() {
 ///LEFT OFF HERE
 
 //------------------------------------------------------------------------------
-function github2wp_options_validate($input) {
-	$options = get_option('github2wp_options');
-	
-	if( isset($_POST['submit_resource']) && !github2wp_needs_configuration() ) {
-	    $initial_options = $options;
+function github2wp_options_validate( $input ) {
+	$options = get_option( 'github2wp_options' );
+
+	if ( isset( $_POST['submit_resource'] ) and ! github2wp_needs_configuration() ) {
+		$initial_options = $options;
 		$resource_list = &$options['resource_list'];
-		
+
 		$repo_link = $_POST['resource_link'];
 		$repo_branch = $_POST['master_branch'];
-		
-		if($repo_branch == '')
-			$repo_branch = $options['default']['master_branch'];
-		
-		if ($repo_link != '') {
-			$repo_link = trim($repo_link);
-			
-			$data = GitHub2WP::get_data_from_git_clone_link($repo_link);
 
-			if(isset($data['user']) && isset($data['repo'])) {
+		if ( '' == $repo_branch )
+			$repo_branch = $options['default']['master_branch'];
+
+		if ( '' != $repo_link ) {
+			$repo_link = trim( $repo_link );
+
+			$data = Github_2_WP::get_data_from_git_clone_link( $repo_link );
+
+			if ( isset( $data['user'] ) and isset( $data['repo'] ) ) {
 				$resource_owner = $data['user'];
 				$resource_repo_name = $data['repo'];
-				
-				$text_resource = "/" . $resource_repo_name;
-				
-				$text_resource = "/" . $_POST['resource_type_dropdown'] . $text_resource;
-				$link = home_url() . "/wp-content" . $text_resource;
-				
+
+				$text_resource = '/' . $resource_repo_name;
+				$text_resource = '/' . $_POST['resource_type_dropdown'] . $text_resource;
+				$link = home_url() . '/wp-content' . $text_resource;
 				$unique = true;
-				
-				if(is_array($resource_list) && !empty($resource_list))
-					foreach($resource_list as $resource) {
-						if($resource['repo_name'] === $resource_repo_name) {
+
+				if ( is_array( $resource_list ) and ! empty( $resource_list ) )
+					foreach ( $resource_list as $resource ) {
+						if ( $resource['repo_name'] === $resource_repo_name ) {
 							$unique = false;
 							break;
 						}
 				}
-				
-				if($unique) {
+
+				if ( $unique ) {
 					$default = $options['default'];
-					
+
 					$args = array(
-						"user" => $resource_owner,
-						"repo" => $resource_repo_name,
-						"access_token" => $default['access_token'],
-						"source" => $repo_branch 
+						'user'         => $resource_owner,
+						'repo'         => $resource_repo_name,
+						'access_token' => $default['access_token'],
+						'source'       => $repo_branch 
 					);
 
-					$git = new GitHub2WP($args);
-					
+					$git = new Github_2_WP( $args );
 					$sw = $git->check_repo_availability();
-					
-					if ($sw) {
-						$on_wp = GitHub2WP::check_svn_avail($resource_repo_name, substr($_POST['resource_type_dropdown'], 0, -1));
+
+					if ( $sw ) {
+						$on_wp = Github_2_WP::check_svn_avail( $resource_repo_name, substr( $_POST['resource_type_dropdown'], 0, -1 ) );
 						$head = $git->get_head_commit();
-						
+
 						$resource_list[] = array(
-												'resource_link' => $link,
-												'repo_name' => $resource_repo_name,
-												'repo_branch' => $repo_branch,
-												'username' => $resource_owner,
-												'is_on_wp_svn' => $on_wp,
-												'head_commit' => $head
-											);
-						
-						add_settings_error( 'github2wp_settings_errors', 'repo_connected', __("Connection was established.", GITHUB2WP), "updated" );
-						delete_transient('github2wp_branches');
-					}else
-						return $initial_options;	
+							'resource_link' => $link,
+							'repo_name'     => $resource_repo_name,
+							'repo_branch'   => $repo_branch,
+							'username'      => $resource_owner,
+							'is_on_wp_svn'  => $on_wp,
+							'head_commit'   => $head
+						);
+
+						add_settings_error( 'github2wp_settings_errors', 'repo_connected', __( 'Connection was established.', GITHUB2WP ), 'updated' );
+						delete_transient( 'github2wp_branches' );
+					} else {
+						return $initial_options;
+					}
 				} else {
 					add_settings_error( 'github2wp_settings_errors', 'duplicate_endpoint', 
-									   __("Duplicate resources! Repositories can't be both themes and plugins ", GITHUB2WP), 
-									   "error" );
+						__( 'Duplicate resources! Repositories can\'t be both themes and plugins ', GITHUB2WP),
+						'error' );
+
 					return $initial_options;
 				}
-			}
-			else {
+			} else {
 				add_settings_error( 'github2wp_settings_errors', 'not_git_link', 
-								   __("This isn't a git link! eg: https://github.com/dragospl/pressignio.git", GITHUB2WP), 
-								   "error" );
+					__( 'This isn\'t a git link! eg: https://github.com/dragospl/pressignio.git', GITHUB2WP), 
+					'error' );
+
 				return $initial_options;
 			}
 		}
 	}
-	
+
 	// install resources
 	$resource_list = &$options['resource_list'];
 	$k = 0;
-	
-	if(is_array($resource_list) && !empty($resource_list))
-		foreach($resource_list as $key => $resource)
-			if ( isset($_POST['submit_install_resource_'.$k++]) ) {
+
+	if ( is_array( $resource_list ) and ! empty( $resource_list ) ) {
+		foreach ( $resource_list as $key => $resource ) {
+			if ( isset( $_POST[ 'submit_install_resource_' . $k++ ] ) ) {
 				$repo_type = github2wp_get_repo_type($resource['resource_link']);
 				$zipball_path = GITHUB2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']).'.zip';
-	
+
 				$default = $options['default'];
-				$git = new GitHub2WP(array(
-					"user" => $resource['username'],
-					"repo" => $resource['repo_name'],
-					"repo_type" => $repo_type,
-					"access_token" => $default['access_token'],
-					"source" => $resource['repo_branch']
-				));
+				$git = new Github_2_WP( array(
+					'user'         => $resource['username'],
+					'repo'         => $resource['repo_name'],
+					'repo_type'    => $repo_type,
+					'access_token' => $default['access_token'],
+					'source'       => $resource['repo_branch']
+					)
+				);
 				$sw = $git->store_git_archive();
-				
-				if($sw) {
-					if ( $repo_type == 'plugin' )
-						github2wp_uploadPlguinFile($zipball_path);
+
+				if ( $sw ) {
+					if ( 'plugin' == $repo_type )
+						github2wp_uploadPlguinFile( $zipball_path );
 					else
-						github2wp_uploadThemeFile($zipball_path);
-					if ( file_exists($zipball_path) ) unlink($zipball_path);
+						github2wp_uploadThemeFile( $zipball_path );
+					
+					if ( file_exists( $zipball_path ) )
+						unlink( $zipball_path );
 				}
 			}
+		}
+	}
 
 	// update resources
 	$resource_list = &$options['resource_list'];
 	$k = 0;
-	if(is_array($resource_list) && !empty($resource_list))
-		foreach($resource_list as $key => $resource)
-			if ( isset($_POST['submit_update_resource_'.$k++]) ) {
-				$repo_type = github2wp_get_repo_type($resource['resource_link']);
-				$zipball_path = GITHUB2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']).'.zip';
+
+	if ( is_array( $resource_list ) and ! empty( $resource_list ) ) {
+		foreach ( $resource_list as $key => $resource ) {
+			if ( isset( $_POST[ 'submit_update_resource_' . $k++ ] ) ) {
+				$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
+				$zipball_path = GITHUB2WP_ZIPBALL_DIR_PATH . wp_hash( $resource['repo_name'] ) . '.zip';
 				$default = $options['default'];
-				
-				if($key != 0)
-					$git = new GitHub2WP(array(
-						"user" => $resource['username'],
-						"repo" => $resource['repo_name'],
-						"repo_type" => $repo_type,
-						"access_token" => $default['access_token'],
-						"source" => $resource['head_commit']
-					));
+
+				if ( 0 != $key )
+					$git = new Github_2_WP( array(
+						'user'         => $resource['username'],
+						'repo'         => $resource['repo_name'],
+						'repo_type'    => $repo_type,
+						'access_token' => $default['access_token'],
+						'source'       => $resource['head_commit']
+						)
+					);
 				else
-					$git = new GitHub2WP(array(
-						"user" => $resource['username'],
-						"repo" => $resource['repo_name'],
-						"repo_type" => $repo_type,
-						"access_token" => $default['token_alt'],
-						"source" => $resource['head_commit']
-					));
+					$git = new Github_2_WP( array(
+						'user'         => $resource['username'],
+						'repo'         => $resource['repo_name'],
+						'repo_type'    => $repo_type,
+						'access_token' => $default['token_alt'],
+						'source'       => $resource['head_commit']
+						)
+					);
 				$sw = $git->store_git_archive();
-				
-				if($sw) {
-					if ( $repo_type == 'plugin' )
-						github2wp_uploadPlguinFile($zipball_path, 'update');
+
+				if ( $sw ) {
+					if ( 'plugin' == $repo_type )
+						github2wp_uploadPlguinFile( $zipball_path, 'update' );
 					else
-						github2wp_uploadThemeFile($zipball_path, 'update');
-	
-					if ( file_exists($zipball_path) ) unlink($zipball_path);
+						github2wp_uploadThemeFile( $zipball_path, 'update' );
+
+					if ( file_exists( $zipball_path ) )
+						unlink( $zipball_path );
 				}
 			}
+		}
+	}
 
 	// delete resources
 	$resource_list = &$options['resource_list'];
 	$k = 0;
-	
-	if(is_array($resource_list) && !empty($resource_list))
-		foreach($resource_list as $key => $resource)
-			if ( isset($_POST['submit_delete_resource_'.$k++]) )
-				if($key != 0)
-					unset($resource_list[$key]);
-		
+
+	if ( is_array( $resource_list ) and ! empty( $resource_list ) ) {
+		foreach ( $resource_list as $key => $resource ) {
+			if ( isset( $_POST[ 'submit_delete_resource_' . $k++ ] ) )
+				if ( 0 != $key )
+					unset( $resource_list[ $key ] );
+		}
+	}
+
 	// settings
-	if(isset($_POST['submit_settings'])) {
+	if ( isset( $_POST['submit_settings'] ) ) {
 		$default = &$options['default'];
-		
+
 		$client_id = $default['client_id'];
 		$client_secret = $default['client_secret'];
-		
-		if(isset($_POST['master_branch'])) {
-			if($_POST['master_branch'])
-				$master_branch = trim($_POST['master_branch']);
+
+		if ( isset( $_POST['master_branch'] ) ) {
+			if ( $_POST['master_branch'] )
+				$master_branch = trim( $_POST['master_branch'] );
 			else
 				$master_branch = 'master';
 		}
-		
-		if(isset($_POST['client_id']))
-			if($_POST['client_id'] != $default['client_id']) {
+
+		if ( isset( $_POST['client_id'] ) )
+			if ( $_POST['client_id'] != $default['client_id'] ) {
 				$client_id = trim($_POST['client_id']);
 				$changed = 1;
 			}
-		
-		if(isset($_POST['client_secret']))
-			if($_POST['client_secret'] != $default['client_secret']) {
+
+		if ( isset( $_POST['client_secret'] ) )
+			if ( $_POST['client_secret'] != $default['client_secret'] ) {
 				$client_secret = trim($_POST['client_secret']);
 				$changed = 1;
 			}
-		
-		if($master_branch and $client_id and $client_secret)
+
+		if ( $master_branch and $client_id and $client_secret )
 			$default['app_reset']=0;
-		
-		$default["master_branch"] = $master_branch;
-		$default["client_id"] = $client_id;
-		$default["client_secret"] = $client_secret;
-		
-		if($changed) {
-			$default["access_token"] = NULL;
-			$default["changed"] =  $changed;
+
+		$default['master_branch'] = $master_branch;
+		$default['client_id'] = $client_id;
+		$default['client_secret'] = $client_secret;
+
+		if ( $changed ) {
+			$default['access_token'] = NULL;
+			$default['changed'] = $changed;
 		}
 	}
-	
+
 	return $options;
 }
 
 //------------------------------------------------------------------------------
 function github2wp_init() {
-	$options = get_option('github2wp_options');
-	
+	$options = get_option( 'github2wp_options' );
+
 	$default = &$options['default'];
 
 	// get token from GitHub
-	if ( isset($_GET['code']) and  isset($_GET['github2wp_auth']) and $_GET['github2wp_auth'] == 'true' ) {
-		
+	if ( isset( $_GET['code'] ) and  isset( $_GET['github2wp_auth'] ) and 'true' == $_GET['github2wp_auth'] ) {
 		$code = $_GET['code'];
-		$options = get_option("github2wp_options");
+		$options = get_option( 'github2wp_options' );
 		$default = &$options['default'];
-		
 		$client_id = $default['client_id'];
 		$client_secret = $default['client_secret'];
-		$data = array("code"=>$code, "client_id"=>$client_id, "client_secret"=>$client_secret);
-		
-		$response = wp_remote_post( "https://github.com/login/oauth/access_token", array("body" =>$data));
-		
-		parse_str($response['body'], $parsed_response_body);
-		
-		if($parsed_response_body['access_token'] != NULL) {
+		$data = array(
+			'code' => $code,
+			'client_id' => $client_id,
+			'client_secret' => $client_secret
+		);
+
+		$response = wp_remote_post( 'https://github.com/login/oauth/access_token', array( 'body' => $data ) );
+
+		parse_str( $response['body'], $parsed_response_body );
+
+		if ( null != $parsed_response_body['access_token'] ) {
 			$default['access_token'] = $parsed_response_body['access_token'];
 			$default['changed'] = 0;
-			update_option("github2wp_options", $options);
+			update_option( 'github2wp_options', $options );
 		}
 	}
 }
-add_action('init', 'github2wp_init');
+add_action( 'init', 'github2wp_init' );
 
 
 function github2wp_language_init() {
 	load_plugin_textdomain( GITHUB2WP, false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' ); 
 }
-add_action('plugins_loaded', 'github2wp_language_init');
+add_action( 'plugins_loaded', 'github2wp_language_init' );
 
 
 function github2wp_admin_head() {
-	if( isset($_GET['action']) and ($_GET['action'] == 'update-selected' or $_GET['action'] == 'update-selected-themes')){
-		$options = get_option('github2wp_options');
-		$resource_list = $options['resource_list'];
-		
-		if( isset($_GET['plugins']) ) {
-			$res = explode( ',', stripslashes($_GET['plugins']));
-			
-			foreach($res as &$r)
-				$r = basename($r, '.php');
-		}elseif ( isset( $_GET['themes'] ) )
-			$res = explode( ',', stripslashes($_GET['themes']) );
-		
-		if( count($res) > 0 )
-			foreach($resource_list as $key=>$resource) {
-				if( in_array($resource['repo_name'], $res, true) ) {
-					
-					$repo_type = github2wp_get_repo_type($resource['resource_link']);
-					$default = $options['default'];
-				
-					if($key != 0)
-						$git = new GitHub2WP(array(
-							"user" => $resource['username'],
-							"repo" => $resource['repo_name'],
-							"repo_type" => $repo_type,
-							"access_token" => $default['access_token'],
-							"source" => $resource['head_commit']
-						));
-					else
-						$git = new GitHub2WP(array(
-							"user" => $resource['username'],
-							"repo" => $resource['repo_name'],
-							"repo_type" => $repo_type,
-							"access_token" => $default['token_alt'],
-							"source" => $resource['head_commit']
-						));
-					$sw = $git->store_git_archive();
+	if ( isset( $_GET['action'] )
+		and ( 'update-selected' == $_GET['action'] or 'update-selected-themes' == $_GET['action'] ) ) {
+
+			$options = get_option( 'github2wp_options' );
+			$resource_list = $options['resource_list'];
+
+			if ( isset( $_GET['plugins'] ) ) {
+				$res = explode( ',', stripslashes( $_GET['plugins'] ) );
+
+				foreach ( $res as &$r ) {
+					$r = basename( $r, '.php' );
+				}
+			} elseif ( isset( $_GET['themes'] ) ) {
+				$res = explode( ',', stripslashes( $_GET['themes'] ) );
+			}
+
+			if ( count( $res ) > 0 ) {
+				foreach ( $resource_list as $key => $resource ) {
+					if ( in_array( $resource['repo_name'], $res, true ) ) {
+						$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
+						$default = $options['default'];
+
+						if ( 0 != $key )
+							$git = new Github_2_WP( array(
+								'user'         => $resource['username'],
+								'repo'         => $resource['repo_name'],
+								'repo_type'    => $repo_type,
+								'access_token' => $default['access_token'],
+								'source'       => $resource['head_commit']
+								)
+							);
+						else
+							$git = new Github_2_WP(array(
+								'user'         => $resource['username'],
+								'repo'         => $resource['repo_name'],
+								'repo_type'    => $repo_type,
+								'access_token' => $default['token_alt'],
+								'source'       => $resource['head_commit']
+								)
+							);
+						$sw = $git->store_git_archive();
+					}
 				}
 			}
-	}
+		}
 }
-add_action('admin_head', 'github2wp_admin_head');
+add_action( 'admin_head', 'github2wp_admin_head' );
 
 
 function github2wp_admin_footer() {
-	if( defined('IFRAME_REQUEST') and isset($_GET['action']) and ($_GET['action'] == 'update-selected' or $_GET['action'] == 'update-selected-themes')){
-		$options = get_option('github2wp_options');
-		$resource_list = $options['resource_list'];
-		
-		if( isset($_GET['plugins']) ) {
-			$res = explode( ',', stripslashes($_GET['plugins']));
+	if ( defined( 'IFRAME_REQUEST' ) and isset( $_GET['action'] )
+		and ( 'update-selected' == $_GET['action'] or 'update-selected-themes' == $_GET['action'] ) ) {
 			
-			foreach($res as &$r)
-				$r = basename($r, '.php');
-		}elseif ( isset( $_GET['themes'] ) )
-			$res = explode( ',', stripslashes($_GET['themes']) );
-		
-		if( count($res) > 0 )
-			foreach($resource_list as $resource) {
-				if( in_array($resource['repo_name'], $res, true) ) {
-					$zipball_path = GITHUB2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']).'.zip';
+			$options = get_option('github2wp_options');
+			$resource_list = $options['resource_list'];
+			
+			if ( isset( $_GET['plugins'] ) ) {
+				$res = explode( ',', stripslashes( $_GET['plugins'] ) );
 
-					if(file_exists($zipball_path))
-						unlink($zipball_path);
+				foreach ( $res as &$r ) {
+					$r = basename($r, '.php');
+				}
+			} elseif ( isset( $_GET['themes'] ) ) {
+				$res = explode( ',', stripslashes($_GET['themes']) );
+			}
+
+			if ( count( $res ) > 0 ) {
+				foreach ( $resource_list as $resource ) {
+					if ( in_array( $resource['repo_name'], $res, true ) ) {
+						$zipball_path = GITHUB2WP_ZIPBALL_DIR_PATH . wp_hash( $resource['repo_name'] ).'.zip';
+
+						if ( file_exists( $zipball_path ) )
+							unlink( $zipball_path );
+					}
 				}
 			}
 	}
 }
-add_action('admin_footer', 'github2wp_admin_footer');
-
-
-
+add_action( 'admin_footer', 'github2wp_admin_footer' );
