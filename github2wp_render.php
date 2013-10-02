@@ -38,24 +38,20 @@ function github2wp_render_resource_history( $resource , $resource_id, $commit_hi
 function github2wp_return_branch_dropdown( $index, $branches ) {
 	$options = get_option('github2wp_options');
 	
-	if ( 0 != $index ) {
-		$branch_dropdown = '<strong>' . __( 'Branch:', GITHUB2WP ) . "</strong><select style='width: 125px;' class='resource_set_branch' resource_id='$index'>";
-		
-		if( is_array( $branches ) and count( $branches ) > 0 ) {
-			foreach ( $branches as $branch ) {
-				if ( $options['resource_list'][ $index ]['repo_branch'] == $branch )
-					$branch_dropdown .= "<option value='$branch' selected='selected' >$branch</option>";
-				else
-					$branch_dropdown .= "<option value='$branch' >$branch</option>";
-			}
+	$branch_dropdown = '<strong>' . __( 'Branch:', GITHUB2WP ) . "</strong><select style='width: 125px;' class='resource_set_branch' resource_id='$index'>";
+	
+	if( is_array( $branches ) and count( $branches ) > 0 ) {
+		foreach ( $branches as $branch ) {
+			if ( $options['resource_list'][ $index ]['repo_branch'] == $branch )
+				$branch_dropdown .= "<option value='$branch' selected='selected' >$branch</option>";
+			else
+				$branch_dropdown .= "<option value='$branch' >$branch</option>";
 		}
+	}
 
-		$branch_dropdown .= '</select>';
+	$branch_dropdown .= '</select>';
 
-		return $branch_dropdown;
-	} else {
-		return '<p><strong>' . __( 'Branch:', GITHUB2WP ) . '</strong>master</p>';
-		}
+	return $branch_dropdown;
 	}
 
 
@@ -77,15 +73,11 @@ function github2wp_return_wordpress_resource( $repo_type, $repo_name ) {
 
 
 function github2wp_return_resource_dismiss( $resource, $index ) {
-	if ( 0 != $index ) {
-		$github_resource_url = github2wp_return_resource_url( $resource['username'], $resource['repo_name'] );
+	$github_resource_url = github2wp_return_resource_url( $resource['username'], $resource['repo_name'] );
 
-		return "<p><input name='submit_delete_resource_$index' type='submit'
-			class='button button-red btn-medium' value='" . __( 'Dismiss', GITHUB2WP )
-			. "' onclick='return confirm(" . __( 'Do you really want to disconect from Github:', GITHUB2WP ) . "$github_resource_url?" . ");'/></p>";
-	} else {
-		return '';
-	}
+	return "<p><input name='submit_delete_resource_$index' type='submit'
+		class='button button-red btn-medium' value='" . __( 'Dismiss', GITHUB2WP )
+		. "' onclick='return confirm(" . __( 'Do you really want to disconect from Github:', GITHUB2WP ) . "$github_resource_url?" . ");'/></p>";
 }
 
 

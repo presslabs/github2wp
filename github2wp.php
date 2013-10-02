@@ -5,7 +5,7 @@
  * Description: Managing themes and plugins from github.
  * Author: PressLabs
  * Author URI: http://www.presslabs.com/ 
- * Version: 1.3.5
+ * Version: 1.0.0
  */
 
 define( 'GITHUB2WP_MAX_COMMIT_HIST_COUNT', 100 );
@@ -31,21 +31,7 @@ endif;
 
 //------------------------------------------------------------------------------
 function github2wp_activate() {
-    add_option( 'github2wp_options', array(
-			'resource_list' => array(
-				0 => array(
-					'resource_link'  => home_url() . '/wp-content/plugins/' . basename( __FILE__, '.php' ),
-          'repo_name'      => 'github2wp',
-          'repo_branch'    => 'master',
-          'username'       => 'PressLabs',
-          'is_on_wp_svn'   => false
-					)
-				),
-				'default' => array(
-					'token_alt' => '15f16816a092c034995fcde4924dffe0f9216cb3'
-				)
-    	)
-		);
+    add_option( 'github2wp_options', array() );
 
     wp_schedule_event( current_time ( 'timestamp' ), '6h', 'github2wp_cron_hook' );
 }
@@ -95,20 +81,12 @@ function github2wp_head_commit_cron() {
 
 	if ( is_array( $resource_list ) and ! empty( $resource_list ) ) {
 		foreach ( $resource_list as $index => &$resource ) {
-			if ( 0 == $index )
-				$args = array(
-					'user'         => $resource['username'],
-					'repo'         => $resource['repo_name'],
-					'source'       => $resource['repo_branch'],
-					'access_token' => $default['token_alt']
-				);
-			else
-				$args = array(
-					'user'         => $resource['username'],
-					'repo'         => $resource['repo_name'],
-					'source'       => $resource['repo_branch'],
-					'access_token' => $default['access_token']
-				);
+			$args = array(
+				'user'         => $resource['username'],
+				'repo'         => $resource['repo_name'],
+				'source'       => $resource['repo_branch'],
+				'access_token' => $default['access_token']
+			);
 
 			$git = new Github_2_WP( $args );
 			$head = $git->get_head_commit();
@@ -398,22 +376,13 @@ function github2wp_ajax_callback() {
 			$resource = $resource_list[ $_POST['res_id'] ];
 			$version = $_POST['commit_id'];
 
-			if ( 0 != $_POST['res_id'] )
-				$git = new Github_2_WP( array(
-					'user'         => $resource['username'],
-					'repo'         => $resource['repo_name'],
-					'access_token' => $default['access_token'],
-					'source'       => $version
-					)
-				);
-			else
-				$git = new Github_2_WP( array(
-					'user'         => $resource['username'],
-					'repo'         => $resource['repo_name'],
-					'access_token' => $default['token_alt'],
-					'source'       => $version		
-					)
-				);
+			$git = new Github_2_WP( array(
+				'user'         => $resource['username'],
+				'repo'         => $resource['repo_name'],
+				'access_token' => $default['access_token'],
+				'source'       => $version
+				)
+			);
 
 			$version = substr( $version, 0, 7 );
 			$type = github2wp_get_repo_type( $resource['resource_link'] );
@@ -1140,24 +1109,15 @@ function github2wp_options_validate( $input ) {
 				$zipball_path = GITHUB2WP_ZIPBALL_DIR_PATH . wp_hash( $resource['repo_name'] ) . '.zip';
 				$default = $options['default'];
 
-				if ( 0 != $key )
-					$git = new Github_2_WP( array(
-						'user'         => $resource['username'],
-						'repo'         => $resource['repo_name'],
-						'repo_type'    => $repo_type,
-						'access_token' => $default['access_token'],
-						'source'       => $resource['head_commit']
-						)
-					);
-				else
-					$git = new Github_2_WP( array(
-						'user'         => $resource['username'],
-						'repo'         => $resource['repo_name'],
-						'repo_type'    => $repo_type,
-						'access_token' => $default['token_alt'],
-						'source'       => $resource['head_commit']
-						)
-					);
+				$git = new Github_2_WP( array(
+					'user'         => $resource['username'],
+					'repo'         => $resource['repo_name'],
+					'repo_type'    => $repo_type,
+					'access_token' => $default['access_token'],
+					'source'       => $resource['head_commit']
+					)
+				);
+
 				$sw = $git->store_git_archive();
 
 				if ( $sw ) {
@@ -1180,7 +1140,6 @@ function github2wp_options_validate( $input ) {
 	if ( is_array( $resource_list ) and ! empty( $resource_list ) ) {
 		foreach ( $resource_list as $key => $resource ) {
 			if ( isset( $_POST[ 'submit_delete_resource_' . $k++ ] ) )
-				if ( 0 != $key )
 					unset( $resource_list[ $key ] );
 		}
 	}
@@ -1289,24 +1248,15 @@ function github2wp_admin_head() {
 						$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
 						$default = $options['default'];
 
-						if ( 0 != $key )
-							$git = new Github_2_WP( array(
-								'user'         => $resource['username'],
-								'repo'         => $resource['repo_name'],
-								'repo_type'    => $repo_type,
-								'access_token' => $default['access_token'],
-								'source'       => $resource['head_commit']
-								)
-							);
-						else
-							$git = new Github_2_WP(array(
-								'user'         => $resource['username'],
-								'repo'         => $resource['repo_name'],
-								'repo_type'    => $repo_type,
-								'access_token' => $default['token_alt'],
-								'source'       => $resource['head_commit']
-								)
-							);
+						$git = new Github_2_WP( array(
+							'user'         => $resource['username'],
+							'repo'         => $resource['repo_name'],
+							'repo_type'    => $repo_type,
+							'access_token' => $default['access_token'],
+							'source'       => $resource['head_commit']
+							)
+						);
+
 						$sw = $git->store_git_archive();
 					}
 				}
