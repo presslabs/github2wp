@@ -117,7 +117,7 @@
 	border-color: #9B2124;
 	border-bottom-color: #8D1F21;
 	-webkit-box-shadow: inset 0 1px 0 rgba(120,200,230,0.5);
- 	box-shadow: inset 0 1px 0 rgba(120,200,230,0.5);
+ 	box-shadow:         inset 0 1px 0 rgba(120,200,230,0.5);
  	color: #fff;
 	text-decoration: none;
 	text-shadow: 0 1px 0 rgba(0,0,0,0.1);
@@ -136,7 +136,7 @@
 	background-image:   linear-gradient(to bottom, #D22E30, #9B2124);
 	border-color: #7F1C1F;
 	-webkit-box-shadow: inset 0 1px 0 rgba(120,200,230,0.6);
- 	box-shadow: inset 0 1px 0 rgba(120,200,230,0.6);
+ 	box-shadow:         inset 0 1px 0 rgba(120,200,230,0.6);
 	color: #fff;
 	text-shadow: 0 -1px 0 rgba(0,0,0,0.3);
 }
@@ -145,7 +145,7 @@
 .wp-core-ui .button-red:focus {
 	border-color: #500F0E;
 	-webkit-box-shadow: inset 0 1px 0 rgba(120,200,230,0.6), 1px 1px 2px rgba(0,0,0,0.4);
-	box-shadow: inset 0 1px 0 rgba(120,200,230,0.6), 1px 1px 2px rgba(0,0,0,0.4);
+	box-shadow:         inset 0 1px 0 rgba(120,200,230,0.6), 1px 1px 2px rgba(0,0,0,0.4);
 }
 
 .wp-core-ui .button-red.active,
@@ -162,7 +162,7 @@
 	border-color: #601312 #AE2426 #AE2426 #AE2426;
 	color: rgba(255,255,255,0.95);
 	-webkit-box-shadow: inset 0 1px 0 rgba(0,0,0,0.1);
- 	box-shadow: inset 0 1px 0 rgba(0,0,0,0.1);
+ 	box-shadow:         inset 0 1px 0 rgba(0,0,0,0.1);
 	text-shadow: 0 1px 0 rgba(0,0,0,0.1);
 }
 
