@@ -498,7 +498,8 @@ function github2wp_options_page() {
 	$nav_bar_tabs = array(
 		'resources',
 		'settings',
-		'history'
+		'history',
+		'faq'
 	);
 
 	isset( $_GET['tab'] ) ? $tab = $_GET['tab'] : $tab = 'resources';
@@ -527,6 +528,10 @@ function github2wp_options_page() {
 
 		if ( 'history' == $tab )
 			github2wp_render_history_page();
+
+		if ( 'faq' == $tab )
+			github2wp_render_faq_page();
+
 	echo '</div><!-- .wrap -->';
 }
 
@@ -562,7 +567,14 @@ function github2wp_admin_init() {
 	//
 	add_settings_section( 'github2wp_main_history_section', __( 'GitHub to WordPress - History', GITHUB2WP ),
 		'github2wp_main_history_section_description', 'github2wp_history' );
-	
+
+	//
+	// FAQ tab
+	//
+	add_settings_section( 'github2wp_main_faq_section', __( 'GitHub to WordPress - FAQ', GITHUB2WP ),
+		'github2wp_main_faq_section_description', 'github2wp_faq' );
+
+
 	//
 	// Add Settings notice
 	//
@@ -604,6 +616,11 @@ function github2wp_resource_display_section_description() {
 //------------------------------------------------------------------------------
 function github2wp_main_section_description() {
 	echo '<p>' . __( 'Enter here the required data to set up a new GitHub endpoint.', GITHUB2WP ) . '</p>';
+}
+
+//------------------------------------------------------------------------------
+function github2wp_main_faq_section_description() {
+	echo '<p>' . __( 'If you can\'t find an answer to your problem contact us.', GITHUB2WP ) . '</p>';
 }
 
 //------------------------------------------------------------------------------

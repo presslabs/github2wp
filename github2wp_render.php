@@ -106,6 +106,8 @@ function github2wp_render_tab_menu( $tab ) {
 			href='<?php echo github2wp_return_settings_link( '&tab=history' ); ?>'><?php _e( 'History', GITHUB2WP ); ?></a>
 		<a class='nav-tab<?php ( 'settings' == $tab ) ? ' nav-tab-active' : ''; ?>'
 			href='<?php echo github2wp_return_settings_link( '&tab=settings' ); ?>'><?php _e( 'Settings', GITHUB2WP ); ?></a>
+		<a class='nav-tab<?php ( 'FAQ' == $tab ) ? ' nav-tab-active' : ''; ?>'
+			href='<?php echo github2wp_return_settings_link( '&tab=faq' ); ?>'><?php _e( 'FAQ', GITHUB2WP ); ?></a>
 	</h2>
 <?php
 }
@@ -292,6 +294,29 @@ function github2wp_render_settings_form( & $default ) {
 	</form>
 <?php
 }
+
+
+function github2wp_render_faq_page() {
+	do_settings_sections( 'github2wp_faq' );
+
+	$faq_data = array(
+		'Test question 0' => "And the answer is here 0",
+		'Test question 1' => "And the answer is here 1\n",
+		'Test question 2' => "And the answer is here 2",
+		'Test question 3' => "And the answer is here 3",
+		'Test question 4' => "And the answer is here 4",
+		'Test question 5' => "And the answer is here 5"
+	);	
+	$k = 0;
+
+	echo '<dl>';
+	foreach ( $faq_data as $q => $a ) {
+		echo "<dt class='faq_question clicker' alt='$k'>$q</dt><dd class='faq_answer slider' id='$k'>" . nl2br( $a ) . "</dd>";
+		$k++;
+	}
+	echo '</dl>';
+}
+
 
 function github2wp_render_history_page() {
 ?>
