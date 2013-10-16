@@ -39,12 +39,16 @@ register_activation_hook( __FILE__, 'github2wp_activate' );
 
 //------------------------------------------------------------------------------
 function github2wp_deactivate() {
-	github2wp_delete_options();
-	delete_transient( 'github2wp_branches' );
-
 	wp_clear_scheduled_hook( 'github2wp_cron_hook' );
 }
 register_deactivation_hook( __FILE__, 'github2wp_deactivate' );
+
+//------------------------------------------------------------------------------
+function github2wp_uninstall() {
+	github2wp_delete_options();
+	delete_transient( 'github2wp_branches' );
+}
+add_action( 'uninstall_' . plugin_basename( __FILE__ ), 'git2wp_uninstall' );
 
 //------------------------------------------------------------------------------
 function github2wp_admin_notices_action() {
@@ -79,7 +83,7 @@ function github2wp_head_commit_cron() {
 
 	$resource_list = &$options['resource_list'];
 
-	if ( is_array( $resource_list ) and ! empty( $resource_list ) ) {
+	if ( is_array( $resource_list ) && ! empty( $resource_list ) ) {
 		foreach ( $resource_list as $index => &$resource ) {
 			$args = array(
 				'user'         => $resource['username'],
@@ -150,11 +154,11 @@ function github2wp_update_check_themes( $transient ) {
             $new_version = substr( $resource['head_commit'], 0, 7 );
             $trans_new_version = $transient->response[ $response_index ]->new_version;
 
-						if ( isset( $trans_new_version ) and ( 7 != strlen( $trans_new_version ) or false != strpos( $trans_new_version, '.') ) )
+						if ( isset( $trans_new_version ) && ( 7 != strlen( $trans_new_version ) || false != strpos( $trans_new_version, '.') ) )
 							unset($transient->response[ $response_index ]);
 
-						if ( '-' != $current_version and '' != $current_version
-							and $current_version != $new_version and false != $new_version ) {
+						if ( '-' != $current_version && '' != $current_version
+							and $current_version != $new_version && false != $new_version ) {
 
 								$update_url = 'http://themes.svn.wordpress.org/responsive/1.9.3.2/readme.txt';
 								$zipball = GITHUB2WP_ZIPBALL_URL . '/' . wp_hash( $resource['repo_name'] ) . '.zip';
@@ -221,7 +225,7 @@ function github2wp_inject_info( $result, $action = null, $args = null ) {
 	$options = get_option( 'github2wp_options' );
 	$resource_list = $options['resource_list'];
 
-	if ( is_array( $resource_list ) and ! empty( $resource_list ) ) {
+	if ( is_array( $resource_list ) && ! empty( $resource_list ) ) {
 		foreach ( $resource_list as $resource ) {
 
 			$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
@@ -240,7 +244,7 @@ function github2wp_inject_info( $result, $action = null, $args = null ) {
 				);
 				$slug = dirname( $response_index );
 
-				$relevant = ( 'plugin_information' == $action ) and isset( $args->slug ) and ( $args->slug == $slug );
+				$relevant = ( 'plugin_information' == $action ) && isset( $args->slug ) && ( $args->slug == $slug );
 				
 				if ( ! $relevant )
 					return $result;
@@ -294,11 +298,11 @@ function github2wp_update_check_plugins( $transient ) {
 						$new_version = substr( $resource['head_commit'], 0, 7 ); 
 						$trans_new_version = $transient->response[ $response_index ]->new_version;
 
-					if ( isset( $trans_new_version ) and ( 7 != strlen( $trans_new_version ) or false != strpos( $trans_new_version, '.') ) )
+					if ( isset( $trans_new_version ) && ( 7 != strlen( $trans_new_version ) || false != strpos( $trans_new_version, '.') ) )
 						unset( $transient->response[ $response_index ] );
 
-					if ( '-' != $current_version and '' != $current_version
-						and $current_version != $new_version and false != $new_version ) {
+					if ( '-' != $current_version && '' != $current_version
+						and $current_version != $new_version && false != $new_version ) {
 							$homepage = github2wp_get_plugin_header( $plugin_file, 'AuthorURI' );
 							$zipball = GITHUB2WP_ZIPBALL_URL . '/' . wp_hash( $resource['repo_name'] ) . '.zip';
 
@@ -331,8 +335,8 @@ function github2wp_ajax_callback() {
 		'success_message' => ''
 	);
 
-	if ( isset( $_POST['github2wp_action'] ) and 'set_branch' == $_POST['github2wp_action'] ) {
-		if ( isset( $_POST['id'] ) and isset( $_POST['branch'] ) ) {	
+	if ( isset( $_POST['github2wp_action'] ) && 'set_branch' == $_POST['github2wp_action'] ) {
+		if ( isset( $_POST['id'] ) && isset( $_POST['branch'] ) ) {	
 			$resource = &$resource_list[ $_POST['id'] ];
 
 			$git = new Github_2_WP( array(
@@ -371,8 +375,8 @@ function github2wp_ajax_callback() {
 		}
 	}
 	
-	if ( isset( $_POST['github2wp_action'] ) and 'downgrade' == $_POST['github2wp_action'] ) {
-		if ( isset( $_POST['commit_id'] ) and isset( $_POST['res_id'] ) ) {
+	if ( isset( $_POST['github2wp_action'] ) && 'downgrade' == $_POST['github2wp_action'] ) {
+		if ( isset( $_POST['commit_id'] ) && isset( $_POST['res_id'] ) ) {
 			$resource = $resource_list[ $_POST['res_id'] ];
 			$version = $_POST['commit_id'];
 
@@ -413,7 +417,7 @@ function github2wp_ajax_callback() {
 		}
 	}
 
-	if ( isset( $_POST['github2wp_action'] ) and 'fetch_history' == $_POST['github2wp_action'] ) {
+	if ( isset( $_POST['github2wp_action'] ) && 'fetch_history' == $_POST['github2wp_action'] ) {
 		if ( isset ( $_POST['res_id'] ) ) {
 			header( 'Content-Type: text/html' );
 
@@ -540,8 +544,8 @@ function github2wp_needs_configuration() {
 	$options = get_option( 'github2wp_options' );
 	$default = $options['default'];
 
-	return ( empty( $default['master_branch'] ) or empty( $default['client_id'] )
-		or empty( $default['client_secret'] ) or empty( $default['access_token'] ) );
+	return ( empty( $default['master_branch'] ) || empty( $default['client_id'] )
+		or empty( $default['client_secret'] ) || empty( $default['access_token'] ) );
 }
 
 //------------------------------------------------------------------------------
@@ -642,7 +646,7 @@ function github2wp_get_repo_name_from_hash( $hash ) {
 	foreach ( $resource_list as $res ) {
 		$repo_name = $res['repo_name'];
 
-		if ( $repo_name == $hash or wp_hash( $repo_name ) == $hash )
+		if ( $repo_name == $hash || wp_hash( $repo_name ) == $hash )
 			return $repo_name;
 	}
 
@@ -660,7 +664,7 @@ function github2wp_pluginFile_hashed( $hash ) {
 		$pluginFile = $plugin_index;
 		$repo_name = substr( basename( $plugin_index ), 0, -4 );
 
-		if ( $repo_name == $hash or $pluginFile == $hash or wp_hash( $repo_name ) == $hash )
+		if ( $repo_name == $hash || $pluginFile == $hash || wp_hash( $repo_name ) == $hash )
 			return $pluginFile;
 	}
 
@@ -682,7 +686,7 @@ function github2wp_get_plugin_header( $pluginFile, $header = 'Version' ) {
 	if ( 'ALL' == $header )
 		return serialize( $allPlugins[ $pluginFile ] );
 
-	if ( array_key_exists( $pluginFile, $allPlugins ) and array_key_exists( $header, $allPlugins[ $pluginFile ] ) )
+	if ( array_key_exists( $pluginFile, $allPlugins ) && array_key_exists( $header, $allPlugins[ $pluginFile ] ) )
 		return $allPlugins[ $pluginFile ][ $header ];
 
 	return '-';
@@ -734,11 +738,11 @@ function github2wp_rmdir( $dir ) {
 	if ( ! file_exists( $dir ) )
 		return true;
 
-	if ( ! is_dir( $dir ) or is_link( $dir ) )
+	if ( ! is_dir( $dir ) || is_link( $dir ) )
 		return unlink( $dir );
 
 	foreach ( scandir( $dir ) as $item ) {
-		if ( '.' == $item or '..' == $item )
+		if ( '.' == $item || '..' == $item )
 			continue;
 
 		if ( ! github2wp_rmdir( $dir . '/' . $item ) ) {
@@ -836,7 +840,7 @@ function github2wp_setting_resources_list() {
 	$options = get_option( 'github2wp_options' );
 	$resource_list = $options['resource_list'];
 
-	if ( is_array( $resource_list )  and  ! empty( $resource_list ) ) {
+	if ( is_array( $resource_list )  &&  ! empty( $resource_list ) ) {
 	?>
 		<br />
 		<table id='the-list' class='wp-list-table widefat plugins' cellpadding='5' border='1' cellspacing='0' >
@@ -853,7 +857,7 @@ function github2wp_setting_resources_list() {
 				$transient = get_transient( 'github2wp_branches' );
 				$default = $options['default'];
 
-				if ( is_array( $resource_list ) and ! empty( $resource_list ) )		
+				if ( is_array( $resource_list ) && ! empty( $resource_list ) )		
 					foreach ( $resource_list as $index => $resource ) {
 						$k++;
 
@@ -903,7 +907,7 @@ function github2wp_setting_resources_list() {
 							$plugin_file = $resource['repo_name'] . '/' . $resource['repo_name'] . '.php';
 							$current_plugin_version = github2wp_get_plugin_version( $plugin_file );
 
-							if ( $current_plugin_version > '-' and $current_plugin_version > '' ) {
+							if ( $current_plugin_version > '-' && $current_plugin_version > '' ) {
 								$my_data .= '<strong>' . github2wp_get_plugin_header( $plugin_file, 'Name' ) . '</strong>&nbsp;(';
 
 								if ( $resource['is_on_wp_svn'] )
@@ -914,7 +918,7 @@ function github2wp_setting_resources_list() {
 								$author_uri = github2wp_get_plugin_header( $plugin_file, 'AuthorURI' );
 								$plugin_description = github2wp_get_plugin_header( $plugin_file, 'Description' );
 
-								if ( '-' != $author_uri and '' != $author_uri )
+								if ( '-' != $author_uri && '' != $author_uri )
 									$author = "<a href='$author_uri' target='_blank'>$author</a>";
 
 								$my_data .= __( 'Version ', GITHUB2WP ) . $current_plugin_version . '&nbsp;|&nbsp;';
@@ -922,14 +926,14 @@ function github2wp_setting_resources_list() {
 								$my_data .= "<a id='need_help_$k' class='clicker' alt='res_details_$k'><strong>" . __( 'Details', GITHUB2WP ) . '</strong></a><br />';
 								$my_data .= "<div id='res_details_$k' class='slider home-border-center'>";
 
-								if ( '' != $plugin_description and '-' != $plugin_description )
+								if ( '' != $plugin_description && '-' != $plugin_description )
 									$my_data .= $plugin_description . '<br />';
 
 								$new_version = substr( $resource['head_commit'], 0, 7 ); 
 							}
 	
-							if ( new_version != $current_plugin_version and '-' != $current_plugin_version
-								and '' != $current_plugin_version and false != $new_version ) {
+							if ( new_version != $current_plugin_version && '-' != $current_plugin_version
+								and '' != $current_plugin_version && false != $new_version ) {
 									$my_data .= '<strong>' . __( 'New Version: ', GITHUB2WP ) . "</strong>$new_version<br /></div>";
 									$action .= github2wp_return_resource_update( $resource, $k-1 );
 							}
@@ -938,7 +942,7 @@ function github2wp_setting_resources_list() {
 								$theme_dirname = $resource['repo_name'];
 								$current_theme_version = github2wp_get_theme_version( $theme_dirname );
 
-								if ( $current_theme_version > '-' and $current_theme_version > '' ) {
+								if ( $current_theme_version > '-' && $current_theme_version > '' ) {
 									$my_data .= '<strong>' . github2wp_get_theme_header( $theme_dirname, 'Name' ) . '</strong>&nbsp;(';
 
 									if ( $resource['is_on_wp_svn'] )
@@ -950,7 +954,7 @@ function github2wp_setting_resources_list() {
 									$author_uri = github2wp_get_theme_header( $theme_file, 'AuthorURI');
 									$theme_description = github2wp_get_theme_header( $theme_dirname, 'Description');
 
-									if ( '-' != $author_uri and '' != $author_uri )
+									if ( '-' != $author_uri && '' != $author_uri )
 										$author = "<a href='$author_uri' target='_blank'>$author</a>";
 
 									$my_data .= __( 'Version ', GITHUB2WP) . $current_theme_version . '&nbsp;|&nbsp;';
@@ -958,14 +962,14 @@ function github2wp_setting_resources_list() {
 									$my_data .= "<a id='need_help_$k' class='clicker' alt='res_details_$k'><strong>" . __( 'Details', GITHUB2WP ) . '</strong></a><br />';
 									$my_data .= "<div id='res_details_$k' class='slider home-border-center'>";
 
-									if ( '' != $theme_description and '-' != $theme_description )
+									if ( '' != $theme_description && '-' != $theme_description )
 										$my_data .= $theme_description . '<br />';
 
 									$new_version = substr( $resource['head_commit'], 0, 7) ;
 								}
 
-								if ( $new_version != $current_theme_version and false != $new_version
-									and '-' != $current_theme_version and '' != $current_theme_version ) {
+								if ( $new_version != $current_theme_version && false != $new_version
+									and '-' != $current_theme_version && '' != $current_theme_version ) {
 										$my_data .= '<strong>' . __( 'New Version:', GITHUB2WP ) . "</strong>$new_version<br /></div>";
 										$action .= github2wp_return_resource_update( $resource, $k-1 );
 							
@@ -1001,7 +1005,7 @@ function github2wp_setting_resources_list() {
 function github2wp_options_validate( $input ) {
 	$options = get_option( 'github2wp_options' );
 
-	if ( isset( $_POST['submit_resource'] ) and ! github2wp_needs_configuration() ) {
+	if ( isset( $_POST['submit_resource'] ) && ! github2wp_needs_configuration() ) {
 		$initial_options = $options;
 		$resource_list = &$options['resource_list'];
 
@@ -1016,7 +1020,7 @@ function github2wp_options_validate( $input ) {
 
 			$data = Github_2_WP::get_data_from_git_clone_link( $repo_link );
 
-			if ( isset( $data['user'] ) and isset( $data['repo'] ) ) {
+			if ( isset( $data['user'] ) && isset( $data['repo'] ) ) {
 				$resource_owner = $data['user'];
 				$resource_repo_name = $data['repo'];
 
@@ -1025,7 +1029,7 @@ function github2wp_options_validate( $input ) {
 				$link = home_url() . '/wp-content' . $text_resource;
 				$unique = true;
 
-				if ( is_array( $resource_list ) and ! empty( $resource_list ) )
+				if ( is_array( $resource_list ) && ! empty( $resource_list ) )
 					foreach ( $resource_list as $resource ) {
 						if ( $resource['repo_name'] === $resource_repo_name ) {
 							$unique = false;
@@ -1085,7 +1089,7 @@ function github2wp_options_validate( $input ) {
 	$resource_list = &$options['resource_list'];
 	$k = 0;
 
-	if ( is_array( $resource_list ) and ! empty( $resource_list ) ) {
+	if ( is_array( $resource_list ) && ! empty( $resource_list ) ) {
 		foreach ( $resource_list as $key => $resource ) {
 			if ( isset( $_POST[ 'submit_install_resource_' . $k++ ] ) ) {
 				$repo_type = github2wp_get_repo_type($resource['resource_link']);
@@ -1119,7 +1123,7 @@ function github2wp_options_validate( $input ) {
 	$resource_list = &$options['resource_list'];
 	$k = 0;
 
-	if ( is_array( $resource_list ) and ! empty( $resource_list ) ) {
+	if ( is_array( $resource_list ) && ! empty( $resource_list ) ) {
 		foreach ( $resource_list as $key => $resource ) {
 			if ( isset( $_POST[ 'submit_update_resource_' . $k++ ] ) ) {
 				$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
@@ -1154,7 +1158,7 @@ function github2wp_options_validate( $input ) {
 	$resource_list = &$options['resource_list'];
 	$k = 0;
 
-	if ( is_array( $resource_list ) and ! empty( $resource_list ) ) {
+	if ( is_array( $resource_list ) && ! empty( $resource_list ) ) {
 		foreach ( $resource_list as $key => $resource ) {
 			if ( isset( $_POST[ 'submit_delete_resource_' . $k++ ] ) )
 					unset( $resource_list[ $key ] );
@@ -1187,7 +1191,7 @@ function github2wp_options_validate( $input ) {
 				$changed = 1;
 			}
 
-		if ( $master_branch and $client_id and $client_secret )
+		if ( $master_branch && $client_id && $client_secret )
 			$default['app_reset']=0;
 
 		$default['master_branch'] = $master_branch;
@@ -1210,7 +1214,7 @@ function github2wp_init() {
 	$default = &$options['default'];
 
 	// get token from GitHub
-	if ( isset( $_GET['code'] ) and  isset( $_GET['github2wp_auth'] ) and 'true' == $_GET['github2wp_auth'] ) {
+	if ( isset( $_GET['code'] ) &&  isset( $_GET['github2wp_auth'] ) && 'true' == $_GET['github2wp_auth'] ) {
 		$code = $_GET['code'];
 		$options = get_option( 'github2wp_options' );
 		$default = &$options['default'];
@@ -1244,7 +1248,7 @@ add_action( 'plugins_loaded', 'github2wp_language_init' );
 
 function github2wp_admin_head() {
 	if ( isset( $_GET['action'] )
-		and ( 'update-selected' == $_GET['action'] or 'update-selected-themes' == $_GET['action'] ) ) {
+		and ( 'update-selected' == $_GET['action'] || 'update-selected-themes' == $_GET['action'] ) ) {
 
 			$options = get_option( 'github2wp_options' );
 			$resource_list = $options['resource_list'];
@@ -1284,8 +1288,8 @@ add_action( 'admin_head', 'github2wp_admin_head' );
 
 
 function github2wp_admin_footer() {
-	if ( defined( 'IFRAME_REQUEST' ) and isset( $_GET['action'] )
-		and ( 'update-selected' == $_GET['action'] or 'update-selected-themes' == $_GET['action'] ) ) {
+	if ( defined( 'IFRAME_REQUEST' ) && isset( $_GET['action'] )
+		and ( 'update-selected' == $_GET['action'] || 'update-selected-themes' == $_GET['action'] ) ) {
 			
 			$options = get_option('github2wp_options');
 			$resource_list = $options['resource_list'];

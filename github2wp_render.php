@@ -40,7 +40,7 @@ function github2wp_return_branch_dropdown( $index, $branches ) {
 	
 	$branch_dropdown = '<strong>' . __( 'Branch:', GITHUB2WP ) . "</strong><select style='width: 125px;' class='resource_set_branch' resource_id='$index'>";
 	
-	if( is_array( $branches ) and count( $branches ) > 0 ) {
+	if( is_array( $branches ) && count( $branches ) > 0 ) {
 		foreach ( $branches as $branch ) {
 			if ( $options['resource_list'][ $index ]['repo_branch'] == $branch )
 				$branch_dropdown .= "<option value='$branch' selected='selected' >$branch</option>";
@@ -331,7 +331,7 @@ function github2wp_render_history_page() {
 			$plugin_render = '';
 			$theme_render = '';
 
-			if ( is_array( $resource_list ) and ! empty( $resource_list ) ) {
+			if ( is_array( $resource_list ) && ! empty( $resource_list ) ) {
 				foreach ( $resource_list as $key => $resource ) {
 					$type = github2wp_get_repo_type( $resource['resource_link'] );
 

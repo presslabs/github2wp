@@ -42,7 +42,7 @@ class Github_2_WP {
 
 
 	public function create_zip_url() {
-		if ( '' != $this->config['user'] and '' != $this->config['repo'] and null != $this->config['access_token'] and '' != $this->config['source'] ) {
+		if ( '' != $this->config['user'] && '' != $this->config['repo'] && null != $this->config['access_token'] && '' != $this->config['source'] ) {
 			$this->config['zip_url'] = $this->config['git_api_base_url'] 
 			. sprintf( 'repos/%s/%s/zipball/%s?access_token=%s', $this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token'] );
 		}
@@ -122,7 +122,7 @@ class Github_2_WP {
 						if ( file_exists( $upload_dir . $this->config['repo'] . '/.gitmodules' ) ) {
 							$submodules = Github_2_WP::parse_git_submodule_file( $upload_dir.$this->config['repo'] . '/.gitmodules' );
 
-							if ( is_array( $submodules ) and ! empty( $submodules ) )
+							if ( is_array( $submodules ) && ! empty( $submodules ) )
 								foreach ( $submodules as $module ) {
 									if ( ! $error_free )
 										break;
@@ -404,7 +404,7 @@ class Github_2_WP {
 		
 		$response = wp_remote_get( $url, $args );
 
-		if ( is_wp_error( $response ) or 200 != wp_remote_retrieve_response_code( $response ) )
+		if ( is_wp_error( $response ) || 200 != wp_remote_retrieve_response_code( $response ) )
 			return false;
 
 		$bit_count = file_put_contents( GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule.zip', wp_remote_retrieve_body( $response ) );
@@ -451,7 +451,7 @@ class Github_2_WP {
 	
 		$response = wp_remote_get( $url, $args );
 
-		if ( is_wp_error( $response ) or 200 != wp_remote_retrieve_response_code( $response ) )
+		if ( is_wp_error( $response ) || 200 != wp_remote_retrieve_response_code( $response ) )
 			return null;
 
 		$result = json_decode( wp_remote_retrieve_body( $response ), true );
@@ -508,7 +508,7 @@ class Github_2_WP {
 
 		$response = wp_remote_get( $url, $args );
 
-		if ( is_wp_error( $response ) or 200 != wp_remote_retrieve_response_code( $response ) )
+		if ( is_wp_error( $response ) || 200 != wp_remote_retrieve_response_code( $response ) )
 			return null;
 
 		$result = json_decode( wp_remote_retrieve_body( $response ), true );
@@ -542,7 +542,7 @@ class Github_2_WP {
 		);	
 		$response = wp_remote_get( $url, $args );
 
-		if ( is_wp_error( $response ) or 200 != wp_remote_retrieve_response_code( $response ) )
+		if ( is_wp_error( $response ) || 200 != wp_remote_retrieve_response_code( $response ) )
 			return null;
 
 		$result = json_decode( wp_remote_retrieve_body( $response ), true );
