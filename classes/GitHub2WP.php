@@ -25,7 +25,6 @@ class GitHub2WP {
     }
 
 
-
     private function deactivate() {
         wp_clear_scheduled_hook( GitHub2WP::PREFIX . 'cron_hook' );
     }

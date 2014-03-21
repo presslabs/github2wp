@@ -8,6 +8,6 @@
  * Version: 1.0.0
  */
 
-require_once( 'GitHub2WP.php' );
+require_once( 'classes/GitHub2WP.php' );
 
 $github2Wp = new GitHub2WP();
