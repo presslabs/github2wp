@@ -13,14 +13,18 @@ class GitHub2WP {
 
 
     private function init() {
-        register_activation_hook( GitHub2WP::WP_BASE_IDENTIFIER, array( $this, 'activate' ) );
-        register_deactivation_hook( GitHub2WP::WP_BASE_IDENTIFIER, array( $this, 'deactivate') );
-        add_action( 'uninstall_' . GitHub2WP::WP_BASE_IDENTIFIER, array( $this, 'uninstall' ) );
+        //TODO find what goes wrong here
+        /*
+        register_activation_hook( GitHub2WP::WP_IDENTIFIER, array( $this, 'install' ) );
+        register_deactivation_hook( GitHub2WP::WP_IDENTIFIER, array( $this, 'deactivate' ) );
+        register_uninstall_hook( GitHub2WP::WP_IDENTIFIER, array( $this, 'uninstall' ) );
+        //add_action( 'uninstall_' . GitHub2WP::WP_BASE_IDENTIFIER, array( $this, 'uninstall' ) );
         add_option( GitHub2WP::PREFIX . '_options', array() );
+        */
     }
 
 
-    private function activate() {
+    private function install() {
         wp_schedule_event( current_time ( 'timestamp' ), '6h', GitHub2WP::PREFIX . 'cron_hook' );
     }
 
