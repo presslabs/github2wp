@@ -48,7 +48,7 @@ function github2wp_uninstall() {
 	github2wp_delete_options();
 	delete_transient( 'github2wp_branches' );
 }
-add_action( 'uninstall_' . plugin_basename( __FILE__ ), 'git2wp_uninstall' );
+add_action( 'uninstall_' . plugin_basename( __FILE__ ), 'github2wp_uninstall' );
 
 //------------------------------------------------------------------------------
 function github2wp_admin_notices_action() {
