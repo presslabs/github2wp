@@ -8,7 +8,7 @@
         private $initiator = null;
 
 
-        public function __construct( ALoader $initiator ) {
+        public function __construct( Loader $initiator ) {
             $this->initiator = $initiator;
         }
 

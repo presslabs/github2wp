@@ -1,5 +1,5 @@
 <?php
-    namespace classes\helper;
+    namespace github2wp\classes\helper;
 
     final class Log {
         private static $instance = null;
@@ -37,6 +37,9 @@
 
 
         public static function setPath( $path ) {
+            if (! file_exists($path) )
+                file_put_contents($path, '');
+            
             self::$path = $path;
         }
 
