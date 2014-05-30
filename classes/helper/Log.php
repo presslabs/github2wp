@@ -36,10 +36,7 @@
         }
 
 
-        public static function setPath( $path ) {
-            if (! file_exists($path) )
-                file_put_contents($path, '');
-            
+        public static function setPath( $path ) { 
             self::$path = $path;
         }
 
