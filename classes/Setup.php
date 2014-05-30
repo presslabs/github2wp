@@ -1,8 +1,6 @@
 <?php
 
-    namespace classes;
-
-    use classes\abstracts\ALoader;
+    namespace github2wp\classes;
 
     class Setup {
         private $initiator = null;
