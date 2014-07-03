@@ -1,6 +1,8 @@
 <?php
 namespace github2wp\classes;
+
 use github2wp\classes\helper\Log;
+use github2wp\classes\Cron;
 
 class Loader {
 
@@ -9,6 +11,7 @@ class Loader {
     private $file;
 
     public static $logger = null;
+    public Cron $cron = null;
 
     public function __construct( $file ) {
         $this->abs_path = dirname( $file );
@@ -17,7 +20,7 @@ class Loader {
         self::$logger = Log::getInstance();
 
         $logPath = wp_upload_dir()[ 'basedir' ] . '/' . $this->prefix . 'log';
-        Log::setPath( $logPath );
+	Log::setPath( $logPath );
     }
 
     public function load() {
@@ -25,11 +28,10 @@ class Loader {
         register_deactivation_hook( $this->file, array ( $this, 'deactivate' ) );
 
         add_action( 'plugins_loaded', array ( $this, 'textDomain' ) );
-        add_filter( 'cron_schedules', array ( $this, 'crons' ) );
-
 
         if ( is_admin() ) {
-
+		//TODO null should be a GITUSER
+		$this->cron = new Cron($this, null);
         } else {
             //TODO add enqueue methods classes, to be seen
             add_action( 'wp_enqueue_style', array ( $this, 'enqueueStyle' ) );
@@ -55,15 +57,6 @@ class Loader {
     public function textDomain() {
         load_plugin_textdomain( $this->prefix . 'textDomain', false,
             dirname( plugin_basename( $this->prefix ) ) . '/translations/' );
-    }
-
-
-    public function crons( $schedules ) {
-        $schedules[ '6h' ] = array ( 'interval' => 21600, 'display' => __( 'Once every 6h' ),
-            //TODO make translation compatible <===
-        );
-
-        return $schedules;
     }
 
 
