@@ -6,9 +6,11 @@
         private $initiator = null;
 
 
-        public function __construct( Loader $initiator ) {
-            $this->initiator = $initiator;
-        }
+				public function __construct() {
+					global $github2wp;
+
+					$this->initiator = $github2wp;
+				}
 
 
         public function deactivate() {

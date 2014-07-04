@@ -25,6 +25,7 @@ spl_autoload_register( function ( $className ) {
         include $className;
 } );
 
+global $github2wp;
 
 $github2Wp = new Loader( __FILE__ );
 $github2Wp->load();
