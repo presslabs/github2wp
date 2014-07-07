@@ -2,7 +2,6 @@
 namespace github2wp\classes;
 
 use github2wp\classes\helper\Log;
-use github2wp\classes\Cron;
 use github2wp\classes\GitUser;
 
 class Loader {
@@ -11,7 +10,6 @@ class Loader {
 	private $file;
 
 	public static $logger = null;
-	public $cron = null;
 	public $user = null;
 
 	public function __construct( $file ) {
@@ -32,8 +30,7 @@ class Loader {
 
 		if ( is_admin() ) {
 			//TODO null should be a GITUSER
-			$this->user = new GitUser();
-			$this->cron = new Cron();
+			$this->user = new GitUser( $this );
 		} else {
 			//TODO add enqueue methods classes, to be seen
 			add_action( 'wp_enqueue_style', array ( $this, 'enqueueStyle' ) );
@@ -44,13 +41,13 @@ class Loader {
 
 	public function activate() {
 		//TODO pass down this reference to the other methods using observer pattern
-		$setup = new Setup();
+		$setup = new Setup( $this );
 		$setup->activate();
 	}
 
 
 	public function deactivate() {
-		$setup = new Setup();
+		$setup = new Setup( $this );
 		$setup->deactivate();
 	}
 
