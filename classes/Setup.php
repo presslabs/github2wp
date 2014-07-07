@@ -6,10 +6,8 @@
         private $initiator = null;
 
 
-				public function __construct() {
-					global $github2wp;
-
-					$this->initiator = $github2wp;
+				public function __construct( Loader $loader ) {
+					$this->initiator = $loader;
 				}
 
 
@@ -27,9 +25,19 @@
         private function checkOptions() {
             $optionName = $this->initiator->getPrefix() . 'options';
 
-            //the default options
-            //TODO complete with already used opts
-            $options = array ();
+						$options = array(
+							'user' => array(
+								'connected_username' => '',
+								'connection_type'    => 'token',
+								'client_id'          => '',
+								'client_secret'      => '',
+								'master_branch'      => 'master',
+								'token'              => '',
+								'needs_refresh'      => false,
+								'app_reset'          => false
+							),
+							'repos' => array()
+						);
 
             if ( !get_option( $optionName ) ) {
                 add_option( $optionName, $options );
