@@ -5,14 +5,12 @@ namespace github2wp\classes;
 use github2wp\classes\GitUser;
 
 class GitRepo {
-	// SSH or Token
-	private $type;
-	private $url;
-	private GitUser $owner;
+	private $owner;
+	private $args;
 
-	public function __construct( GitUser $owner, $resource_url  ) {
+	public function __construct( GitUser $owner, array $db_args  ) {
 		$this->owner = $owner;
-		$this->url = $resource_url;
+		$this->args = $db_args;
 		//TODO make type differentiation from the resource url after validation
 	}
 
