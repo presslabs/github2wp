@@ -1,8 +1,8 @@
 <?php
 namespace github2wp\classes;
 
-use github2wp\classes\helper\Log;
-use github2wp\classes\GitUser;
+use helper\Log;
+use git\User;
 
 class Loader {
 	private $prefix = 'GH2WP_';
@@ -30,7 +30,7 @@ class Loader {
 
 		if ( is_admin() ) {
 			//TODO null should be a GITUSER
-			$this->user = new GitUser( $this );
+			$this->user = new User( $this );
 		} else {
 			//TODO add enqueue methods classes, to be seen
 			add_action( 'wp_enqueue_style', array ( $this, 'enqueueStyle' ) );
