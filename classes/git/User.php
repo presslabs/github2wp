@@ -1,12 +1,11 @@
 <?php
 
-namespace github2wp\classes;
+namespace github2wp\classes\git;
 
-use github2wp\classes\Cron;
-use github2wp\classes\GitRepo;
+use Repo;
+use github2wp\classes\Loader;
 
 class GitUser {
-	private $repos = array();
 	private $authType ='token'; //can be token or ssh
 	private $cron;
 	private $loader;
@@ -16,11 +15,6 @@ class GitUser {
 	public function __construct( Loader $loader ) {
 		$this->loader = $loader;
 		$this->cron = new Cron( $this ); 
-
-
-		if ( $this->isAuthenticated()  )
-			$this->repos = $this->getUserRepos();
-
 
 		//TODO make it read from the database all the repos info
 		//TODO check if user needs authentification and if so use cron to check and update itself	
@@ -38,18 +32,29 @@ class GitUser {
 	}
 
 
+	public function save() {
+		update_option( $loader->getPrefix() . 'options', $this->dbData );
+	}
+
 	private function loadDB() {
 		$this->dbData = get_option( $loader->getPrefix() . 'options', array() );
 	}
 
-	private function getUserRepos() {
+	public function addRepo( $resource_url ) {
 		$this->loadDB();
 
-		$dbReps = $this->dbData['repos'];
 
-		$this->repos = array();
-		foreach( $dbReps as $repo ) {
-				$this->repos[] = new GitRepo( $this, $repo );
-		}
+		//TODO change this to make it work
+		$args = array(
+			'type' => '',
+			'link' => '',
+			'name' => '',
+			'branch'=>'',
+			'username'=>'',
+			'is_on_wp_svn'=>'',
+			'head_commit'=>'',
+		);
+
+		$this->data['repos'][] = new Repo( $this,  );
 	}
 }

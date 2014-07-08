@@ -1,14 +1,14 @@
 <?php
 
-namespace github2wp\classes;
+namespace github2wp\classes\git;
 
-use github2wp\classes\GitUser;
+use User; 
 
-class GitRepo {
+class Repo {
 	private $owner;
 	private $args;
 
-	public function __construct( GitUser $owner, array $db_args  ) {
+	public function __construct( User $owner, array $db_args  ) {
 		$this->owner = $owner;
 		$this->args = $db_args;
 		//TODO make type differentiation from the resource url after validation
@@ -37,8 +37,7 @@ class GitRepo {
 		//TODO see if the url is in a valid format SSH or HTTP
 	}
 
-	private function extractType() {
+	public static  function extractType() {
 		//TODO after validation this should return SSH or HTTP or false on error
 	}
-
 }

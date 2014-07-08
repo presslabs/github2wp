@@ -1,21 +1,27 @@
 <?php
 
-namespace github2wp\classes;
+namespace github2wp\classes\git;
 
-use github2wp\classes\GitUser;
-use github2wp\classes\GitRepo;
+use User;
+use Repo;
 
-abstract class Git {
+abstract class API {
+	protected $download_dir;
 	protected $api_base;
-	protected GitUser $user;
 
-	public function __construct( GitUser $user, $api_base ) {
+	protected $user;
+
+
+	public function __construct( User $user, $api_base ) {
 		$this->user = $user;
 		$this->api_base = $api_base;
+
+		$this->download_dir = wp_upload_dir()['basedir'].DIRECTORY_SEPARATOR;
 	}
 
-	public abstract function checkRepoConnection( GitRepo $repo );
-	public abstract function fetch( GitRepo $repo );
-	public abstract function checkSubmodule( GitRepo $repo );
-	public abstract function updateSubmodules( GitRepo $repo );
+	public abstract function checkRepoVisibility( Repo $repo );
+	public abstract function fetch( Repo $repo );
+
+	public abstract function checkSubmodule( Repo $repo );
+	public abstract function updateSubmodules( Repo $repo );
 }
