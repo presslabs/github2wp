@@ -1,0 +1,15 @@
+{
+    "name": "presslabs/github2wp",
+    "authors": [
+        {
+            "name": "Krody Robi",
+            "email": "robi@presslabs.com"
+        }
+    ],
+    "require": {
+
+    },
+		"autoload": {
+			"psr-4": {"github2wp\\": "classes/"}
+		}
+}
