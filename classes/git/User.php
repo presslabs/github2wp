@@ -5,7 +5,7 @@ namespace github2wp\classes\git;
 use Repo;
 use github2wp\classes\Loader;
 
-class GitUser {
+class User {
 	private $authType ='token'; //can be token or ssh
 	private $cron;
 	private $loader;

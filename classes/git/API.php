@@ -6,15 +6,14 @@ use User;
 use Repo;
 
 abstract class API {
-	protected $download_dir;
-	protected $api_base;
+	const API_BASE = '';
 
+	protected $download_dir;
 	protected $user;
 
 
-	public function __construct( User $user, $api_base ) {
+	public function __construct( User $user ) {
 		$this->user = $user;
-		$this->api_base = $api_base;
 
 		$this->download_dir = wp_upload_dir()['basedir'].DIRECTORY_SEPARATOR;
 	}
@@ -24,4 +23,7 @@ abstract class API {
 
 	public abstract function checkSubmodule( Repo $repo );
 	public abstract function updateSubmodules( Repo $repo );
+	
+	public abstract function getApiUrl($endpoint, array $segments);
+
 }

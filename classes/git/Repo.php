@@ -4,7 +4,7 @@ namespace github2wp\classes\git;
 
 use User; 
 
-class Repo {
+class Repo implements Serializable {
 	private $owner;
 	private $args;
 
@@ -39,5 +39,13 @@ class Repo {
 
 	public static  function extractType() {
 		//TODO after validation this should return SSH or HTTP or false on error
+	}
+
+	public function serialize() {
+		//return serialize($this->data);
+	}
+
+	public function unserialize($data) {
+		//$this->data = unserialize($data);
 	}
 }

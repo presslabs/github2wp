@@ -10,7 +10,7 @@
 
 namespace github2wp;
 
-use github2wp\classes\Loader;
+use classes\Loader;
 
 spl_autoload_register( function ( $className ) {
 
