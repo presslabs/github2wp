@@ -1,5 +1,6 @@
 <?php
-namespace github2wp\classes;
+
+namespace github2wp\Loader;
 
 use helper\Log;
 use git\User;
