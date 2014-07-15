@@ -10,28 +10,11 @@
 
 namespace github2wp;
 
-use Loader;
+use github2wp\Loader;
+
 
 require 'vendor/autoload.php';
 
-
-/*
-spl_autoload_register( function ( $className ) {
-
-	if ( substr( $className, 0, strlen(__NAMESPACE__) ) === __NAMESPACE__ )
-    	$className = substr($className, strlen(__NAMESPACE__));
-
-		error_log(serialize($className));
-    $className = trim($className);
-    $className = __DIR__ . DIRECTORY_SEPARATOR .  str_replace( '\\', DIRECTORY_SEPARATOR, $className );
-    $className .= '.php';
-
-
-		error_log(serialize($className));
-    if ( file_exists( $className ) )
-        include $className;
-} );
- */
 
 global $github2wp;
 

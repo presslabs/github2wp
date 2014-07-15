@@ -1,9 +1,8 @@
 <?php
 
-namespace github2wp\classes\git;
+namespace github2wp\git;
 
-use Repo;
-use github2wp\classes\Loader;
+use github2wp\Loader;
 
 class User {
 	private $authType ='token'; //can be token or ssh

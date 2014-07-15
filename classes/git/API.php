@@ -1,6 +1,6 @@
 <?php
 
-namespace github2wp\classes\git;
+namespace github2wp\git;
 
 use User;
 use Repo;

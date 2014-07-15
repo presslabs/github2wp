@@ -1,5 +1,5 @@
 <?php
-    namespace github2wp\classes\helper;
+    namespace github2wp\helper;
 
     final class Log {
         private static $instance = null;

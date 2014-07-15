@@ -10,6 +10,9 @@
 
     },
 		"autoload": {
-			"psr-4": {"github2wp\\": "classes/"}
+			"psr-4": {
+				"github2wp\\": "classes/",
+				"github2wp\\tests\\": "tests/"
+			}
 		}
 }

@@ -1,10 +1,10 @@
 <?php
 
-namespace github2wp\classes\git;
+namespace github2wp\git;
 
 use User; 
 
-class Repo implements Serializable {
+class Repo implements \Serializable {
 	private $owner;
 	private $args;
 

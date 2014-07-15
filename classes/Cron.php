@@ -1,6 +1,6 @@
 <?php
 
-namespace github2wp\classes;
+namespace github2wp;
 
 class Cron {
 	//TODO Make the loader have access to the Cron OBJECT

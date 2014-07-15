@@ -1,9 +1,9 @@
 <?php
 
-namespace github2wp\Loader;
+namespace github2wp;
 
-use helper\Log;
-use git\User;
+use github2wp\helper\Log;
+use github2wp\git\User;
 
 class Loader {
 	private $prefix = 'GH2WP_';
