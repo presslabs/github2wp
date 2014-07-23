@@ -1,46 +1,51 @@
 <?php
-    namespace github2wp\helper;
+namespace github2wp\helper;
 
-    final class Log {
-        private static $instance = null;
-        private static $path = null;
+final class Log {
+	private static $instance = null;
+	private static $path = null;
 
-
-        private function __construct() { }
-
-
-        public static function getInstance() {
-            if ( !self::$instance )
-                self::$instance = new Log();
+	private function __construct() { }
 
 
-            return self::$instance;
-        }
+	public static function getInstance() {
+		if ( !self::$instance )
+				self::$instance = new Log();
+
+		return self::$instance;
+	}
 
 
-        public static function write( $message, $to_serialize = false, $file = null, $line = null ) {
-            if ( $to_serialize )
-                $message = serialize( $message );
+	public static function write( $message, $to_serialize = false, $file = null, $line = null ) {
 
-            $message = time() . ' - ' . $message;
-            $message .= is_null( $file ) ? '' : " in $file";
-            $message .= is_null( $line ) ? '' : " on line $line";
-            $message .= "\n";
+		if ( !defined( 'WP_DEBUG' ) || FALSE == WP_DEBUG )
+			return false;
 
-            return file_put_contents( self::$path, $message, FILE_APPEND );
-        }
+		if ( $to_serialize )
+			 $message = serialize( $message );
 
+		$message = time() . ' - ' . $message;
+		$message .= is_null( $file ) ? '' : " in $file";
+		$message .= is_null( $line ) ? '' : " on line $line";
+		$message .= "\n";
 
-        public static function getPath() {
-            return self::$path;
-        }
-
-
-        public static function setPath( $path ) { 
-            self::$path = $path;
-        }
+		return file_put_contents( self::$path, $message, FILE_APPEND );
+	}
 
 
-        private function __clone() { }
+	public static function writeException( Exception $e ) {
+		static::write( $e->getMessage(), false, $e->getFile, $e->getLine() );
+	}
 
-    }
+
+	public static function getPath() {
+		return self::$path;
+	}
+
+
+	public static function setPath( $path ) { 
+		self::$path = $path;
+	}
+
+	private function __clone() { }
+}
