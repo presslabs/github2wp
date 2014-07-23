@@ -1,8 +1,11 @@
 <?php
 
-use github2wp\classes\Loader;
+namespace github2wp\tests;
 
-class WP_Test_Loader extends WP_UnitTestCase {
+use github2wp\Loader;
+
+
+class WP_Test_Loader extends \WP_UnitTestCase {
 	private $loader;
 
 	public function setUp() {

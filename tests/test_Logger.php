@@ -1,8 +1,10 @@
 <?php
 
-use github2wp\classes\helper\Log;
+namespace github2wp\tests;
 
-class WP_Test_Logger extends WP_UnitTestCase {
+use github2wp\helper\Log;
+
+class WP_Test_Logger extends \WP_UnitTestCase {
 	private $log;
 	private $log_path;
 
