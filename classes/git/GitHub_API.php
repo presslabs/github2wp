@@ -2,9 +2,10 @@
 
 namespace github2wp\git;
 
-use API;
-use Repo;
-use User;
+use github2wp\git\API;
+use github2wp\git\Repo;
+use github2wp\git\User;
+use github2wp\helper\Log;
 
 class GitHub_API extends API {
 	//TODO fill the $api_base
@@ -28,38 +29,21 @@ class GitHub_API extends API {
 
 		$ping_url = $this->getApiUrl( $this->endpoints['availability_ping'], $segments );
 
-		$args = array(
-			'method'      => 'GET',
-			'timeout'     => 50,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			'blocking'    => true,
-			'headers'     => array(),
-			'body'        => null,
-			'cookies'     => array()
-		);
-
-		$response = wp_remote_get( $url, $args );
-
-		if ( is_wp_error( $response ) )
+		try {
+			$response_body = $this->makeRequest( $ping_url ); 
+		} catch ( \Exception $e ) {
+			Log::writeException( $e );
 			return false;
-
-		$result = wp_remote_retrieve_body( $response );
-		$result = json_decode($result, true);
-
-		if ( 'Not Found' == $result['message'] )
-			return false;
-
-		return true;
-	}
-
-
-	public function getApiUrl($endpoint, array $segments) {
-		foreach( $segments as $seg => $value ) {
-			$endpoint = str_replace( ':'.$seg, $value, $endpoint );
 		}
 
-		return self::API_BASE . $endpoint;
+		$result = json_decode($result, true);
+
+		if ( 'Not Found' == $result['message'] ) {
+			Log::write("Repo {$repo->getName()} not available");
+			return false;
+		}
+
+		return true;
 	}
 
 }
