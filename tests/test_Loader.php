@@ -39,11 +39,4 @@ class WP_Test_Loader extends \WP_UnitTestCase {
 		$this->assertEquals($path, $logger->getPath());
 	}
 
-	public function test_cron_setup() {
-		$crons = $this->loader->crons(array());
-
-		$this->assertArrayHasKey('6h', $crons);
-		$this->assertEquals( array( 'interval' => 21600, 'display' => __( 'Once every 6h' )), $crons['6h']);
-	}
-
 }
