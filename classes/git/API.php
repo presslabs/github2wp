@@ -19,10 +19,13 @@ abstract class API {
 	}
 
 	public abstract function checkRepoVisibility( Repo $repo );
-	public abstract function fetch( Repo $repo );
+	public abstract function fetch( Repo $repo, FileSystem $fs );
 
 	public abstract function checkSubmodule( Repo $repo );
 	public abstract function updateSubmodules( Repo $repo );
+
+	public abstract function getBranches( Repo $repo );
+	public abstract function getHeadCommit( Repo $repo, $branch );
 
 
 	public function getApiUrl($endpoint, array $segments) {
@@ -34,7 +37,7 @@ abstract class API {
 	}
 
 
-	public function makeRequest( $url='' ) {
+	public static function makeRequest( $url='' ) {
 		if ( FALSE === filter_var( $url, FILTER_VALIDATE_URL ) )
 			throw new \InvalidArgumentException( "$url is not a valid url!" );
 
