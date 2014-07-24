@@ -3,6 +3,7 @@
 namespace github2wp\tests;
 
 use github2wp\git\GitHub_API;
+use github2wp\git\User;
 
 class WP_Test_Github_API extends \WP_UnitTestCase {
 	private $gitApi = null;
