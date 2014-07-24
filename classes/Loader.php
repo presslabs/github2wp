@@ -9,7 +9,7 @@ class Loader {
 	private $prefix = 'GH2WP_';
 	private $abs_path;
 	private $file;
-
+	
 	public static $logger = null;
 	public $user = null;
 
