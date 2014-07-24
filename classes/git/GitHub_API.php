@@ -12,11 +12,25 @@ class GitHub_API extends API {
 	const API_BASE = 'https://api.github.com/';
 
 	private $endpoints = array(
-		'availability_ping' => 'repos/:user/:repo/branches?access_token=:access_token'
+		'availability_ping' => 'repos/:user/:repo/branches?access_token=:access_token',
+		'repo_download'     => 'repos/:user/:repo/zipball/:version?access_token=:access_token'
 	); 
 
 	public function __construct( User $user ) {
 		parent::__construct( $user );
+	}
+
+	public function fetch( Repo $repo, FileSystem $fs ) {
+		$segments = array(
+			'repo'         => $repo->getName(),
+			'user'         => $user->getName(),
+			'access_token' => $user->getToken()
+		);
+
+		$download_url = $this->getApiUrl( $this->endpoints['repo_download'], $segments );
+		$fs->downloadFile( $download_url );
+
+		//TODO make the transition to wp format
 	}
 
 	public function checkRepoVisibility( Repo $repo ) {
@@ -30,7 +44,7 @@ class GitHub_API extends API {
 		$ping_url = $this->getApiUrl( $this->endpoints['availability_ping'], $segments );
 
 		try {
-			$response_body = $this->makeRequest( $ping_url ); 
+			$response_body = static::makeRequest( $ping_url ); 
 		} catch ( \Exception $e ) {
 			Log::writeException( $e );
 			return false;
@@ -46,4 +60,9 @@ class GitHub_API extends API {
 		return true;
 	}
 
+	public function checkSubmodule( Repo $repo ) {}
+	public function updateSubmodules( Repo $repo ) {}
+
+	public function getBranches( Repo $repo ) {}
+	public function getHeadCommit( Repo $repo, $branch ) {}
 }
