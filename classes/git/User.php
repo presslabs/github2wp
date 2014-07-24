@@ -3,6 +3,7 @@
 namespace github2wp\git;
 
 use github2wp\Loader;
+use github2wp\Cron;
 
 class User {
 	private $authType ='token'; //can be token or ssh
@@ -54,6 +55,6 @@ class User {
 			'head_commit'=>'',
 		);
 
-		$this->data['repos'][] = new Repo( $this,  );
+		//$this->data['repos'][] = new Repo( $this,  );
 	}
 }
