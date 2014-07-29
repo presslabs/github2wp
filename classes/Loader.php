@@ -1,26 +1,18 @@
 <?php
 
-namespace github2wp;
+namespace git2wp;
 
-use github2wp\helper\Log;
-use github2wp\git\User;
+use git2wp\helper\Log;
+use git2wp\git\User;
 
 class Loader {
 	private $prefix = 'GH2WP_';
-	private $abs_path;
-	private $file;
-	
-	public static $logger = null;
-	public $user = null;
 
-	public function __construct( $file ) {
-		$this->abs_path = dirname( $file );
-		$this->file = $file;
+	public $plugin_FILE;
 
-		self::$logger = Log::getInstance();
-
-		$logPath = wp_upload_dir()[ 'basedir' ] . '/' . $this->prefix . 'log';
-		Log::setPath( $logPath );
+	public function __construct( $prefix='GH2WP_', $file ) {
+		$this->plugin_FILE = $file;
+		$this->prefix = $prefix;
 	}
 
 	public function load() {
@@ -30,8 +22,6 @@ class Loader {
 		add_action( 'plugins_loaded', array ( $this, 'textDomain' ) );
 
 		if ( is_admin() ) {
-			//TODO null should be a GITUSER
-			$this->user = new User( $this );
 		} else {
 			//TODO add enqueue methods classes, to be seen
 			add_action( 'wp_enqueue_style', array ( $this, 'enqueueStyle' ) );
@@ -79,19 +69,8 @@ class Loader {
 		// TODO: Implement enqueueAdminScript() method.
 	}
 
-	public function getPrefix() {
-		return $this->prefix;
-	}
-
-	public function setPrefix( $newPrefix ) {
-		$this->prefix = $newPrefix;
-	}
-
-	public function getAbsPath() {
-		return $this->abs_path;
-	}
-
-	public function getFile() {
-		return $this->file;
+	public function prefix( $data='' ) {
+		//TODO validate and compose return of prefix + string;
+		return '';	
 	}
 }

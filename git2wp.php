@@ -8,15 +8,15 @@
  * Version: 1.0.0
  */
 
-namespace github2wp;
+namespace git2wp;
 
-use github2wp\Loader;
+use git2wp\Loader;
 
 
 require 'vendor/autoload.php';
 
 
-global $github2wp;
+global $git2wp;
 
-$github2Wp = new Loader( __FILE__ );
-$github2Wp->load();
+$git2wp = new Loader( __FILE__ );
+$git2wp->load();

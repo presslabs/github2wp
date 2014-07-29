@@ -1,9 +1,9 @@
 <?php
 
-namespace github2wp\git;
+namespace git2wp\git;
 
-use User;
-use Repo;
+use git2wp\git\User;
+use git2wp\git\Repo;
 
 abstract class API {
 	const API_BASE = '';

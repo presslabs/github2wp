@@ -1,5 +1,5 @@
 <?php
-    namespace github2wp;
+    namespace git2wp;
 
     if ( !defined( 'WP_UNINSTALL_PLUGIN' ) )
         exit();

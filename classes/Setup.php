@@ -1,6 +1,6 @@
 <?php
 
-namespace github2wp;
+namespace git2wp;
 
 
 class Setup {
@@ -13,18 +13,18 @@ class Setup {
 
 
 	public function deactivate() {
-		wp_clear_scheduled_hook( $this->initiator->getPrefix() . 'cron_hook' );
+		wp_clear_scheduled_hook( $this->initiator->prefix('cron_hook') );
 	}
 
 
 	public function activate() {
 		$this->checkOptions();
-		wp_schedule_event( current_time( 'timestamp' ), '6h', $this->initiator->getPrefix() . 'cron_hook' );
+		wp_schedule_event( current_time( 'timestamp' ), '6h', $this->prefix('cron_hook') );
 	}
 
 
 	private function checkOptions() {
-		$optionName = $this->initiator->getPrefix() . 'options';
+		$optionName = $this->initiator->prefix('options');
 
 		$options = array(
 			'user' => array(
@@ -52,7 +52,7 @@ class Setup {
 
 
 	public function optionReset() {
-		$optionName = $this->initiator->getPrefix() . 'options';
+		$optionName = $this->initiator->prefix('options');
 
 		delete_option( $optionName );
 		$this->checkOptions();

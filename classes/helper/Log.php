@@ -1,6 +1,7 @@
 <?php
-namespace github2wp\helper;
+namespace git2wp\helper;
 
+/*
 final class Log {
 	private static $instance = null;
 	private static $path = null;
@@ -34,7 +35,7 @@ final class Log {
 
 
 	public static function writeException( Exception $e ) {
-		static::write( $e->getMessage(), false, $e->getFile, $e->getLine() );
+		static::write( $e->getMessage(), false, $e->getFile(), $e->getLine() );
 	}
 
 
@@ -49,3 +50,5 @@ final class Log {
 
 	private function __clone() { }
 }
+
+ */
