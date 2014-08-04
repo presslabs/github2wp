@@ -158,7 +158,7 @@ function github2wp_update_check_themes( $transient ) {
 							unset($transient->response[ $response_index ]);
 
 						if ( '-' != $current_version && '' != $current_version
-							and $current_version != $new_version && false != $new_version ) {
+							&& $current_version != $new_version && false != $new_version ) {
 
 								$update_url = 'http://themes.svn.wordpress.org/responsive/1.9.3.2/readme.txt';
 								$zipball = GITHUB2WP_ZIPBALL_URL . '/' . wp_hash( $resource['repo_name'] ) . '.zip';
@@ -286,14 +286,15 @@ function github2wp_update_check_plugins( $transient ) {
     $options = get_option( 'github2wp_options' );
     $resource_list = $options['resource_list'];
 
-    if ( count( $resource_list ) > 0 ) {
+
+		if ( count( $resource_list ) > 0 ) {
 			foreach ( $resource_list as $resource ) {
 				$repo_type = github2wp_get_repo_type($resource['resource_link']);
 				
 				if ( 'plugin' == $repo_type  ) {
 					$response_index = $resource['repo_name'] . '/' . $resource['repo_name'] . '.php';
 					$current_version = github2wp_get_plugin_version( $response_index );
-					
+
 					if ( $resource['head_commit'] ) {
 						$new_version = substr( $resource['head_commit'], 0, 7 ); 
 						$trans_new_version = $transient->response[ $response_index ]->new_version;
@@ -302,7 +303,7 @@ function github2wp_update_check_plugins( $transient ) {
 						unset( $transient->response[ $response_index ] );
 
 					if ( '-' != $current_version && '' != $current_version
-						and $current_version != $new_version && false != $new_version ) {
+						&& $current_version != $new_version && false != $new_version ) {
 							$homepage = github2wp_get_plugin_header( $plugin_file, 'AuthorURI' );
 							$zipball = GITHUB2WP_ZIPBALL_URL . '/' . wp_hash( $resource['repo_name'] ) . '.zip';
 
@@ -891,8 +892,9 @@ function github2wp_setting_resources_list() {
 						
 						if ( 0 == ($k % 2) )
 							$alternate = 'class="inactive"';
-						
-						$resource_path = str_replace( home_url(), ABSPATH, $resource['resource_link'] );
+
+
+						$resource_path = WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . basename($resource['resource_link']);
 						$dir_exists = is_dir( $resource_path );
 
 						$action = github2wp_return_resource_dismiss( $resource, $k-1 );
