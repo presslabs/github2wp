@@ -885,21 +885,23 @@ function github2wp_setting_resources_list() {
 							}
 						}
 
-						$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
-
 						$alternate = '';
 						$my_data = '';
-						
+						$action = github2wp_return_resource_dismiss( $resource, $k-1 );
+
+						$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
+
 						if ( 0 == ($k % 2) )
 							$alternate = 'class="inactive"';
 
+						$resource_path = WP_CONTENT_DIR;
+						if ( 'plugin' == $repo_type )
+							$resource_path .= '/plugins/';
+						else
+							$resource_path .= '/themes/';
+						$resource_path .= basename($resource['resource_link']);
 
-						$resource_path = WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . basename($resource['resource_link']);
-						$dir_exists = is_dir( $resource_path );
-
-						$action = github2wp_return_resource_dismiss( $resource, $k-1 );
-
-						if ( ! $dir_exists ) {
+						if ( ! is_dir( $resource_path ) ) {
 							$my_data .= '<p><strong>' . __( 'The resource does not exist on your site!', GITHUB2WP ) . '</strong></p>';
 							$action .= github2wp_return_resource_install( $resource, $k-1 );
 						}
