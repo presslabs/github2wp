@@ -320,14 +320,26 @@ class Github_2_WP {
 					$repo_file_name = 'style.css';
 
 				if ( basename( $file_name ) == $repo_file_name ) {
-					$tag_version = 'Version: ';
+					$tag_version = 'Version';
 
-					$file_content = file_get_contents( $file );
-					$old_version = $tag_version . github2wp_str_between( $tag_version, "\n", $file_content );
-					$new_version = $tag_version . $version;
+					$f = fopen($file, 'rw+');
+					$header_chunk = fread( $f, 8192 );
 
-					$new_file_content = str_replace( $old_version, $new_version, $file_content );
+					$header_chunk = str_replace( "\r", "\n", $header_chunk );
+					$new_header_chunk = preg_replace( '/^[ \t\/*#@]*' . preg_quote( $tag_version, '/' )	. ':(.*)$/mi', ' *Version: ' . $version, $header_chunk );
+
+					if ( $header_chunk !== $new_header_chunk ) {
+						$new_file_content = $new_header_chunk;
+					} else {
+						$new_header_chunk = preg_replace( '/\/\*(.*?)\*\//s', "/*\n *Version: " . $version . '$1*/', $header_chunk, 1 );
+
+						//file pointer is at 8193 or at the end of the file
+						$new_file_content = $new_header_chunk . stream_get_contents($f);
+					}
+	
 					$zip->addFromString( $file_name, $new_file_content );
+
+					fclose($f);
 				} else {
 					$zip->addFile( $file, $file_name );
 				}
