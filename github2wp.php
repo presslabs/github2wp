@@ -9,7 +9,7 @@
  */
 
 define( 'GITHUB2WP_MAX_COMMIT_HIST_COUNT', 100 );
-define( 'GITHUB2WP_ZIPBALL_DIR_PATH', ABSPATH . 'wp-content/uploads/' . basename( dirname(__FILE__) ) . '/' );
+define( 'GITHUB2WP_ZIPBALL_DIR_PATH', WP_CONTENT_DIR . '/uploads/' . basename( dirname(__FILE__) ) . '/' );
 define( 'GITHUB2WP_ZIPBALL_URL', home_url() . '/wp-content/uploads/' . basename( dirname( __FILE__ ) ) );
 define( 'GITHUB2WP', basename( __FILE__, '.php' ) );
 
@@ -31,14 +31,19 @@ endif;
 
 //------------------------------------------------------------------------------
 function github2wp_activate() {
-    add_option( 'github2wp_options', array() );
+	if( !file_exists(GITHUB2WP_ZIPBALL_DIR_PATH) )
+		mkdir(GITHUB2WP_ZIPBALL_DIR_PATH, 0777, true);
 
-    wp_schedule_event( current_time ( 'timestamp' ), '6h', 'github2wp_cron_hook' );
+	add_option( 'github2wp_options', array() );
+	add_option( 'github2wp_reverts', array( 'themes' => array(), 'plugins' => array()) );
+
+	wp_schedule_event( current_time ( 'timestamp' ), '6h', 'github2wp_cron_hook' );
 }
 register_activation_hook( __FILE__, 'github2wp_activate' );
 
 //------------------------------------------------------------------------------
 function github2wp_deactivate() {
+	github2wp_rmdir(GITHUB2WP_ZIPBALL_DIR_PATH);
 	wp_clear_scheduled_hook( 'github2wp_cron_hook' );
 }
 register_deactivation_hook( __FILE__, 'github2wp_deactivate' );
@@ -59,6 +64,7 @@ add_action( 'admin_notices', 'github2wp_admin_notices_action' );
 //------------------------------------------------------------------------------
 function github2wp_delete_options() {
 	delete_option( 'github2wp_options' );
+	delete_option( 'github2wp_revers' );
 }
 
 //------------------------------------------------------------------------------
@@ -396,10 +402,7 @@ function github2wp_ajax_callback() {
 			$sw = $git->store_git_archive();
 
 			if ( $sw ) {
-				if ( 'plugin' == $type )
-					github2wp_uploadPlguinFile( $zipball_path, 'update' );
-				else
-					github2wp_uploadThemeFile( $zipball_path, 'update' );
+				github2wp_uploadFile( $zipball_path, $resource, 'update' );
 
 				if ( file_exists( $zipball_path ) )
 					unlink( $zipball_path );
@@ -441,6 +444,45 @@ function github2wp_ajax_callback() {
 	}
 }
 add_action( 'wp_ajax_github2wp_ajax', 'github2wp_ajax_callback' );
+
+
+
+function github2wp_change_transient_revert( $old_transient ) {
+	$reverts = get_option('github2wp_reverts');
+
+	$current_filter = current_filter();
+	$resource_type = ( strpos( $current_filter, 'themes') !== false ) 'themes' : 'plugins';
+
+	if ( empty($reverts[ $resource_type ]) )
+		return false;
+
+	$response = array();
+	foreach ( $reverts[ $resource_type ] as $res_slug ) {
+		$repo_name = explode( '/', $res_slug )[0];
+
+		$reponse[] = array(
+			'slug'    => $res_slug,
+			'version' => 'x#$!', //no need for it since we already have the right version downloaded
+			'package' => GITHUB2WP_ZIPBALL_URL . '/' . wp_hash( $repo_name ) . '.zip'
+		)
+	}
+
+	$transient = array(
+		'lastchecked' => time(),
+		'response' => $reponse
+	);
+
+	if ( false === $old_transient )
+		return (object) $transient;
+
+	$transient = wp parse args( $transient, (array) $old_transient );
+
+	return $transient;
+}
+add_filter( 'pre_site_transient_update_plugins', 'github2wp_change_transient_revert', 999 );
+add_filter( 'pre_site_transient_update_themes', 'github2wp_change_transient_revert', 999 );
+
+
 
 //-----------------------------------------------------------------------------
 function github2wp_update_options( $where, $data ) {
@@ -518,12 +560,17 @@ function github2wp_options_page() {
 
 		if ( 'resources' == $tab ) {
 		  github2wp_head_commit_cron();
+
+			wp_clean_plugins_cache(true);
+			wp_clean_themes_cache(true);
+
 			$options = get_option( 'github2wp_options' );
 			github2wp_render_resource_form();
 		}
 
 		if ( 'settings' == $tab ) {
 			github2wp_token_cron();
+
 			$options = get_option( 'github2wp_options' );
 			$default = &$options['default'];
 
@@ -756,78 +803,36 @@ function github2wp_rmdir( $dir ) {
 	return rmdir( $dir );
 }
 
-//------------------------------------------------------------------------------
-function github2wp_uploadThemeFile( $path, $mode = 'install' ) {
-	//set destination dir
-	$destDir = ABSPATH . 'wp-content/themes/';
+function github2wp_uploadFile( $path, array $resource, $mode='install' ) {
+	$resource_type = github2wp_get_repo_type( $resource['resource_link'] );
+	$resource_name = $resource['repo_name'];
 
-	//set new file name
-	$ftw = $destDir . basename( $path );
-	$ftr = $path;	
+	$destination_dir = WP_CONTENT_DIR;
+	if ( 'plugin' == $resource_type )
+		$destination_dir .= '/plugins/';
+	elseif ( 'theme' == $resource_type )
+		$destination_dir = '/themes/';
+	else
+		throw new InvalidArgumentException( 'Second parameter: must be a plugin resource db option!' );
+	require_once( ABSPATH . 'wp-admin/includes/class-wp-upgrader.php');
 
-	$theme_dirname = str_replace( '.zip', '', basename( $path ) );
-	$theme_dirname = $destDir . github2wp_get_repo_name_from_hash( $theme_dirname ) . '/';
-
-	if ( 'update' == $mode )
-		github2wp_rmdir( $theme_dirname );
-
-	$file = new Github_2_WP_File( $ftr, $ftw );
-
-	if ( $file->checkFtr() ) {
-		$file->writeToFile();
-		github2wp_installTheme( $file->pathFtw() );
+	$res_slug = '';
+	if( 'theme' == $resource_type ) {
+		$processor = new Theme_Upgrader( new Theme_Installer_Skin( compact('type', 'title', 'nonce') ) );
+		$res_slug = $resource_name;
+	} else {
+		$processor = new Plugin_Upgrader( new Plugin_Installer_Skin( compact('type', 'title', 'nonce') ) );
+		$res_slug = "$resource_name/$resource_name.php";
 	}
-}
-
-//------------------------------------------------------------------------------
-function github2wp_uploadPlguinFile( $path, $mode = 'install' ) {
-	//set destination dir
-	$destDir = ABSPATH . 'wp-content/plugins/';
-
-	//set new file name
-	$ftw = $destDir . basename( $path );
-	$ftr = $path;
-
-	$plugin_dirname = str_replace( '.zip', '', basename( $path ) );
-	$plugin_dirname = $destDir . github2wp_get_repo_name_from_hash( $plugin_dirname ) . '/';
-	
-	if ( 'update' == $mode )
-		github2wp_rmdir( $plugin_dirname );
-
-	$file = new Github_2_WP_File( $ftr, $ftw );
-
-	if ( $file->checkFtr() ) {
-		$file->writeToFile();
-		github2wp_installPlugin( $file->pathFtw() );
-	}
-}
-
-
-//------------------------------------------------------------------------------
-function github2wp_installTheme( $file ) {
-	require_once( ABSPATH . 'wp-admin/includes/class-wp-upgrader.php' );
-
-	$upgrader = new Theme_Upgrader( new Theme_Installer_Skin( compact('type', 'title', 'nonce') ) );
 
 	require_once( ABSPATH . 'wp-admin/admin-header.php' );
-	$result = $upgrader->install( $file );
+	if ( 'update' == $mode )
+		$processor->upgrade( $res_slug );
+	else
+		$processor->install( $path );
 	require_once( ABSPATH . 'wp-admin/admin-footer.php' );
-
-	github2wp_cleanup( $file );
 }
 
-//------------------------------------------------------------------------------
-function github2wp_installPlugin( $file ) {
-	require_once( ABSPATH . 'wp-admin/includes/class-wp-upgrader.php' );
-
-	$upgrader = new Plugin_Upgrader( new Plugin_Installer_Skin( compact('type', 'title', 'nonce') ) );
-
-	require_once( ABSPATH . 'wp-admin/admin-header.php' );	
-	$result = $upgrader->install( $file );
-	require_once( ABSPATH . 'wp-admin/admin-footer.php' );
-
-	github2wp_cleanup( $file );
-}
 
 //------------------------------------------------------------------------------
 function github2wp_cleanup( $file ) {
@@ -838,6 +843,7 @@ function github2wp_cleanup( $file ) {
 
 //------------------------------------------------------------------------------
 function github2wp_setting_resources_list() {
+
 	$options = get_option( 'github2wp_options' );
 	$resource_list = $options['resource_list'];
 
@@ -936,7 +942,7 @@ function github2wp_setting_resources_list() {
 								$new_version = substr( $resource['head_commit'], 0, 7 ); 
 							}
 	
-							if ( new_version != $current_plugin_version && '-' != $current_plugin_version
+							if ( $new_version != $current_plugin_version && '-' != $current_plugin_version
 								and '' != $current_plugin_version && false != $new_version ) {
 									$my_data .= '<strong>' . __( 'New Version: ', GITHUB2WP ) . "</strong>$new_version<br /></div>";
 									$action .= github2wp_return_resource_update( $resource, $k-1 );
@@ -1111,10 +1117,7 @@ function github2wp_options_validate( $input ) {
 				$sw = $git->store_git_archive();
 
 				if ( $sw ) {
-					if ( 'plugin' == $repo_type )
-						github2wp_uploadPlguinFile( $zipball_path );
-					else
-						github2wp_uploadThemeFile( $zipball_path );
+					github2wp_uploadFile( $zipball_path, $resource );
 					
 					if ( file_exists( $zipball_path ) )
 						unlink( $zipball_path );
@@ -1146,10 +1149,7 @@ function github2wp_options_validate( $input ) {
 				$sw = $git->store_git_archive();
 
 				if ( $sw ) {
-					if ( 'plugin' == $repo_type )
-						github2wp_uploadPlguinFile( $zipball_path, 'update' );
-					else
-						github2wp_uploadThemeFile( $zipball_path, 'update' );
+					github2wp_uploadFile( $zipball_path, $resource, 'update' );
 
 					if ( file_exists( $zipball_path ) )
 						unlink( $zipball_path );
