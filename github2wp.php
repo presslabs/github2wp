@@ -451,7 +451,7 @@ function github2wp_change_transient_revert( $old_transient ) {
 	$reverts = get_option('github2wp_reverts');
 
 	$current_filter = current_filter();
-	$resource_type = ( strpos( $current_filter, 'themes') !== false ) 'themes' : 'plugins';
+	$resource_type = ( strpos( $current_filter, 'themes') !== false ) ? 'themes' : 'plugins';
 
 	if ( empty($reverts[ $resource_type ]) )
 		return false;
