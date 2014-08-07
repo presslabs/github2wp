@@ -3,7 +3,7 @@
 
 
 function github2wp_return_settings_link( $query_vars = '' ) {
-	return admin_url( 'tools.php?page=' . plugin_basename( GITHUB2WP_MAIN_PLUGIN_FILE ) . $query_vars );
+	return admin_url( 'tools.php?page=' . GITHUB2WP_PLUGIN_BASENAME . $query_vars );
 }
 
 
@@ -50,7 +50,8 @@ function github2wp_check_page_hook( $hook='', $prefix='', $string='' ) {
 
 
 function github2wp_check_toolpage_hook( $hook='' ) {
-	$plugin_hook_base = dirname( GITHUB2WP_MAIN_PLUGIN_FILE ) . '/' . basename(GITHUB2WP_MAIN_PLUGIN_FILE, '.php' );
+	$plugin_parts = pathinfo( GITHUB2WP_PLUGIN_BASENAME );
+	$plugin_hook_base = $plugin_parts['dirname'].'/'.$plugin_parts['filename'];
 
 	if ( github2wp_check_page_hook( $hook, 'tools_page_', $plugin_hook_base ) )
 		return true;
@@ -64,9 +65,9 @@ function github2wp_enqueue_resource( $resource='', array $deps=array(), $activat
 	if ( '' === $resource )
 		return;
 
-
 	$path = GITHUB2WP_INC_PATH.$resource;
-	$url = plugins_url( $path, GITHUB2WP_MAIN_PLUGIN_FILE );
+	$rel_path = basename(GITHUB2WP_INC_PATH).'/'.$resource;
+	$url = plugins_url( $rel_path, GITHUB2WP_MAIN_PLUGIN_FILE );
 
 	$resource_parts = pathinfo($resource);
 
@@ -74,14 +75,14 @@ function github2wp_enqueue_resource( $resource='', array $deps=array(), $activat
 		return;
 
 	switch( $resource_parts['extension'] ) {
-	case 'css':
-		wp_enqueue_style( esc_attr($resource), $url, $deps, filemtime( $path ), $activation );
-		break;
-	case 'js':
-		wp_enqueue_script( esc_attr($resource), $url, $deps, filemtime( $path ), $activation );
-		break;
-	default:
-		return;
+		case 'css':
+			wp_enqueue_style( esc_attr($resource), $url, $deps, filemtime( $path ), $activation );
+			break;
+		case 'js':
+			wp_enqueue_script( esc_attr($resource), $url, $deps, filemtime( $path ), $activation );
+			break;
+		default:
+			return;
 	}
 }
 

@@ -37,7 +37,7 @@
 .slider > .ajax-loader:first-child {
 	min-width: 50em;
 	min-height: 64px;
-	background-image: url('./resources/ajax-loader.gif');
+	background-image: url('../resources/ajax-loader.gif');
 	background-repeat: no-repeat;
 	background-position: center;
 	margin: 0px;
@@ -50,7 +50,7 @@
 .slider > .ajax-fail:first-child {
 	min-width: 50em;
 	min-height: 64px;
-	background-image: url('./resources/ajax-fail.png');
+	background-image: url('../resources/ajax-fail.png');
 	background-repeat: no-repeat;
 	background-position: center;
 	margin: 0px;
@@ -61,7 +61,7 @@
 }
 
 .ajax-loader {
-	background-image: url('./resources/ajax-loader.gif');
+	background-image: url('../resources/ajax-loader.gif');
 	background-repeat: no-repeat;
 	background-size: 14px 14px;
 	height: 14px;
@@ -72,7 +72,7 @@
 }
 
 .ajax-success {
-	background-image: url('./resources/ajax-success.jpg');
+	background-image: url('../resources/ajax-success.jpg');
 	background-repeat: no-repeat;
 	background-size: 14px 14px;
 	height: 14px;
@@ -83,7 +83,7 @@
 }
 
 .ajax-fail {
-	background-image: url('./resources/ajax-fail.png');
+	background-image: url('../resources/ajax-fail.png');
 	background-repeat: no-repeat;
 	background-size: 14px 14px;
 	height: 14px;
@@ -94,7 +94,7 @@
 }
 
 .notification-warning {
-	background-image: url('./resources/notification_warning.png');
+	background-image: url('../resources/notification_warning.png');
 	background-repeat: no-repeat;
 	background-size: 14px 14px;
 	height: 14px;
