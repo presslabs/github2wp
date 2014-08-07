@@ -1,17 +1,6 @@
 <?php
 if ( ! class_exists( 'Github_2_WP' ) ):
-	if ( ! defined( 'GITHUB2WP_ZIPBALL_URL' ) )
-		define( 'GITHUB2WP_ZIPBALL_URL', home_url() . '/wp-content/uploads/' . basename( dirname( __FILE__ ) ) );
-	if ( ! defined( 'GITHUB2WP_ZIPBALL_DIR_PATH') )
-		define( 'GITHUB2WP_ZIPBALL_DIR_PATH', ABSPATH . '/wp-content/uploads/' . basename( dirname( __FILE__ ) ) . '/' );
-	if ( ! defined( 'GITHUB2WP_MAX_COMMIT_HIST_COUNT' ) )
-		define( 'GITHUB2WP_MAX_COMMIT_HIST_COUNT', 100 );
-		
 
-//------------------------------------------------------------------------------
-/*
-DONT FORGET TO SAVE THE INSTANCE OF THIS CLASS IN THE DATABASE
-*/
 class Github_2_WP {
 
 	public $config = array(
