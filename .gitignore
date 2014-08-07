@@ -15,3 +15,5 @@ sitemap.xml.gz
 *~
 nbproject/
 github2wp.komodoproject
+*.swp
+*.swo
