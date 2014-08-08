@@ -8,7 +8,6 @@ class GITHUB2WP_Setup {
 		$plugin = isset( $_REQUEST['plugin'] ) ? $_REQUEST['plugin'] : '';
 		check_admin_referer( "activate-plugin_{$plugin}" );
 
-		error_log("activate");	
 		if( !file_exists( GITHUB2WP_ZIPBALL_DIR_PATH ) )
 			mkdir(GITHUB2WP_ZIPBALL_DIR_PATH, 0777, true);
 
@@ -27,7 +26,6 @@ class GITHUB2WP_Setup {
 		$plugin = isset( $_REQUEST['plugin'] ) ? $_REQUEST['plugin'] : '';
 		check_admin_referer( "deactivate-plugin_{$plugin}" );
 
-		error_log("deactivate");	
 		github2wp_rmdir(GITHUB2WP_ZIPBALL_DIR_PATH);
 		wp_clear_scheduled_hook( 'github2wp_cron_hook' );
 	}
@@ -40,7 +38,6 @@ class GITHUB2WP_Setup {
 
 		check_admin_referer( 'bulk-plugins' );
 
-		error_log('uninstall');
 		static::github2wp_delete_options();
 		delete_transient( 'github2wp_branches' );
 	}
