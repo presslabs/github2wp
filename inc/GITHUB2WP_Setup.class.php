@@ -1,7 +1,7 @@
 <?php
 
 class GITHUB2WP_Setup {
-	static function _activate() {
+	static function activate() {
 		if ( ! current_user_can( 'activate_plugins' ) )
 			return;
 		
