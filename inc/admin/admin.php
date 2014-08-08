@@ -175,7 +175,13 @@ function github2wp_options_validate( $input ) {
 							'head_commit'   => $head
 						);
 
-						add_settings_error( 'github2wp_settings_errors', 'repo_connected', __( 'Connection was established.', GITHUB2WP ), 'updated' );
+						add_settings_error(
+							'github2wp_settings_errors',
+							'repo_connected',
+							__( 'Connection was established.', GITHUB2WP ),
+							'updated'
+						);
+
 						delete_transient( 'github2wp_branches' );
 					} else {
 						return $initial_options;

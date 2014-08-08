@@ -169,3 +169,61 @@ function github2wp_cleanup( $file ) {
 		return unlink( $file );
 	}
 }
+
+
+
+function github2wp_toWpFormat( $data ) {
+	$info = new StdClass;
+
+	//The custom update API is built so that many fields have the same name and format
+	//as those returned by the native WordPress.org API. These can be assigned directly. 
+	$sameFormat = array(
+		'name', 'slug', 'version', 'requires', 'tested', 'rating', 'upgrade_notice',
+		'num_ratings', 'downloaded', 'homepage', 'last_updated',
+	);
+
+	foreach ( $sameFormat as $field ) {
+		if ( isset( $data[ $field ] ) )
+			$info->$field = $data[ $field ];
+		else
+			$info->$field = null;
+	}
+
+	//Other fields need to be renamed and/or transformed.
+	$info->download_link = $data['download_url'];
+
+	if ( ! empty( $data['author_homepage'] ) )
+		$info->author = sprintf( '<a href="%s">%s</a>', $data['author_homepage'], $data['author'] );
+	else
+		$info->author = $data['author'];
+
+	if ( is_object( $data['sections'] ) )
+		$info->sections = get_object_vars( $data['sections'] );
+	elseif ( is_array( $data['sections'] ) ) 
+		$info->sections = $data['sections'];
+	else
+		$info->sections = array( 'description' => '' );
+
+	return $info;
+}
+
+
+
+function github2wp_get_header( $file, $header='Version' ) {
+	$file_parts = pathinfo($file);
+
+	if( isset($file_parts['extension']) && 'php' === $file_parts['extension'] ) {
+		if( ! function_exists( 'get_plugins' ) )
+			require_once( ABSPATH . '/wp-admin/includes/plugin.php' );
+
+		$allPlugins = get_plugins();
+		if( isset($allPlugins[ $file ][ $header ]) )
+			return $allPlugins[ $file ][ $header ];
+	} else {
+		$theme = wp_get_theme( $theme_name );
+
+		return $theme->get( $header );
+	}
+
+	return null;
+}

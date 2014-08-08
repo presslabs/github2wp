@@ -25,7 +25,7 @@ function github2wp_update_check_themes( $transient ) {
 
         if ( 'theme' == $repo_type ) {
           $response_index = $resource['repo_name'];
-					$current_version = github2wp_get_theme_version( $response_index );
+					$current_version = github2wp_get_header( $response_index, 'Version' );
 
           if ( $resource['head_commit'] ) {
             $new_version = substr( $resource['head_commit'], 0, 7 );
@@ -61,41 +61,6 @@ add_filter( 'pre_set_site_transient_update_themes', 'github2wp_update_check_them
 
 //------------------------------------------------------------------------------
 // Transform plugin info into the format used by the native WordPress.org API
-function github2wp_toWpFormat( $data ) {
-	$info = new StdClass;
-
-	//The custom update API is built so that many fields have the same name and format
-	//as those returned by the native WordPress.org API. These can be assigned directly. 
-	$sameFormat = array(
-		'name', 'slug', 'version', 'requires', 'tested', 'rating', 'upgrade_notice',
-		'num_ratings', 'downloaded', 'homepage', 'last_updated',
-	);
-
-	foreach ( $sameFormat as $field ) {
-		if ( isset( $data[ $field ] ) )
-			$info->$field = $data[ $field ];
-		else
-			$info->$field = null;
-	}
-
-	//Other fields need to be renamed and/or transformed.
-	$info->download_link = $data['download_url'];
-
-	if ( ! empty( $data['author_homepage'] ) )
-		$info->author = sprintf( '<a href="%s">%s</a>', $data['author_homepage'], $data['author'] );
-	else
-		$info->author = $data['author'];
-
-	if ( is_object( $data['sections'] ) )
-		$info->sections = get_object_vars( $data['sections'] );
-	elseif ( is_array( $data['sections'] ) ) 
-		$info->sections = $data['sections'];
-	else
-		$info->sections = array( 'description' => '' );
-
-	return $info;
-}
-
 
 //------------------------------------------------------------------------------
 function github2wp_inject_info( $result, $action = null, $args = null ) {
@@ -110,13 +75,13 @@ function github2wp_inject_info( $result, $action = null, $args = null ) {
 			if ( 'plugin' == $repo_type ) {
 				$response_index = $resource['repo_name'] . '/' . $resource['repo_name'] . '.php';
 				$new_version = substr( $resource['head_commit'], 0, 7 );
-				$homepage = github2wp_get_plugin_header( $plugin_file, 'AuthorURI' );
+				$homepage = github2wp_get_header( $plugin_file, 'AuthorURI' );
 				$zipball = home_url() . '/?zipball=' . wp_hash( $resource['repo_name'] );
 
 				$changelog = __( 'No changelog found', GITHUB2WP );
 
 				$sections = array(
-					'description' => github2wp_get_plugin_header( $response_index, 'Description' ),
+					'description' => github2wp_get_header( $response_index, 'Description' ),
 					'changelog'   => $changelog,
 				);
 				$slug = dirname( $response_index );
@@ -131,13 +96,13 @@ function github2wp_inject_info( $result, $action = null, $args = null ) {
 					'new_version'     => $new_version,
 					'package'         => $zipball,
 					'url'             => null,
-					'name'            => github2wp_get_plugin_header( $response_index, 'Name' ),
+					'name'            => github2wp_get_header( $response_index, 'Name' ),
 					'version'         => $new_version,
 					'homepage'        => null,
 					'sections'        => $sections,
 					'download_url'    => $zipball,
-					'author'          => github2wp_get_plugin_header( $response_index, 'Author' ),
-					'author_homepage' => github2wp_get_plugin_header( $response_index, 'AuthorURI' ),
+					'author'          => github2wp_get_header( $response_index, 'Author' ),
+					'author_homepage' => github2wp_get_header( $response_index, 'AuthorURI' ),
 					'requires'        => null,
 					'tested'          => null,
 					'upgrade_notice'  => __( 'Here\'s why you should upgrade...', GITHUB2WP ),
@@ -170,7 +135,7 @@ function github2wp_update_check_plugins( $transient ) {
 				
 				if ( 'plugin' == $repo_type  ) {
 					$response_index = $resource['repo_name'] . '/' . $resource['repo_name'] . '.php';
-					$current_version = github2wp_get_plugin_version( $response_index );
+					$current_version = github2wp_get_header( $response_indexi, 'Version' );
 
 					if ( $resource['head_commit'] ) {
 						$new_version = substr( $resource['head_commit'], 0, 7 ); 
@@ -181,7 +146,7 @@ function github2wp_update_check_plugins( $transient ) {
 
 					if ( '-' != $current_version && '' != $current_version
 						&& $current_version != $new_version && false != $new_version ) {
-							$homepage = github2wp_get_plugin_header( $plugin_file, 'AuthorURI' );
+							$homepage = github2wp_get_header( $plugin_file, 'AuthorURI' );
 							$zipball = GITHUB2WP_ZIPBALL_URL . '/' . wp_hash( $resource['repo_name'] ) . '.zip';
 
 							$plugin = array(
@@ -203,118 +168,6 @@ function github2wp_update_check_plugins( $transient ) {
 add_filter( 'pre_set_site_transient_update_plugins', 'github2wp_update_check_plugins', 10, 1 );
 
 //------------------------------------------------------------------------------
-function github2wp_ajax_callback() {
-	$options = get_option( 'github2wp_options' );
-	$resource_list = &$options['resource_list'];
-	$default = $options['default'];
-	$response = array(
-		'success'         => false,
-		'error_messge'    => '',
-		'success_message' => ''
-	);
-
-	if ( isset( $_POST['github2wp_action'] ) && 'set_branch' == $_POST['github2wp_action'] ) {
-		if ( isset( $_POST['id'] ) && isset( $_POST['branch'] ) ) {	
-			$resource = &$resource_list[ $_POST['id'] ];
-
-			$git = new Github_2_WP( array(
-				'user'         => $resource['username'],
-				'repo'         => $resource['repo_name'],
-				'access_token' => $default['access_token'],
-				'source'       => $resource['repo_branch'] 
-				)
-			);
-
-			$branches = $git->fetch_branches();
-			$branch_set = false;
-
-			if ( count( $branches ) > 0) {
-				foreach ( $branches as $br ) {
-					if ( $br == $_POST['branch'] ) {
-						$resource['repo_branch'] = $br;
-
-						$sw = github2wp_update_options( 'github2wp_options', $options );
-
-						if ( $sw ) {
-							$branch_set = true;
-							$response['success'] = true;
-							break;
-						}
-					}
-				}
-			}
-
-			if ( ! $branch_set )
-				$response['error_messages'] = __( 'Branch not set', GITHUB2WP );  
-
-			header( 'Content-type: application/json' );
-			echo json_encode( $response );
-			die();
-		}
-	}
-	
-	if ( isset( $_POST['github2wp_action'] ) && 'downgrade' == $_POST['github2wp_action'] ) {
-		if ( isset( $_POST['commit_id'] ) && isset( $_POST['res_id'] ) ) {
-			$resource = $resource_list[ $_POST['res_id'] ];
-			$version = $_POST['commit_id'];
-
-			$git = new Github_2_WP( array(
-				'user'         => $resource['username'],
-				'repo'         => $resource['repo_name'],
-				'access_token' => $default['access_token'],
-				'source'       => $version
-				)
-			);
-
-			$version = substr( $version, 0, 7 );
-			$type = github2wp_get_repo_type( $resource['resource_link'] );
-			$zipball_path = GITHUB2WP_ZIPBALL_DIR_PATH . wp_hash( $resource['repo_name'] ) . '.zip';
-
-			$sw = $git->store_git_archive();
-
-			if ( $sw ) {
-				github2wp_uploadFile( $zipball_path, $resource, 'update' );
-
-				if ( file_exists( $zipball_path ) )
-					unlink( $zipball_path );
-
-				$response['success'] = true;
-				$response['success_message'] = sprintf( __( 'The resource <b>%s<b> has been updated to %s .', GITHUB2WP ),
-					$resource['repo_name'], $version );
-			} else {
-				$response['error_message'] = sprintf( __( 'The resource <b>%s<b> has FAILED to updated to %s .', GITHUB2WP ),
-					$resource['repo_name'], $version );
-			}
-
-			header( 'Content-type: application/json' );
-			echo json_encode( $response );
-			die();
-		}
-	}
-
-	if ( isset( $_POST['github2wp_action'] ) && 'fetch_history' == $_POST['github2wp_action'] ) {
-		if ( isset ( $_POST['res_id'] ) ) {
-			header( 'Content-Type: text/html' );
-
-			$resource = $resource_list[ $_POST['res_id'] ];
-			
-			$git = new Github_2_WP( array(
-				'user'         => $resource['username'],
-				'repo'         => $resource['repo_name'],
-				'access_token' => $default['access_token'],
-				'source'       => $resource['repo_branch']
-				)
-			);
-
-			$commit_history = $git->get_commits();
-
-			github2wp_render_resource_history( $resource['repo_name'], $_POST['res_id'], $commit_history );
-
-			die();
-		}
-	}
-}
-add_action( 'wp_ajax_github2wp_ajax', 'github2wp_ajax_callback' );
 
 
 
@@ -406,57 +259,6 @@ function github2wp_options_page() {
 
 
 
-//
-// Get the header of the plugin.
-//
-function github2wp_get_plugin_header( $pluginFile, $header = 'Version' ) {
-	$pluginFile = github2wp_pluginFile_hashed( $pluginFile );
-
-	if ( ! function_exists( 'get_plugins' ) )
-		require_once( ABSPATH . '/wp-admin/includes/plugin.php' );
-
-	$allPlugins = get_plugins();
-
-	if ( 'ALL' == $header )
-		return serialize( $allPlugins[ $pluginFile ] );
-
-	if ( array_key_exists( $pluginFile, $allPlugins ) && array_key_exists( $header, $allPlugins[ $pluginFile ] ) )
-		return $allPlugins[ $pluginFile ][ $header ];
-
-	return '-';
-}
-
-//------------------------------------------------------------------------------
-//
-// Get the version of the plugin.
-//
-function github2wp_get_plugin_version( $pluginFile ) {
-	return github2wp_get_plugin_header( $pluginFile );
-}
-
-//------------------------------------------------------------------------------
-//
-// Get the version of the theme.
-//
-function github2wp_get_theme_header( $theme_name, $header = 'Version' ) {
-	if ( function_exists( 'wp_get_theme' ) ) {
-		$theme = wp_get_theme( $theme_name );
-
-		if ( 'ALL' == $header )
-			return serialize( $theme );
-
-		return $theme->get( $header );
-	}
-
-	return '-';
-}
-
-
-function github2wp_get_theme_version( $theme_name ) {
-	return github2wp_get_theme_header( $theme_name );
-}
-
-
 function github2wp_uploadFile( $path, array $resource, $mode='install' ) {
 	$resource_type = github2wp_get_repo_type( $resource['resource_link'] );
 	$resource_name = $resource['repo_name'];
@@ -486,6 +288,7 @@ function github2wp_uploadFile( $path, array $resource, $mode='install' ) {
 		$processor->install( $path );
 	require_once( ABSPATH . 'wp-admin/admin-footer.php' );
 }
+
 
 
 function github2wp_setting_resources_list() {
@@ -561,18 +364,18 @@ function github2wp_setting_resources_list() {
 						if ( 'plugin' == $repo_type ) {
 							$new_version = false;
 							$plugin_file = $resource['repo_name'] . '/' . $resource['repo_name'] . '.php';
-							$current_plugin_version = github2wp_get_plugin_version( $plugin_file );
+							$current_plugin_version = github2wp_get_header( $plugin_file, 'Version' );
 
 							if ( $current_plugin_version > '-' && $current_plugin_version > '' ) {
-								$my_data .= '<strong>' . github2wp_get_plugin_header( $plugin_file, 'Name' ) . '</strong>&nbsp;(';
+								$my_data .= '<strong>' . github2wp_get_header( $plugin_file, 'Name' ) . '</strong>&nbsp;(';
 
 								if ( $resource['is_on_wp_svn'] )
 									$my_data .= '<div class="notification-warning" title="'
 										. __( 'Wordpress has a resource with the same name.\nWe will override its update notifications!', GITHUB2WP) . '"></div>';
 
-								$author = github2wp_get_plugin_header( $plugin_file, 'Author' );
-								$author_uri = github2wp_get_plugin_header( $plugin_file, 'AuthorURI' );
-								$plugin_description = github2wp_get_plugin_header( $plugin_file, 'Description' );
+								$author = github2wp_get_header( $plugin_file, 'Author' );
+								$author_uri = github2wp_get_header( $plugin_file, 'AuthorURI' );
+								$plugin_description = github2wp_get_header( $plugin_file, 'Description' );
 
 								if ( '-' != $author_uri && '' != $author_uri )
 									$author = "<a href='$author_uri' target='_blank'>$author</a>";
@@ -596,19 +399,19 @@ function github2wp_setting_resources_list() {
 						} elseif ( 'theme' == $repo_type ) {
 								$new_version = false;
 								$theme_dirname = $resource['repo_name'];
-								$current_theme_version = github2wp_get_theme_version( $theme_dirname );
+								$current_theme_version = github2wp_get_header( $theme_dirname, 'Version' );
 
 								if ( $current_theme_version > '-' && $current_theme_version > '' ) {
-									$my_data .= '<strong>' . github2wp_get_theme_header( $theme_dirname, 'Name' ) . '</strong>&nbsp;(';
+									$my_data .= '<strong>' . github2wp_get_header( $theme_dirname, 'Name' ) . '</strong>&nbsp;(';
 
 									if ( $resource['is_on_wp_svn'] )
 										$my_data .= '<div class="notification-warning" title="'
 											. __( 'Wordpress has a resource with the same name.\nWe will override its update notifications!', GITHUB2WP )
 											. '"></div>';
 
-									$author = github2wp_get_theme_header( $theme_file, 'Author');
-									$author_uri = github2wp_get_theme_header( $theme_file, 'AuthorURI');
-									$theme_description = github2wp_get_theme_header( $theme_dirname, 'Description');
+									$author = github2wp_get_header( $theme_file, 'Author');
+									$author_uri = github2wp_get_header( $theme_file, 'AuthorURI');
+									$theme_description = github2wp_get_header( $theme_dirname, 'Description');
 
 									if ( '-' != $author_uri && '' != $author_uri )
 										$author = "<a href='$author_uri' target='_blank'>$author</a>";
