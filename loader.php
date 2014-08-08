@@ -1,5 +1,7 @@
 <?php
 
+//TODO find a way to limit the requires only to where they are needed
+
 require_once( 'inc/constants.php' );
 require_once( GITHUB2WP_INC_PATH . 'helpers.php' );
 require_once( GITHUB2WP_INC_PATH . 'notices.php' );
@@ -7,7 +9,7 @@ require_once( GITHUB2WP_INC_PATH . 'notices.php' );
 
 require_once( GITHUB2WP_INC_PATH . 'GITHUB2WP_Setup.class.php' );
 require_once( GITHUB2WP_INC_PATH . 'cron.php' );
-
+require_once( GITHUB2WP_INC_PATH . 'ajax.php' );
 
 require_once( GITHUB2WP_INC_PATH . '/admin/admin.php' );
 require_once( GITHUB2WP_INC_PATH . '/admin/ui.php' );
