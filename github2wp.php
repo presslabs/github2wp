@@ -15,6 +15,8 @@ register_activation_hook( __FILE__, array( 'GITHUB2WP_Setup', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'GITHUB2WP_Setup', 'deactivate' ) ); 
 register_uninstall_hook( __FILE__, array( 'GITHUB2WP_Setup', 'uninstall' ) );
 
+
+//TODO refactor these type of calls
 function github2wp_update_check_themes( $transient ) {
     $options = get_option('github2wp_options');
     $resource_list = $options['resource_list'];
@@ -25,7 +27,7 @@ function github2wp_update_check_themes( $transient ) {
 
         if ( 'theme' == $repo_type ) {
           $response_index = $resource['repo_name'];
-					$current_version = github2wp_get_header( $response_index, 'Version' );
+					$current_version = github2wp_get_header( $response_index );
 
           if ( $resource['head_commit'] ) {
             $new_version = substr( $resource['head_commit'], 0, 7 );
@@ -37,12 +39,9 @@ function github2wp_update_check_themes( $transient ) {
 						if ( '-' != $current_version && '' != $current_version
 							&& $current_version != $new_version && false != $new_version ) {
 
-								$update_url = 'http://themes.svn.wordpress.org/responsive/1.9.3.2/readme.txt';
-								$zipball = GITHUB2WP_ZIPBALL_URL . '/' . wp_hash( $resource['repo_name'] ) . '.zip';
-
+							$zipball = github2wp_generate_zipball_endpoint( $resource['repo_name'] );
 								$theme = array(
 									'new_version' => $new_version,
-									'url'         => $update_url,
 									'package'     => $zipball
 								);
 
@@ -62,7 +61,7 @@ add_filter( 'pre_set_site_transient_update_themes', 'github2wp_update_check_them
 //------------------------------------------------------------------------------
 // Transform plugin info into the format used by the native WordPress.org API
 
-//------------------------------------------------------------------------------
+//TODO make relevant check as fast as posible plus refactor some more
 function github2wp_inject_info( $result, $action = null, $args = null ) {
 	$options = get_option( 'github2wp_options' );
 	$resource_list = $options['resource_list'];
@@ -76,7 +75,7 @@ function github2wp_inject_info( $result, $action = null, $args = null ) {
 				$response_index = $resource['repo_name'] . '/' . $resource['repo_name'] . '.php';
 				$new_version = substr( $resource['head_commit'], 0, 7 );
 				$homepage = github2wp_get_header( $plugin_file, 'AuthorURI' );
-				$zipball = home_url() . '/?zipball=' . wp_hash( $resource['repo_name'] );
+				$zipball = github2wp_generate_zipball_endpoint( $resource['repo_name'] );
 
 				$changelog = __( 'No changelog found', GITHUB2WP );
 
@@ -100,7 +99,7 @@ function github2wp_inject_info( $result, $action = null, $args = null ) {
 					'version'         => $new_version,
 					'homepage'        => null,
 					'sections'        => $sections,
-					'download_url'    => $zipball,
+					'download_url'    => "https://github.com/{$resource['username']}/{$resource['repo_name']}/",
 					'author'          => github2wp_get_header( $response_index, 'Author' ),
 					'author_homepage' => github2wp_get_header( $response_index, 'AuthorURI' ),
 					'requires'        => null,
@@ -147,7 +146,7 @@ function github2wp_update_check_plugins( $transient ) {
 					if ( '-' != $current_version && '' != $current_version
 						&& $current_version != $new_version && false != $new_version ) {
 							$homepage = github2wp_get_header( $plugin_file, 'AuthorURI' );
-							$zipball = GITHUB2WP_ZIPBALL_URL . '/' . wp_hash( $resource['repo_name'] ) . '.zip';
+							$zipball = github2wp_generate_zipball_endpoint($resource['repo_name']);
 
 							$plugin = array(
 								'slug'        => dirname( $response_index ),
@@ -497,74 +496,5 @@ function github2wp_language_init() {
 add_action( 'plugins_loaded', 'github2wp_language_init' );
 
 
-function github2wp_admin_head() {
-	if ( isset( $_GET['action'] )
-		and ( 'update-selected' == $_GET['action'] || 'update-selected-themes' == $_GET['action'] ) ) {
-
-			$options = get_option( 'github2wp_options' );
-			$resource_list = $options['resource_list'];
-
-			if ( isset( $_GET['plugins'] ) ) {
-				$res = explode( ',', stripslashes( $_GET['plugins'] ) );
-
-				foreach ( $res as &$r ) {
-					$r = basename( $r, '.php' );
-				}
-			} elseif ( isset( $_GET['themes'] ) ) {
-				$res = explode( ',', stripslashes( $_GET['themes'] ) );
-			}
-
-			if ( count( $res ) > 0 ) {
-				foreach ( $resource_list as $key => $resource ) {
-					if ( in_array( $resource['repo_name'], $res, true ) ) {
-						$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
-						$default = $options['default'];
-
-						$git = new Github_2_WP( array(
-							'user'         => $resource['username'],
-							'repo'         => $resource['repo_name'],
-							'repo_type'    => $repo_type,
-							'access_token' => $default['access_token'],
-							'source'       => $resource['head_commit']
-							)
-						);
-
-						$sw = $git->store_git_archive();
-					}
-				}
-			}
-		}
-}
-add_action( 'admin_head', 'github2wp_admin_head' );
 
 
-function github2wp_admin_footer() {
-	if ( defined( 'IFRAME_REQUEST' ) && isset( $_GET['action'] )
-		and ( 'update-selected' == $_GET['action'] || 'update-selected-themes' == $_GET['action'] ) ) {
-			
-			$options = get_option('github2wp_options');
-			$resource_list = $options['resource_list'];
-			
-			if ( isset( $_GET['plugins'] ) ) {
-				$res = explode( ',', stripslashes( $_GET['plugins'] ) );
-
-				foreach ( $res as &$r ) {
-					$r = basename($r, '.php');
-				}
-			} elseif ( isset( $_GET['themes'] ) ) {
-				$res = explode( ',', stripslashes($_GET['themes']) );
-			}
-
-			if ( count( $res ) > 0 ) {
-				foreach ( $resource_list as $resource ) {
-					if ( in_array( $resource['repo_name'], $res, true ) ) {
-						$zipball_path = GITHUB2WP_ZIPBALL_DIR_PATH . wp_hash( $resource['repo_name'] ).'.zip';
-
-						if ( file_exists( $zipball_path ) )
-							unlink( $zipball_path );
-					}
-				}
-			}
-	}
-}
-add_action( 'admin_footer', 'github2wp_admin_footer' );
