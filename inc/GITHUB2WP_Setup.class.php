@@ -41,14 +41,14 @@ class GITHUB2WP_Setup {
 		check_admin_referer( 'bulk-plugins' );
 
 		error_log('uninstall');
-		$this->github2wp_delete_options();
+		static::github2wp_delete_options();
 		delete_transient( 'github2wp_branches' );
 	}
 
 
 
-	private function github2wp_delete_options() {
+	private static function github2wp_delete_options() {
 		delete_option( 'github2wp_options' );
-		delete_option( 'github2wp_revers' );
+		delete_option( 'github2wp_reverts' );
 	}
 }
