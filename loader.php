@@ -5,7 +5,7 @@ require_once( GITHUB2WP_INC_PATH . 'helpers.php' );
 require_once( GITHUB2WP_INC_PATH . 'notices.php' );
 
 
-require_once( GITHUB2WP_INC_PATH . 'setup.php' );
+require_once( GITHUB2WP_INC_PATH . 'GITHUB2WP_Setup.class.php' );
 require_once( GITHUB2WP_INC_PATH . 'cron.php' );
 
 

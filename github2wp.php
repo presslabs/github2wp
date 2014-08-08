@@ -11,9 +11,9 @@
 require_once( 'loader.php' );
 
 
-register_activation_hook( 'GITHUB2WP_INC_PATH' . 'setup.php', 'github2wp_activate' );
-register_deactivation_hook( 'GITHUB2WP_INC_PATH' . 'setup.php', 'github2wp_deactivate' );
-register_uninstall_hook( 'GITHUB2WP_INC_PATH' . 'setup.php', 'github2wp_uninstall' );
+register_activation_hook( __FILE__, array( 'GITHUB2WP_Setup', 'activate' ) );
+register_deactivation_hook( __FILE__, array( 'GITHUB2WP_Setup', 'deactivate' ) ); 
+register_uninstall_hook( __FILE__, array( 'GITHUB2WP_Setup', 'uninstall' ) );
 
 function github2wp_update_check_themes( $transient ) {
     $options = get_option('github2wp_options');
