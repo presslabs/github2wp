@@ -42,6 +42,7 @@ class Github_2_WP {
 	}
 
 	public function store_git_archive() {
+		set_time_limit (300);
 		$url = $this->config['zip_url'];
 
 		$upload_dir = GITHUB2WP_ZIPBALL_DIR_PATH;
@@ -55,7 +56,7 @@ class Github_2_WP {
 
 		$args = array(
 			'method'      => 'GET',
-			'timeout'     => 50,
+			'timeout'     => 150,
 			'redirection' => 5,
 			'httpversion' => '1.0',
 			'blocking'    => true,
