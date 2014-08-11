@@ -321,6 +321,52 @@ function github2wp_options_validate( $input ) {
 
 
 
+add_filter( 'pre_set_site_transient_update_themes', 'github2wp_update_check_resources', 10, 1);
+add_filter( 'pre_set_site_transient_update_plugins', 'github2wp_update_check_resources', 10, 1);
+function github2wp_update_check_resources( $transient ) {
+	$options = get_option('github2wp_options');
+	$resource_list = $options['resource_list'];
+
+	if ( empty($resource_list) )
+		return $transient;
+
+	$current_filter = current_filter();
+
+	switch( $current_filter ) {
+		case 'pre_set_site_transient_update_themes':
+			$filter_type = 'theme';
+			break;
+		case 'pre_set_site_transient_update_plugins':
+			$filter_type = 'plugin';
+			break;
+	}
+
+	foreach ( $resource_list as $resource ) {
+		$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
+		if ( $filter_type !== $repo_type )
+			continue;
+
+		$response_index = $resource['repo_name'];
+		$current_version = github2wp_get_header( $response_index, 'Version' );
+		$new_version = substr( $resource['head_commit'], 0, 7);
+
+		if ( $current_version && $new_version && $current_version != $new_version ) {
+			$zipball = github2wp_generate_zipball_endpoint( $resource['repo_name'] );
+				$theme = array(
+					'new_version' => $new_version,
+					'package'     => $zipball
+				);
+
+				$transient->response[ $response_index ] = $theme;
+		} else {
+			unset( $transient->response[ $response_index ] );
+		}
+	}
+
+  return $transient;
+}
+
+
 
 add_filter( 'upgrader_pre_download', 'github2wp_pre_download', 999, 3 );
 function github2wp_pre_download( $reply, $package, $upgrader) {

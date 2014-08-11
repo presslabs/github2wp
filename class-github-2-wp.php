@@ -48,9 +48,6 @@ class Github_2_WP {
 		$upload_dir = GITHUB2WP_ZIPBALL_DIR_PATH;
 		$upload_url = GITHUB2WP_ZIPBALL_URL;
 
-		if ( ! is_dir( $upload_dir ) ) 
-		   mkdir( $upload_dir, 0777, true );
-
 		$upload_dir_zip .= $upload_dir . wp_hash( $this->config['repo'] ) . '.zip';	
 		$upload_url_zip .= $upload_url . '/' . wp_hash( $this->config['repo'] ) . '.zip';
 

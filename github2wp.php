@@ -1,7 +1,6 @@
 <?php
 /*
  * Plugin Name: github2wp
- * Plugin URI: http://wordpress.org/extend/plugins/git2wp/ 
  * Description: Managing themes and plugins from github.
  * Author: PressLabs
  * Author URI: http://www.presslabs.com/ 
@@ -16,51 +15,7 @@ register_deactivation_hook( __FILE__, array( 'GITHUB2WP_Setup', 'deactivate' ) )
 register_uninstall_hook( __FILE__, array( 'GITHUB2WP_Setup', 'uninstall' ) );
 
 
-//TODO refactor these type of calls
-function github2wp_update_check_themes( $transient ) {
-    $options = get_option('github2wp_options');
-    $resource_list = $options['resource_list'];
-
-    if ( count( $resource_list ) > 0 ) {
-			foreach ( $resource_list as $resource ) {
-				$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
-
-        if ( 'theme' == $repo_type ) {
-          $response_index = $resource['repo_name'];
-					$current_version = github2wp_get_header( $response_index );
-
-          if ( $resource['head_commit'] ) {
-            $new_version = substr( $resource['head_commit'], 0, 7 );
-            $trans_new_version = $transient->response[ $response_index ]->new_version;
-
-						if ( isset( $trans_new_version ) && ( 7 != strlen( $trans_new_version ) || false != strpos( $trans_new_version, '.') ) )
-							unset($transient->response[ $response_index ]);
-
-						if ( '-' != $current_version && '' != $current_version
-							&& $current_version != $new_version && false != $new_version ) {
-
-							$zipball = github2wp_generate_zipball_endpoint( $resource['repo_name'] );
-								$theme = array(
-									'new_version' => $new_version,
-									'package'     => $zipball
-								);
-
-								$transient->response[ $response_index ] = $theme;
-							}
-					
-					} else {
-						unset( $transient->response[ $response_index ] );
-					}
-				}
-			}
-		}
-    return $transient;
-}
-add_filter( 'pre_set_site_transient_update_themes', 'github2wp_update_check_themes', 10, 1);
-
-//------------------------------------------------------------------------------
 // Transform plugin info into the format used by the native WordPress.org API
-
 //TODO make relevant check as fast as posible plus refactor some more
 function github2wp_inject_info( $result, $action = null, $args = null ) {
 	$options = get_option( 'github2wp_options' );
@@ -122,51 +77,6 @@ function github2wp_inject_info( $result, $action = null, $args = null ) {
 //Override requests for plugin information
 add_filter( 'plugins_api', 'github2wp_inject_info', 20, 3 );
 
-//------------------------------------------------------------------------------
-function github2wp_update_check_plugins( $transient ) {	
-    $options = get_option( 'github2wp_options' );
-    $resource_list = $options['resource_list'];
-
-
-		if ( count( $resource_list ) > 0 ) {
-			foreach ( $resource_list as $resource ) {
-				$repo_type = github2wp_get_repo_type($resource['resource_link']);
-				
-				if ( 'plugin' == $repo_type  ) {
-					$response_index = $resource['repo_name'] . '/' . $resource['repo_name'] . '.php';
-					$current_version = github2wp_get_header( $response_indexi, 'Version' );
-
-					if ( $resource['head_commit'] ) {
-						$new_version = substr( $resource['head_commit'], 0, 7 ); 
-						$trans_new_version = $transient->response[ $response_index ]->new_version;
-
-					if ( isset( $trans_new_version ) && ( 7 != strlen( $trans_new_version ) || false != strpos( $trans_new_version, '.') ) )
-						unset( $transient->response[ $response_index ] );
-
-					if ( '-' != $current_version && '' != $current_version
-						&& $current_version != $new_version && false != $new_version ) {
-							$homepage = github2wp_get_header( $plugin_file, 'AuthorURI' );
-							$zipball = github2wp_generate_zipball_endpoint($resource['repo_name']);
-
-							$plugin = array(
-								'slug'        => dirname( $response_index ),
-								'new_version' => $new_version,
-								'url'         => $homepage,
-								'package'     => $zipball
-							);
-						$transient->response[ $response_index ] = (object) $plugin;
-						}
-					} else {
-						unset( $transient->response[ $response_index ] );
-					}
-				}
-			}
-    }
-    return $transient;
-}
-add_filter( 'pre_set_site_transient_update_plugins', 'github2wp_update_check_plugins', 10, 1 );
-
-//------------------------------------------------------------------------------
 
 
 
@@ -387,7 +297,7 @@ function github2wp_setting_resources_list() {
 								if ( '' != $plugin_description && '-' != $plugin_description )
 									$my_data .= $plugin_description . '<br />';
 
-								$new_version = substr( $resource['head_commit'], 0, 7 ); 
+								$new_version = substr( $resource['head_commit'], 0, 7 );
 							}
 	
 							if ( $new_version != $current_plugin_version && '-' != $current_plugin_version
@@ -423,7 +333,7 @@ function github2wp_setting_resources_list() {
 									if ( '' != $theme_description && '-' != $theme_description )
 										$my_data .= $theme_description . '<br />';
 
-									$new_version = substr( $resource['head_commit'], 0, 7) ;
+									$new_version = substr( $resource['head_commit'], 0, 7 );
 								}
 
 								if ( $new_version != $current_theme_version && false != $new_version
