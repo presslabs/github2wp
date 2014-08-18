@@ -15,103 +15,18 @@ register_deactivation_hook( __FILE__, array( 'GITHUB2WP_Setup', 'deactivate' ) )
 register_uninstall_hook( __FILE__, array( 'GITHUB2WP_Setup', 'uninstall' ) );
 
 
-// Transform plugin info into the format used by the native WordPress.org API
-//TODO make relevant check as fast as posible plus refactor some more
-function github2wp_inject_info( $result, $action = null, $args = null ) {
-	$options = get_option( 'github2wp_options' );
-	$resource_list = $options['resource_list'];
-
-	if ( is_array( $resource_list ) && ! empty( $resource_list ) ) {
-		foreach ( $resource_list as $resource ) {
-
-			$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
-
-			if ( 'plugin' == $repo_type ) {
-				$response_index = $resource['repo_name'] . '/' . $resource['repo_name'] . '.php';
-				$new_version = substr( $resource['head_commit'], 0, 7 );
-				$homepage = github2wp_get_header( $plugin_file, 'AuthorURI' );
-				$zipball = github2wp_generate_zipball_endpoint( $resource['repo_name'] );
-
-				$changelog = __( 'No changelog found', GITHUB2WP );
-
-				$sections = array(
-					'description' => github2wp_get_header( $response_index, 'Description' ),
-					'changelog'   => $changelog,
-				);
-				$slug = dirname( $response_index );
-
-				$relevant = ( 'plugin_information' == $action ) && isset( $args->slug ) && ( $args->slug == $slug );
-				
-				if ( ! $relevant )
-					return $result;
-
-				$plugin = array(
-					'slug'            => $slug,
-					'new_version'     => $new_version,
-					'package'         => $zipball,
-					'url'             => null,
-					'name'            => github2wp_get_header( $response_index, 'Name' ),
-					'version'         => $new_version,
-					'homepage'        => null,
-					'sections'        => $sections,
-					'download_url'    => "https://github.com/{$resource['username']}/{$resource['repo_name']}/",
-					'author'          => github2wp_get_header( $response_index, 'Author' ),
-					'author_homepage' => github2wp_get_header( $response_index, 'AuthorURI' ),
-					'requires'        => null,
-					'tested'          => null,
-					'upgrade_notice'  => __( 'Here\'s why you should upgrade...', GITHUB2WP ),
-					'rating'          => null,
-					'num_ratings'     => null,
-					'downloaded'      => null,
-					'last_updated'    => null
-				);
-
-				$pluginInfo = github2wp_toWpFormat( $plugin );
-				if ( $pluginInfo )
-					return $pluginInfo;
-			}
-		}
-	}
-	return $result;
-}
-//Override requests for plugin information
-add_filter( 'plugins_api', 'github2wp_inject_info', 20, 3 );
-
-
 
 
 function github2wp_change_transient_revert( $old_transient ) {
-	$reverts = get_option('github2wp_reverts');
+	/*$reverts = get_option('github2wp_reverts');
 
 	$current_filter = current_filter();
 	$resource_type = ( strpos( $current_filter, 'themes') !== false ) ? 'themes' : 'plugins';
 
-	if ( empty($reverts[ $resource_type ]) )
-		return false;
-
-	$response = array();
-	foreach ( $reverts[ $resource_type ] as $res_slug ) {
-		$repo_name = explode( '/', $res_slug )[0];
-
-		$reponse[ $res_slug ] = (object) array(
-			'slug'    => $repo_name,
-			'version' => 'x#$!', //no need for it since we already have the right version downloaded
-			'package' => GITHUB2WP_ZIPBALL_URL . '/' . wp_hash( $repo_name ) . '.zip'
-		);
-	}
-
-	$transient = array(
-		'lastchecked' => time(),
-		'response' => $reponse
-	);
-
-	if ( false === $old_transient )
-		return (object) $transient;
-
-	$transient = wp_parse_args( $transient, (array) $old_transient );
-
 	//TODO check if this function works and remember to add to reverts option and remove entries when necessary
-	return (object) $transient;
+	return $transient;*/
+
+	return $old_transient;
 }
 add_filter( 'pre_site_transient_update_plugins', 'github2wp_change_transient_revert', 999 );
 add_filter( 'pre_site_transient_update_themes', 'github2wp_change_transient_revert', 999 );
@@ -134,34 +49,34 @@ function github2wp_options_page() {
 		$tab = 'resources';
 
 	echo '<div class="wrap">';
-		github2wp_render_plugin_icon();
-		github2wp_render_tab_menu( $tab );
+	github2wp_render_plugin_icon();
+	github2wp_render_tab_menu( $tab );
 
-		if ( 'resources' == $tab ) {
-		  github2wp_head_commit_cron();
+	if ( 'resources' == $tab ) {
+		github2wp_head_commit_cron();
 
-			wp_clean_plugins_cache(true);
-			wp_clean_themes_cache(true);
+		wp_clean_plugins_cache(true);
+		wp_clean_themes_cache(true);
 
-			$options = get_option( 'github2wp_options' );
-			github2wp_render_resource_form();
-		}
+		$options = get_option( 'github2wp_options' );
+		github2wp_render_resource_form();
+	}
 
-		if ( 'settings' == $tab ) {
-			github2wp_token_cron();
+	if ( 'settings' == $tab ) {
+		github2wp_token_cron();
 
-			$options = get_option( 'github2wp_options' );
-			$default = &$options['default'];
+		$options = get_option( 'github2wp_options' );
+		$default = &$options['default'];
 
-			github2wp_render_settings_app_reset_message( $default );
-			github2wp_render_settings_form( $default );
-		}
+		github2wp_render_settings_app_reset_message( $default );
+		github2wp_render_settings_form( $default );
+	}
 
-		if ( 'history' == $tab )
-			github2wp_render_history_page();
+	if ( 'history' == $tab )
+		github2wp_render_history_page();
 
-		if ( 'faq' == $tab )
-			github2wp_render_faq_page();
+	if ( 'faq' == $tab )
+		github2wp_render_faq_page();
 
 	echo '</div><!-- .wrap -->';
 }

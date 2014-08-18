@@ -259,8 +259,8 @@ function github2wp_options_validate( $input ) {
 				if ( $sw ) {
 					github2wp_uploadFile( $zipball_path, $resource, 'update' );
 
-					if ( file_exists( $zipball_path ) )
-						unlink( $zipball_path );
+					//if ( file_exists( $zipball_path ) )
+					//	unlink( $zipball_path );
 				}
 			}
 		}
@@ -347,23 +347,94 @@ function github2wp_update_check_resources( $transient ) {
 			continue;
 
 		$response_index = $resource['repo_name'];
+		if ( 'plugin' === $filter_type )
+			$response_index .= '/'. $resource['repo_name'] . '.php';
+
 		$current_version = github2wp_get_header( $response_index, 'Version' );
 		$new_version = substr( $resource['head_commit'], 0, 7);
 
 		if ( $current_version && $new_version && $current_version != $new_version ) {
 			$zipball = github2wp_generate_zipball_endpoint( $resource['repo_name'] );
-				$theme = array(
+				$res = (object) array(
 					'new_version' => $new_version,
 					'package'     => $zipball
 				);
 
-				$transient->response[ $response_index ] = $theme;
+				$transient->response[ $response_index ] = $res;
 		} else {
 			unset( $transient->response[ $response_index ] );
 		}
 	}
 
+
   return $transient;
+}
+
+
+
+add_filter( 'plugins_api', 'github2wp_inject_info', 20, 3 );
+function github2wp_inject_info( $result, $action = null, $args = null ) {
+	$options = get_option( 'github2wp_options' );
+	$resource_list = $options['resource_list'];
+
+	if( empty($resource_list) )
+		return $result;
+
+	foreach ( $resource_list as $resource ) {
+		$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
+
+		if ( 'plugin' !== $repo_type )
+			continue;
+
+		$response_index = $resource['repo_name'] . '/' . $resource['repo_name'] . '.php';
+		$slug = dirname( $response_index );
+
+		$relevant = ( 'plugin_information' == $action ) && isset( $args->slug ) && ( $args->slug == $slug );
+		if ( $relevant )
+			break;
+	}
+		
+	if ( !$relevant )
+		return $result;
+
+	$new_version = substr( $resource['head_commit'], 0, 7 );
+	$homepage = github2wp_get_header( $plugin_file, 'AuthorURI' );
+	$zipball = github2wp_generate_zipball_endpoint( $resource['repo_name'] );
+
+	$changelog = __( 'No changelog found', GITHUB2WP );
+
+	$sections = array(
+		'description' => github2wp_get_header( $response_index, 'Description' ),
+		'changelog'   => $changelog,
+	);
+	
+
+	$plugin = array(
+		'slug'            => $slug,
+		'new_version'     => $new_version,
+		'package'         => $zipball,
+		'url'             => null,
+		'name'            => github2wp_get_header( $response_index, 'Name' ),
+		'version'         => $new_version,
+		'homepage'        => null,
+		'sections'        => $sections,
+		'download_url'    => "https://github.com/{$resource['username']}/{$resource['repo_name']}/",
+		'author'          => github2wp_get_header( $response_index, 'Author' ),
+		'author_homepage' => github2wp_get_header( $response_index, 'AuthorURI' ),
+		'requires'        => null,
+		'tested'          => null,
+		'upgrade_notice'  => __( 'Here\'s why you should upgrade...', GITHUB2WP ),
+		'rating'          => null,
+		'num_ratings'     => null,
+		'downloaded'      => null,
+		'last_updated'    => null
+	);
+
+	$pluginInfo = github2wp_toWpFormat( $plugin );
+	if ( $pluginInfo )
+		return $pluginInfo;
+
+	return $result;
 }
 
 
@@ -388,6 +459,7 @@ function github2wp_pre_download( $reply, $package, $upgrader) {
 		if ( file_exists($resource_path) )
 			return $resource_path;
 	}
+
 
 	return $reply;
 }
