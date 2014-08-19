@@ -11,7 +11,7 @@ class GITHUB2WP_Setup {
 		if( !file_exists( GITHUB2WP_ZIPBALL_DIR_PATH ) )
 			mkdir(GITHUB2WP_ZIPBALL_DIR_PATH, 0777, true);
 
-		add_option( 'github2wp_options', array() );
+		add_option( 'github2wp_options', array( 'default' => array(), 'resource_list' => array() ) );
 		add_option( 'github2wp_reverts', array( 'themes' => array(), 'plugins' => array()) );
 
 		wp_schedule_event( current_time( 'timestamp' ), '6h', 'github2wp_cron_hook' );

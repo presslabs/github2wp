@@ -220,7 +220,7 @@ function github2wp_get_header( $file, $header='Version' ) {
 		if( isset($allPlugins[ $file ][ $header ]) )
 			return $allPlugins[ $file ][ $header ];
 	} else {
-		$theme = wp_get_theme( $theme_name );
+		$theme = wp_get_theme( $file );
 
 		return $theme->get( $header );
 	}
@@ -238,4 +238,62 @@ function github2wp_generate_zipball_endpoint( $repo_name ) {
 		),
 		home_url().'/'
 	);
+}
+
+
+
+function github2wp_get_res_branches( $resource, $transient, $options ) {
+	if ( false === $transient ) {
+		$git = new Github_2_WP( array(
+			'user'         => $resource['username'],
+			'repo'         => $resource['repo_name'],
+			'access_token' => $options['default']['access_token'],
+			'source'       => $resource['repo_branch'] 
+			)
+		);
+
+		$branches = $git->fetch_branches();
+	} else {
+		foreach ( $transient as $tran_res ) {
+			if ( $tran_res['repo_name'] == $resource['repo_name'] ) {
+				$branches = $tran_res['branches'];
+				break;
+			}
+		}
+	}
+
+	return $branches;
+}
+
+
+
+function github2wp_get_content_dir_by_type( $type ) {
+	$dir = WP_CONTENT_DIR;
+	switch($type) {
+		case 'theme':
+			return $dir . '/themes/';
+		case 'plugin':
+			return $dir . '/plugins/';
+		default:
+			throw new InvalidArgumentException( 'When calling __FUNCTION__ parameter must be either plugin/theme' );
+	}
+}
+
+
+
+function github2wp_fetch_archive( $args ) {
+	$git = new Github_2_WP( $args );
+	$sw = $git->store_git_archive();
+	
+	return $sw;
+}
+
+
+
+function github2wp_needs_configuration() {
+	$options = get_option( 'github2wp_options' );
+	$default = $options['default'];
+
+	return ( empty( $default['master_branch'] ) || empty( $default['client_id'] )
+		or empty( $default['client_secret'] ) || empty( $default['access_token'] ) );
 }
