@@ -17,6 +17,7 @@ register_uninstall_hook( __FILE__, array( 'GITHUB2WP_Setup', 'uninstall' ) );
 
 
 
+add_action( 'init', 'github2wp_init' );
 function github2wp_init() {
 	$options = get_option( 'github2wp_options' );
 
@@ -47,4 +48,3 @@ function github2wp_init() {
 		}
 	}
 }
-add_action( 'init', 'github2wp_init' );
