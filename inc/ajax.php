@@ -5,22 +5,16 @@
 
 add_action( 'wp_ajax_github2wp_set_branch', 'github2wp_ajax_set_branch' );
 function github2wp_ajax_set_branch() {
-	$options = get_option( 'github2wp_options' );
-	$resource_list = &$options['resource_list'];
-	$default = $options['default'];
-	$response = array(
-		'success'         => false,
-		'error_messge'    => '',
-		'success_message' => ''
-	);
+	list($options, $resource_list, $response ) = github2wp_ajax_ini();
 
+	//TODO on nonce refactor make sure to simplify the checks somehow
 	if ( isset( $_POST['id'] ) && isset( $_POST['branch'] ) ) {
 		$resource = &$resource_list[ $_POST['id'] ];
 
 		$git = new Github_2_WP( array(
 			'user'         => $resource['username'],
 			'repo'         => $resource['repo_name'],
-			'access_token' => $default['access_token'],
+			'access_token' => $option['default']['access_token'],
 			'source'       => $resource['repo_branch']
 			)
 		);
@@ -48,9 +42,7 @@ function github2wp_ajax_set_branch() {
 		if ( ! $branch_set )
 			$response['error_messages'] = __( 'Branch not set', GITHUB2WP );
 
-		header( 'Content-type: application/json' );
-		echo json_encode( $response );
-		die();
+		github2wp_ajax_end( $response, 'json' );
 	}
 }
 
@@ -58,14 +50,7 @@ function github2wp_ajax_set_branch() {
 
 add_action( 'wp_ajax_github2wp_downgrade', 'github2wp_ajax_downgrade' );
 function github2wp_ajax_downgrade() {
-	$options = get_option( 'github2wp_options' );
-	$resource_list = &$options['resource_list'];
-	$default = $options['default'];
-	$response = array(
-		'success'         => false,
-		'error_messge'    => '',
-		'success_message' => ''
-	);
+	list($options, $resource_list, $response ) = github2wp_ajax_ini();
 
 
 	if ( isset( $_POST['commit_id'] ) && isset( $_POST['res_id'] ) ) {
@@ -73,25 +58,25 @@ function github2wp_ajax_downgrade() {
 		$type = github2wp_get_repo_type( $resource['resource_link'] );
 		$version = $_POST['commit_id'];
 
+
+		$reverts = get_option('github2wp_reverts', array());
+
+		$res_slug = $resource['repo_name'] . (( 'plugin' === $type ) ? "/{$resource['repo_name']}.php" : '');
+		$sub_version = substr( $version, 0, 7 );
+		$reverts[ $res_slug ]	= $sub_version;
+		update_option('github2wp_reverts', $reverts);
+
+
 		$args = array(
 			'user'         => $resource['username'],
 			'repo'         => $resource['repo_name'],
 			'repo_type'    => $type,
-			'access_token' => $default['access_token'],
+			'access_token' => $options['default']['access_token'],
 			'source'       => $version
 		);
 
-
-		//Make sure wp knows there is an update even if it's a downgrade
-		$version = substr( $version, 0, 7 );
-		$res_slug = $resource['repo_name'] . (( 'plugin' === $type ) ? "/{$resource['repo_name']}.php" : '');
-		$reverts = get_option('github2wp_reverts', array());
-		$reverts[ $res_slug ]	= $version;
-		update_option('github2wp_reverts', $reverts);
-
-
-		$zipball_path = github2wp_generate_zipball_endpoint( $resource['repo_name'] );
 		if ( github2wp_fetch_archive( $args ) ) {
+			$zipball_path = github2wp_generate_zipball_endpoint( $resource['repo_name'] );
 			github2wp_update_resource( $zipball_path, $resource, 'update' );
 
 			unset($reverts[ $res_slug ]);
@@ -105,9 +90,7 @@ function github2wp_ajax_downgrade() {
 				$resource['repo_name'], $version );
 		}
 
-		header( 'Content-type: application/json' );
-		echo json_encode( $response );
-		die();
+		github2wp_ajax_end( $response, 'json' );
 	}
 }
 
@@ -115,13 +98,7 @@ function github2wp_ajax_downgrade() {
 
 add_action ( 'wp_ajax_github2wp_fetch_history', 'github2wp_ajax_fetch_history' );
 function github2wp_ajax_fetch_history() {
-	$options = get_option( 'github2wp_options' );
-	$resource_list = &$options['resource_list'];
-	$response = array(
-		'success'         => false,
-		'error_messge'    => '',
-		'success_message' => ''
-	);
+	list($options, $resource_list, $response ) = github2wp_ajax_ini();
 
 	if ( isset ( $_POST['res_id'] ) ) {
 		$resource = $resource_list[ $_POST['res_id'] ];
@@ -136,8 +113,40 @@ function github2wp_ajax_fetch_history() {
 
 		$commit_history = $git->get_commits();
 
-		header( 'Content-Type: text/html' );
+		ob_start();
 		github2wp_render_resource_history( $resource['repo_name'], $_POST['res_id'], $commit_history );
-		die();
+		$response = ob_get_clean();
+
+		github2wp_ajax_end( $response, 'html' );
 	}
+}
+
+
+
+function github2wp_ajax_ini() {
+	$options = get_option( 'github2wp_options' );
+	$resource_list = &$options['resource_list'];
+	$response = array(
+		'success'         => false,
+		'error_messge'    => '',
+		'success_message' => ''
+	);
+
+	return array($options, $resource_list, $response);
+}
+
+
+
+function github2wp_ajax_end( $data, $data_type ) {
+	switch( $data_type ) {
+		case 'json':
+			header( 'Content-type: application/json' );
+			echo json_encode($data);
+			break;
+		default:
+			header( 'Content-Type: text/html' );
+			echo $data;
+	}
+
+	die();
 }
