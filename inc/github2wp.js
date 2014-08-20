@@ -34,7 +34,7 @@ j( document ).ready( function( $ ) {
   	j.ajax( ajaxurl, {
    		type: 'post',
 			async: true,
-			data: { action: 'github2wp_ajax', 'id': id, 'branch': branch, 'github2wp_action': 'set_branch' },
+			data: { action: 'github2wp_set_branch', 'id': id, 'branch': branch },
 
   		success: function( response ) {
 				if ( response['success'] ) {
@@ -79,7 +79,7 @@ j( document ).ready( function( $ ) {
 			j.ajax( ajaxurl, {
 				type: 'post',
 				async: true,
-				data: { action: 'github2wp_ajax', 'res_id': res_id, 'github2wp_action': 'fetch_history' },
+				data: { action: 'github2wp_fetch_history', 'res_id': res_id },
 				success: function( response ) {
 					if ( response ) {								
 						container.empty();
@@ -97,7 +97,7 @@ j( document ).ready( function( $ ) {
 							j.ajax( ajaxurl, {
 								type: 'post',
 								async: true,
-								data: { action: 'github2wp_ajax', 'res_id': res_id, 'commit_id': commit_id, 'github2wp_action': 'downgrade' },
+								data: { action: 'github2wp_downgrade', 'res_id': res_id, 'commit_id': commit_id },
 								dataFilter: function ( rawresponse, type ) {
 									if ( "json" == type )
 										if ( -1 != rawresponse.indexOf( '</html>' ) )

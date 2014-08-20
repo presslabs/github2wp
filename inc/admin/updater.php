@@ -24,6 +24,9 @@ function github2wp_update_resource( $path, array $resource, $mode='install' ) {
 	else
 		$processor->install( $path );
 	require_once( ABSPATH . 'wp-admin/admin-footer.php' );
+
+
+	github2wp_cleanup($path);
 }
 
 
