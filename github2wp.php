@@ -7,7 +7,8 @@
  * Version: 1.0.0
  */
 
-require_once( 'loader.php' );
+if ( is_admin() )
+	require_once( 'loader.php' );
 
 
 register_activation_hook( __FILE__, array( 'GITHUB2WP_Setup', 'activate' ) );
