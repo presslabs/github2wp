@@ -28,33 +28,6 @@ function github2wp_update_resource( $path, array $resource, $mode='install' ) {
 
 
 
-add_filter( 'upgrader_pre_download', 'github2wp_pre_download', 999, 3 );
-function github2wp_pre_download( $reply, $package, $upgrader) {
-	if ( !$package )
-		return $reply;
-
-	$url_parts = parse_url($package);
-	if ( !isset($url_parts['query'] ) )
-		return $reply;
-
-	parse_str($url_parts['query']);
-
-	if ( !isset($github2wp_action) || !isset($resource) )
-		return $reply;
-
-	if ( 'download' === $github2wp_action ) {
-		$resource_path = GITHUB2WP_ZIPBALL_DIR_PATH . $resource . '.zip';
-
-		if ( file_exists($resource_path) )
-			return $resource_path;
-	}
-
-
-	return $reply;
-}
-
-
-
 add_action( 'admin_head', 'github2wp_admin_head' );
 function github2wp_admin_head() {
 	$options = get_option( 'github2wp_options' );
@@ -72,16 +45,15 @@ function github2wp_admin_head() {
 
 		$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
 
-		$git = new Github_2_WP( array(
+		$args = array(
 			'user'         => $resource['username'],
 			'repo'         => $resource['repo_name'],
 			'repo_type'    => $repo_type,
 			'access_token' => $default['access_token'],
 			'source'       => $resource['head_commit']
-			)
 		);
-
-		$sw = $git->store_git_archive();
+	
+		github2wp_fetch_archive($args);
 	}
 }
 
@@ -108,7 +80,7 @@ function github2wp_admin_footer() {
 		if ( !in_array( $resource['repo_name'], $res, true ) )
 			continue;
 
-		$zipball_path = GITHUB2WP_ZIPBALL_DIR_PATH . wp_hash( $resource['repo_name'] ).'.zip';
+		$zipball_path = github2wp_generate_zipball_endpoint( $resource['repo_name'] );
 		github2wp_cleanup($zipball_path);
 	}
 }

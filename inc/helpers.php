@@ -231,13 +231,7 @@ function github2wp_get_header( $file, $header='Version' ) {
 
 
 function github2wp_generate_zipball_endpoint( $repo_name ) {
-	return add_query_arg(
-		array(
-			'github2wp_action'   => 'download',
-			'resource' => wp_hash($repo_name)
-		),
-		home_url().'/'
-	);
+	return GITHUB2WP_ZIPBALL_DIR_PATH . wp_hash($repo_name) . '.zip';
 }
 
 
