@@ -67,18 +67,33 @@ function github2wp_options_validate( $input ) {
 
 
 
-add_filter( 'pre_site_transient_update_plugins', 'github2wp_change_transient_revert', 999 );
-add_filter( 'pre_site_transient_update_themes', 'github2wp_change_transient_revert', 999 );
-function github2wp_change_transient_revert( $old_transient ) {
-	/*$reverts = get_option('github2wp_reverts');
+add_filter( 'site_transient_update_plugins', 'github2wp_change_transient_revert', 999, 1 );
+add_filter( 'site_transient_update_themes', 'github2wp_change_transient_revert', 999, 1 );
+function github2wp_change_transient_revert( $transient ) {
+	$reverts = get_option('github2wp_reverts');
+
+	if( empty($reverts) )
+		return $transient;
 
 	$current_filter = current_filter();
-	$resource_type = ( strpos( $current_filter, 'themes') !== false ) ? 'themes' : 'plugins';
+	$filter_target = ( $current_filter === 'site_transient_update_themes' ) ? 'theme' : 'plugin';
+	
+	$response = &$transient->response;
 
-	//TODO check if this function works and remember to add to reverts option and remove entries when necessary
-	return $transient;*/
+	foreach( $reverts as $res_slug => $version ) {
+		$info = pathinfo($res_slug);
+		$type = ( isset($info['extension']) ) ? 'plugin' : 'theme';
+		if ( $filter_target !== $type)
+			continue;
 
-	return $old_transient;
+		$new_response = (array) $response[ $res_slug ];
+		$new_response['new_version'] = $version;
+		$new_response['package'] = github2wp_generate_zipball_endpoint($info['filename']);
+		
+		$response[ $res_slug ] = ( 'plugin' === $filter_target ) ? (object) $new_response : $new_response;
+	}
+
+	return $transient;
 }
 
 

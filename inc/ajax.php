@@ -54,27 +54,33 @@ function github2wp_ajax_callback() {
 	if ( isset( $_POST['github2wp_action'] ) && 'downgrade' == $_POST['github2wp_action'] ) {
 		if ( isset( $_POST['commit_id'] ) && isset( $_POST['res_id'] ) ) {
 			$resource = $resource_list[ $_POST['res_id'] ];
+			$type = github2wp_get_repo_type( $resource['resource_link'] );
 			$version = $_POST['commit_id'];
 
-			$git = new Github_2_WP( array(
+			$args = array(
 				'user'         => $resource['username'],
 				'repo'         => $resource['repo_name'],
+				'repo_type'    => $type,
 				'access_token' => $default['access_token'],
 				'source'       => $version
-				)
 			);
-
+			
+			
 			$version = substr( $version, 0, 7 );
-			$type = github2wp_get_repo_type( $resource['resource_link'] );
-			$zipball_path = GITHUB2WP_ZIPBALL_DIR_PATH . wp_hash( $resource['repo_name'] ) . '.zip';
+			$res_slug = $resource['repo_name'] . (( 'plugin' === $type ) ? "/{$resource['repo_name']}.php" : '');
 
-			$sw = $git->store_git_archive();
+			$reverts = get_option('github2wp_reverts', array());
+			$reverts[ $res_slug ]	= $version;
+			update_option('github2wp_reverts', $reverts);	
 
-			if ( $sw ) {
-				github2wp_uploadFile( $zipball_path, $resource, 'update' );
+			$zipball_path = github2wp_generate_zipball_endpoint( $resource['repo_name'] );
 
-				if ( file_exists( $zipball_path ) )
-					unlink( $zipball_path );
+			if ( github2wp_fetch_archive( $args ) ) {
+				github2wp_update_resource( $zipball_path, $resource, 'update' );
+				github2wp_cleanup( $zipball_path );
+
+				unset($reverts[ $res_slug ]);
+				update_option('github2wp_reverts', $reverts );
 
 				$response['success'] = true;
 				$response['success_message'] = sprintf( __( 'The resource <b>%s<b> has been updated to %s .', GITHUB2WP ),
