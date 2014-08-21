@@ -99,7 +99,7 @@ function github2wp_setting_resources_list() {
 
 		$new_version = substr( $resource['head_commit'], 0, 7 );
 	
-		if ( $new_version && $new_version != $resource_current_version ) {
+		if ( $new_version && $resource_current_version && $new_version != $resource_current_version ) {
 			$my_data .= '<strong>' . __( 'New Version: ', GITHUB2WP ) . "</strong>$new_version<br /></div>";
 			$action .= github2wp_return_resource_update( $resource, $k-1 );
 		}
