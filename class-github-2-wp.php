@@ -258,30 +258,6 @@ class Github_2_WP {
 			return null;
 		}
 
-		$branches = null;
-		$args = array(
-			'method'      => 'GET',
-			'timeout'     => 50,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			'blocking'    => true,
-			'headers'     => array(),
-			'body'        => null,
-			'cookies'     => array()
-		);
-
-		$response = wp_remote_get( $url, $args );
-
-		if ( is_wp_error( $response ) ) {
-			$error_message = $response->get_error_message();
-			add_settings_error( 'github2wp_settings_errors', 
-				'repo_archive_error', 
-				__( 'An error has occured:', GITHUB2WP) . $error_message, 
-				'error' );
-
-			return null;
-		}
-
 		$result = wp_remote_retrieve_body( $response );
 		$result = json_decode( $result, true );
 
