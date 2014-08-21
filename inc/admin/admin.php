@@ -9,7 +9,7 @@ function github2wp_add_resources( $hook ) {
 	if ( ! github2wp_check_toolpage_hook( $hook ) )
 		return;
 
-	github2wp_enqueue_resource( 'github2wp.js', array('jquery'), false );
+	github2wp_enqueue_resource( 'github2wp.js', array('jquery'), true );
 	github2wp_enqueue_resource( 'github2wp.css', array(), 'ALL' );
 }
 
@@ -49,7 +49,10 @@ function github2wp_settings_link( $links ) {
 function github2wp_options_validate( $input ) {
 	require_once('form.php');
 
-	$options = get_option( 'github2wp_options' );
+	if ( !$input )
+		$options = get_option( 'github2wp_options' );
+	else
+		$options = &$input;
 
 	if ( isset( $_POST['submit_settings'] ) )
 		return github2wp_submit_settings( $options );
