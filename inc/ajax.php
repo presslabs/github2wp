@@ -5,7 +5,13 @@
 
 add_action( 'wp_ajax_github2wp_set_branch', 'github2wp_ajax_set_branch' );
 function github2wp_ajax_set_branch() {
-	list($options, $resource_list, $response ) = github2wp_ajax_ini();
+	$options = get_option( 'github2wp_options' );
+	$resource_list = &$options['resource_list'];
+	$response = array(
+		'success'         => false,
+		'error_messge'    => '',
+		'success_message' => ''
+	);
 
 	//TODO on nonce refactor make sure to simplify the checks somehow
 	if ( isset( $_POST['id'] ) && isset( $_POST['branch'] ) ) {
@@ -14,8 +20,7 @@ function github2wp_ajax_set_branch() {
 		$git = new Github_2_WP( array(
 			'user'         => $resource['username'],
 			'repo'         => $resource['repo_name'],
-			'access_token' => $option['default']['access_token'],
-			'source'       => $resource['repo_branch']
+			'access_token' => $options['default']['access_token']
 			)
 		);
 
@@ -28,8 +33,7 @@ function github2wp_ajax_set_branch() {
 					continue;
 
 				$resource['repo_branch'] = $br;
-
-				$sw = github2wp_update_options( 'github2wp_options', $options );
+				$sw = update_option( 'github2wp_options', $options );
 
 				if ( $sw ) {
 					$branch_set = true;
@@ -50,8 +54,13 @@ function github2wp_ajax_set_branch() {
 
 add_action( 'wp_ajax_github2wp_downgrade', 'github2wp_ajax_downgrade' );
 function github2wp_ajax_downgrade() {
-	list($options, $resource_list, $response ) = github2wp_ajax_ini();
-
+	$options = get_option( 'github2wp_options' );
+	$resource_list = &$options['resource_list'];
+	$response = array(
+		'success'         => false,
+		'error_messge'    => '',
+		'success_message' => ''
+	);
 
 	if ( isset( $_POST['commit_id'] ) && isset( $_POST['res_id'] ) ) {
 		$resource = $resource_list[ $_POST['res_id'] ];
@@ -102,7 +111,13 @@ function github2wp_ajax_downgrade() {
 
 add_action ( 'wp_ajax_github2wp_fetch_history', 'github2wp_ajax_fetch_history' );
 function github2wp_ajax_fetch_history() {
-	list($options, $resource_list, $response ) = github2wp_ajax_ini();
+	$options = get_option( 'github2wp_options' );
+	$resource_list = &$options['resource_list'];
+	$response = array(
+		'success'         => false,
+		'error_messge'    => '',
+		'success_message' => ''
+	);
 
 	if ( isset ( $_POST['res_id'] ) ) {
 		$resource = $resource_list[ $_POST['res_id'] ];
@@ -123,20 +138,6 @@ function github2wp_ajax_fetch_history() {
 
 		github2wp_ajax_end( $response, 'html' );
 	}
-}
-
-
-
-function github2wp_ajax_ini() {
-	$options = get_option( 'github2wp_options' );
-	$resource_list = &$options['resource_list'];
-	$response = array(
-		'success'         => false,
-		'error_messge'    => '',
-		'success_message' => ''
-	);
-
-	return array($options, $resource_list, $response);
 }
 
 
