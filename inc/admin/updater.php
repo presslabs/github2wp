@@ -20,13 +20,14 @@ function github2wp_update_resource( $path, array $resource, $mode='install' ) {
 
 	require_once( ABSPATH . 'wp-admin/admin-header.php' );
 	if ( 'update' == $mode )
-		$processor->upgrade( $res_slug );
+		$return = $processor->upgrade( $res_slug );
 	else
-		$processor->install( $path );
+		$return = $processor->install( $path );
 	require_once( ABSPATH . 'wp-admin/admin-footer.php' );
 
 
 	github2wp_cleanup($path);
+	return $return;
 }
 
 

@@ -77,16 +77,20 @@ function github2wp_ajax_downgrade() {
 
 		if ( github2wp_fetch_archive( $args ) ) {
 			$zipball_path = github2wp_generate_zipball_endpoint( $resource['repo_name'] );
-			github2wp_update_resource( $zipball_path, $resource, 'update' );
+			$was_updated = github2wp_update_resource( $zipball_path, $resource, 'update' );
 
-			unset($reverts[ $res_slug ]);
-			update_option('github2wp_reverts', $reverts );
+			if ( $was_updated	) {
+				unset($reverts[ $res_slug ]);
+				update_option('github2wp_reverts', $reverts );
 
-			$response['success'] = true;
-			$response['success_message'] = sprintf( __( 'The resource <b>%s<b> has been updated to %s .', GITHUB2WP ),
-				$resource['repo_name'], $version );
-		} else {
-			$response['error_message'] = sprintf( __( 'The resource <b>%s<b> has FAILED to updated to %s .', GITHUB2WP ),
+				$response['success'] = true;
+				$response['success_message'] = sprintf( __( 'The resource <b>%s<b> has been updated to %s .', GITHUB2WP ),
+					$resource['repo_name'], $version );
+			}
+		}
+
+		if ( !$was_updated ) {
+			$response['error_message'] = sprintf( __( 'The resource <b>%s<b> has FAILED to update to %s .', GITHUB2WP ),
 				$resource['repo_name'], $version );
 		}
 
