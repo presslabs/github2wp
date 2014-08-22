@@ -2,9 +2,17 @@
 if ( ! class_exists( 'Github_2_WP' ) ):
 
 class Github_2_WP {
-	public static $api_base = 'https://api.github.com/';
-	
+	private static $api_base = 'https://api.github.com/';
+	private static $endpoints = array(
+		'zip_url'    => 'repos/:user/:repo/zipball/:source',
+		'branches'   => 'repos/:user/:repo/branches',
+		'user_check' => 'user',
+		'contents'   => 'repos/:user/:repo/contents/:path',
+		'commits'    => 'repos/:user/:repo/commits?sha=:source&per_page=:limit&access_token=:acces_token'
+	);
+
 	private $config = array();
+
 
 	function __construct( $resource, $version='HEAD' ) {
 		$access_token = get_option( 'github2wp_options' )['default']['access_token'];
@@ -16,12 +24,13 @@ class Github_2_WP {
 			'access_token' => $access_token,
 			'source'       => ( $version === 'HEAD' ) ? $resource['repo_branch'] : $version
 		);
-		
+
 		$this->create_zip_url();
 	}
 
+
 	private function create_zip_url() {
-		$this->config['zip_url'] = static::$api_base 
+		$this->config['zip_url'] = static::$api_base
 			. sprintf( 'repos/%s/%s/zipball/%s?access_token=%s',
 					$this->config['user'],
 					$this->config['repo'],
