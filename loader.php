@@ -5,16 +5,14 @@ require_once( GITHUB2WP_INC_PATH . 'helpers.php' );
 require_once( GITHUB2WP_INC_PATH . 'notices.php' );
 
 
-require_once( GITHUB2WP_INC_PATH . 'GITHUB2WP_Setup.class.php' );
+require_once( GITHUB2WP_INC_PATH . 'GitHub2WP_Setup.class.php' );
 require_once( GITHUB2WP_INC_PATH . 'cron.php' );
 require_once( GITHUB2WP_INC_PATH . 'ajax.php' );
 
 require_once( GITHUB2WP_INC_PATH . '/admin/admin.php' );
 require_once( GITHUB2WP_INC_PATH . '/admin/ui.php' );
 
-//TODO rename, relocate these files, maybe split them
-require_once( 'class-github-2-wp.php' );
-
+require_once( GITHUB2WP_INC_PATH . 'GitHub2WP.class.php' );
 
 
 add_action( 'plugins_loaded', 'github2wp_language_init' );

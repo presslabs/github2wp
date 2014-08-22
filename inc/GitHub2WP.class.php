@@ -400,12 +400,12 @@ class Github_2_WP {
 		$upload_url_zip .= $upload_url . '/' . wp_hash( $this->config['repo'] ) . '.zip';
 
 		$bit_count = file_put_contents( $upload_dir_zip, wp_remote_retrieve_body( $response ) );
-		
+
 		if ( !$bit_count ) {
 			github2wp_cleanup($uploade_dir_zip);
 
-			add_settings_error( 'github2wp_settings_errors', 
-				'repo_archive_error', 
+			add_settings_error( 'github2wp_settings_errors',
+				'repo_archive_error',
 				__( 'Empty archive. ', GITHUB2WP ), 
 				'error' );
 
@@ -414,10 +414,10 @@ class Github_2_WP {
 
 		//Extract git archive and take info from it
 		$zip = new ZipArchive;
-		$zip->open( $upload_dir_zip ); 
+		$zip->open( $upload_dir_zip );
 
 		$folder_name = $this->config['user'] . '-' . $this->config['repo'] . '-' ;
-		for ( $i = 0; $i < $zip->numFiles; $i++ ) {   
+		for ( $i = 0; $i < $zip->numFiles; $i++ ) {
 			$name = $zip->getNameIndex( $i );
 
 			if ( 0 == strpos( $folder_name, $name ) ) {
@@ -459,13 +459,13 @@ class Github_2_WP {
 								$module['path'],
 								$this->config['source']
 							);
-							
+
 							if ( !$sub_commit ) {
 								$error_free = false;
-								add_settings_error( 'github2wp_settings_errors', 
-									'repo_archive_submodule_error', 
+								add_settings_error( 'github2wp_settings_errors',
+									'repo_archive_submodule_error',
 									__( "At least one of the submodules included in the resource failed"
-									. " to be retrieved! No permissions or repo does not exist. ", GITHUB2WP ), 
+									. " to be retrieved! No permissions or repo does not exist. ", GITHUB2WP ),
 									'error' );
 							}	else {
 								$args = array(
@@ -486,7 +486,7 @@ class Github_2_WP {
 									add_settings_error( 'github2wp_settings_errors', 
 										'repo_archive_submodule_error', 
 										__( "At least one of the submodules included in the resource failed"
-										. " to be retrieved! No data retrieved. ", GITHUB2WP ), 
+										. " to be retrieved! No data retrieved. ", GITHUB2WP ),
 										'error' );
 								}
 							}
