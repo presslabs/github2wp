@@ -53,22 +53,23 @@ function github2wp_submit_resource( array $options ) {
 		return $initial_options;
 	}
 
+
+	$link = home_url() . "/wp-content/{$_POST['resource_type_dropdown']}/$resource_repo_name";
 	$args = array(
-		'user'         => $resource_owner,
-		'repo'         => $resource_repo_name,
-		'access_token' => $options['default']['access_token'],
-		'source'       => $repo_branch 
+		'username'      => $resource_owner,
+		'repo_name'     => $resource_repo_name,
+		'resource_link' => $link
 	);
 
-	$git = new Github_2_WP( $args );
+	$git = new Github_2_WP( $args, $repo_branch );
 	$sw = $git->check_repo_availability();
 
 	if ( !$sw )
 		return $initial_options;
 
+
 	$on_wp = Github_2_WP::check_svn_avail( $resource_repo_name, substr( $_POST['resource_type_dropdown'], 0, -1 ) );
 	$head = $git->get_head_commit();
-	$link = home_url() . "/wp-content/{$_POST['resource_type_dropdown']}/$resource_repo_name";
 
 	$resource_list[] = array(
 		'resource_link' => $link,

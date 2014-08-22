@@ -2,44 +2,39 @@
 if ( ! class_exists( 'Github_2_WP' ) ):
 
 class Github_2_WP {
+	public static $api_base = 'https://api.github.com/';
+	
+	private $config = array();
 
-	public $config = array(
-		'user' => '',
-		'repo' => '',
-		'repo_type' => '',
-		'access_token' => '',
-		'zip_url' => '',
-		'git_api_base_url' => 'https://api.github.com/',
-		'source' => ''
-	);
+	function __construct( $resource, $version='HEAD' ) {
+		$access_token = get_option( 'github2wp_options' )['default']['access_token'];
 
-	function __construct( $array ) {
-		if ( is_array( $array ) )
-			foreach ( $array as $key => $value ) {
-				if ( array_key_exists( $key, $this->config ) )
-					if ( '' == $this->config[ $key ] )
-						$this->config[ $key ] = $array[ $key ];
-			}
-
+		$this->config = array(
+			'user'         => $resource['username'],
+			'repo'         => $resource['repo_name'],
+			'repo_type'    => github2wp_get_repo_type( $resource['resource_link'] ),
+			'access_token' => $access_token,
+			'source'       => ( $version === 'HEAD' ) ? $resource['repo_branch'] : $version
+		);
+		
 		$this->create_zip_url();
 	}
 
-
-	public function get_config() {
-		return $this->config;
+	private function create_zip_url() {
+		$this->config['zip_url'] = static::$api_base 
+			. sprintf( 'repos/%s/%s/zipball/%s?access_token=%s',
+					$this->config['user'],
+					$this->config['repo'],
+					$this->config['source'],
+					$this->config['access_token']
+				);
 	}
 
-
-	public function create_zip_url() {
-		if ( '' != $this->config['user'] && '' != $this->config['repo'] && null != $this->config['access_token'] && '' != $this->config['source'] ) {
-			$this->config['zip_url'] = $this->config['git_api_base_url'] 
-			. sprintf( 'repos/%s/%s/zipball/%s?access_token=%s', $this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token'] );
-		}
-	}
 
 	public function return_git_archive_url() {
 		return $this->store_git_archive();
 	}
+
 
 	public function store_git_archive() {
 		set_time_limit (300);
@@ -129,7 +124,7 @@ class Github_2_WP {
 										__( "At least one of the submodules included in the resource failed to be retrieved! No permissions or repo does not exist. ", GITHUB2WP ), 
 										'error' );
 								}	else {
-									$sub_url = $this->config['git_api_base_url']
+									$sub_url = static::$api_base_
 										. sprintf( 'repos/%s/%s/zipball/%s?access_token=%s', $sub_user, $sub_repo, $sub_commit, $this->config['access_token'] );
 									
 									$sw = Github_2_WP::get_submodule_data( $sub_url, $upload_dir . $this->config['repo'] . '/'.$module['path'], $module['path'] );
@@ -189,7 +184,7 @@ class Github_2_WP {
 
 
 	public function check_repo_availability() {
-		$url = $this->config['git_api_base_url'] . "repos/{$this->config['user']}/{$this->config['repo']}/branches?access_token={$this->config['access_token']}";
+		$url = static::$api_base . "repos/{$this->config['user']}/{$this->config['repo']}/branches?access_token={$this->config['access_token']}";
 
 		$args = array(
 			'method'      => 'GET',
@@ -231,7 +226,7 @@ class Github_2_WP {
 	}
 
 	public function fetch_branches() {
-		$url = $this->config['git_api_base_url']."repos/{$this->config['user']}/{$this->config['repo']}/branches?access_token={$this->config['access_token']}";
+		$url = static::$api_base."repos/{$this->config['user']}/{$this->config['repo']}/branches?access_token={$this->config['access_token']}";
 
 		$branches = null;
 		$args = array(
@@ -310,8 +305,8 @@ class Github_2_WP {
 		}
 	}
 
-	public function check_user() {
-		$url = "https://api.github.com/user?access_token={$this->config['access_token']}";
+	public static function check_user( $access_token ) {
+		$url = static::$api_base . "user?access_token=$access_token";
 
 		$args = array(
 			'method'      => 'GET',
@@ -410,7 +405,7 @@ class Github_2_WP {
 	}
 	
 	public function get_submodule_active_commit( $sub_user, $path, $ref ) {
-		$url = sprintf( 'https://api.github.com/repos/%s/%s/contents/%s?access_token=%s&ref=%s', $sub_user, $this->config['repo'], $path, $this->config['access_token'], $ref );
+		$url = sprintf( static::$api_base. 'repos/%s/%s/contents/%s?access_token=%s&ref=%s', $sub_user, $this->config['repo'], $path, $this->config['access_token'], $ref );
 		$commit = null;
 
 		$args = array(
@@ -466,7 +461,7 @@ class Github_2_WP {
 	public function get_commits() {
 		$commits = null;
 
-		$url = sprintf( 'https://api.github.com/repos/%s/%s/commits?sha=%s&access_token=%s&per_page=%s',
+		$url = sprintf( static::$api_base.'repos/%s/%s/commits?sha=%s&access_token=%s&per_page=%s',
 			$this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token'],
 			GITHUB2WP_MAX_COMMIT_HIST_COUNT );
 
@@ -502,7 +497,7 @@ class Github_2_WP {
 	}
 
 	public function get_head_commit() {
-		$url = sprintf( 'https://api.github.com/repos/%s/%s/commits/%s?access_token=%s',
+		$url = sprintf( static::$api_base . 'repos/%s/%s/commits/%s?access_token=%s',
 					   $this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token'] );
 
 		$args = array(

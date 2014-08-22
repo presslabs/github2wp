@@ -17,12 +17,7 @@ function github2wp_ajax_set_branch() {
 	if ( isset( $_POST['id'] ) && isset( $_POST['branch'] ) ) {
 		$resource = &$resource_list[ $_POST['id'] ];
 
-		$git = new Github_2_WP( array(
-			'user'         => $resource['username'],
-			'repo'         => $resource['repo_name'],
-			'access_token' => $options['default']['access_token']
-			)
-		);
+		$git = new Github_2_WP( $resource );
 
 		$branches = $git->fetch_branches();
 		$branch_set = false;
@@ -76,15 +71,7 @@ function github2wp_ajax_downgrade() {
 		update_option('github2wp_reverts', $reverts);
 
 
-		$args = array(
-			'user'         => $resource['username'],
-			'repo'         => $resource['repo_name'],
-			'repo_type'    => $type,
-			'access_token' => $options['default']['access_token'],
-			'source'       => $version
-		);
-
-		if ( github2wp_fetch_archive( $args ) ) {
+		if ( github2wp_fetch_archive( $resource, $version ) ) {
 			$zipball_path = github2wp_generate_zipball_endpoint( $resource['repo_name'] );
 			$was_updated = github2wp_update_resource( $zipball_path, $resource, 'update' );
 
@@ -122,14 +109,7 @@ function github2wp_ajax_fetch_history() {
 	if ( isset ( $_POST['res_id'] ) ) {
 		$resource = $resource_list[ $_POST['res_id'] ];
 
-		$git = new Github_2_WP( array(
-			'user'         => $resource['username'],
-			'repo'         => $resource['repo_name'],
-			'access_token' => $options['default']['access_token'],
-			'source'       => $resource['repo_branch']
-			)
-		);
-
+		$git = new Github_2_WP( $resource );
 		$commit_history = $git->get_commits();
 
 		ob_start();

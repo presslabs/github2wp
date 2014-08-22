@@ -22,14 +22,7 @@ function github2wp_head_commit_cron() {
 
 	if ( is_array( $resource_list ) && ! empty( $resource_list ) ) {
 		foreach ( $resource_list as $index => &$resource ) {
-			$args = array(
-				'user'         => $resource['username'],
-				'repo'         => $resource['repo_name'],
-				'source'       => $resource['repo_branch'],
-				'access_token' => $default['access_token']
-			);
-
-			$git = new Github_2_WP( $args );
+			$git = new Github_2_WP( $resource );
 			$head = $git->get_head_commit();
 
 			if ( $head )
@@ -48,13 +41,7 @@ function github2wp_token_cron() {
 	$default = &$options['default'];
 
 	if ( isset( $default['access_token'] ) ) {
-		$args = array(
-			access_token => $default['access_token']
-		);
-
-		$git = new Github_2_WP( $args );
-
-		if ( ! $git->check_user() ) {
+		if ( ! Github_2_WP::check_user( $default['access_token'] ) ) {
 			$default['access_token'] = null;
 			$default['client_id'] = null;
 			$default['client_secret'] = null;

@@ -238,14 +238,7 @@ function github2wp_generate_zipball_endpoint( $repo_name ) {
 
 function github2wp_get_res_branches( $resource, $transient, $options ) {
 	if ( false === $transient ) {
-		$git = new Github_2_WP( array(
-			'user'         => $resource['username'],
-			'repo'         => $resource['repo_name'],
-			'access_token' => $options['default']['access_token'],
-			'source'       => $resource['repo_branch'] 
-			)
-		);
-
+		$git = new Github_2_WP( $resource );
 		$branches = $git->fetch_branches();
 	} else {
 		foreach ( $transient as $tran_res ) {
@@ -275,8 +268,8 @@ function github2wp_get_content_dir_by_type( $type ) {
 
 
 
-function github2wp_fetch_archive( $args ) {
-	$git = new Github_2_WP( $args );
+function github2wp_fetch_archive( $resource, $version='HEAD' ) {
+	$git = new Github_2_WP( $resource, $version );
 	$sw = $git->store_git_archive();
 	
 	return $sw;
