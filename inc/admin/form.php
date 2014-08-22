@@ -140,27 +140,16 @@ function github2wp_process_resource_request( array $options ) {
 
 	$k = 0;
 	foreach ( $resource_list as $key => $resource ) {
-		$repo_type = github2wp_get_repo_type($resource['resource_link']);
 		$zipball_path = GITHUB2WP_ZIPBALL_DIR_PATH . wp_hash($resource['repo_name']).'.zip';
-
-		$args = array(
-			'user'         => $resource['username'],
-			'repo'         => $resource['repo_name'],
-			'repo_type'    => $repo_type,
-			'access_token' => $options['default']['access_token'],
-			'source'       => $resource['repo_branch']
-		);
-
 
 		if ( isset( $_POST[ 'submit_install_resource_' . $k ] ) ) {
 
-			if ( github2wp_fetch_archive($args) )
+			if ( github2wp_fetch_archive($resource) )
 				github2wp_update_resource( $zipball_path, $resource );
 
 		}	else if ( isset( $_POST[ 'submit_update_resource_' . $k ] ) ) {
 
-			$args['source'] = $resource['head_commit'];
-			if ( github2wp_fetch_archive($args) )
+			if ( github2wp_fetch_archive($resource, $resource['head_commit']) )
 				github2wp_update_resource( $zipball_path, $resource, 'update' );
 
 		} else if ( isset( $_POST[ 'submit_delete_resource_' . $k ] ) ) {

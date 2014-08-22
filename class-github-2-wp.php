@@ -18,12 +18,12 @@ class Github_2_WP {
 		$access_token = get_option( 'github2wp_options' )['default']['access_token'];
 
 		if( !empty($resource) ) {
-			$this->config() = array(
+			$this->config = array(
 				'user'         => $resource['username'],
 				'repo'         => $resource['repo_name'],
 				'repo_type'    => github2wp_get_repo_type( $resource['resource_link'] ),
 				'source'       => ( $version === 'HEAD' ) ? $resource['repo_branch'] : $version
-			)
+			);
 		}
 
 		$this->config = wp_parse_args( array( 'access_token' => $access_token ), $this->config );
@@ -75,12 +75,10 @@ class Github_2_WP {
 
 		$code = wp_remote_retrieve_response_code( $response );
 
-		if ( '200' !== $code )
+		if ( 200 !== $code )
 			throw new \Exception( "Error code $code received at $url." );
 
-		$body = wp_remote_retrieve_body( $response );
-
-		return $body;
+		return $response;
 	}
 
 
@@ -165,9 +163,21 @@ class Github_2_WP {
 
 	public static function check_svn_avail( $resource_name, $type ) {
 		$url = "http://{$type}s.svn.wordpress.org/{$resource_name}/";
-    $response = $this->makeRequest( $url );
 
-		if ( $response )
+		$args = array(
+			'method'      => 'GET',
+			'timeout'     => 50,
+			'redirection' => 5,
+			'httpversion' => '1.0',
+			'blocking'    => true,
+			'headers'     => array(),
+			'body'        => null,
+			'cookies'     => array()
+		);
+
+		$response = wp_remote_get( $url, $args );
+
+		if ( '200' == wp_remote_retrieve_response_code( $response ) )
 			return true;
 
 		return false;
@@ -239,63 +249,6 @@ class Github_2_WP {
 	}
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	
-
 	public static function get_data_from_git_clone_link( $url ) {
 		if ( 0 === strpos( $url, 'https://github.com/' ) ) {
 			$data = array(
@@ -314,78 +267,59 @@ class Github_2_WP {
 			
 			return $data;
 		}
+
 		return null;
 	}
 
-	public function get_commits() {
-		$commits = null;
 
-		$url = sprintf( static::$api_base.'repos/%s/%s/commits?sha=%s&access_token=%s&per_page=%s',
-			$this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token'],
-			GITHUB2WP_MAX_COMMIT_HIST_COUNT );
+	public function get_commits() {
 
 		$args = array(
-			'method'      => 'GET',
-			'timeout'     => 50,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			'blocking'    => true,
-			'headers'     => array(),
-			'body'        => null,
-			'cookies'     => array()
+			'limit' => GITHUB2WP_MAX_COMMIT_HIST_COUNT
 		);
 
-		$response = wp_remote_get( $url, $args );
+		$url = $this->getApiUrl( 'commits' );
+		$response = $this->makeRequest( $url );
 
-		if ( is_wp_error( $response ) || 200 != wp_remote_retrieve_response_code( $response ) )
+		if ( !$response )
 			return null;
 
 		$result = json_decode( wp_remote_retrieve_body( $response ), true );
 
-		if ( is_array( $result ) )
-			foreach($result as $commit) {
-				$commits[] = array(
-					'sha'       => $commit['sha'],
-					'message'   => $commit['commit']['message'],
-					'git_url'   => $commit['html_url'],
-					'timestamp' => $commit['commit']['author']['date']
-				);
-			}
+
+		$commits = array();
+		if ( !is_array( $result ) ) {
+			if( $result )
+				return $result;
+			else
+				return array();
+		}
+
+
+		foreach($result as $commit) {
+			$commits[] = array(
+				'sha'       => $commit['sha'],
+				'message'   => $commit['commit']['message'],
+				'git_url'   => $commit['html_url'],
+				'timestamp' => $commit['commit']['author']['date']
+			);
+		}
 
 		return $commits;
 	}
 
+
 	public function get_head_commit() {
-		$url = sprintf( static::$api_base . 'repos/%s/%s/commits/%s?access_token=%s',
-					   $this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token'] );
+		$result = $this->get_commits();
 
-		$args = array(
-			'method'      => 'GET',
-			'timeout'     => 50,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			'blocking'    => true,
-			'headers'     => array(),
-			'body'        => null,
-			'cookies'     => array()
-		);	
-		$response = wp_remote_get( $url, $args );
-
-		if ( is_wp_error( $response ) || 200 != wp_remote_retrieve_response_code( $response ) )
+		if ( !$result )
 			return null;
 
-		$result = json_decode( wp_remote_retrieve_body( $response ), true );
+		if ( is_array($result) )
+			return $result[0]['sha'];
 
-		if ( $result )
-			return $result['sha'];
-
-		return null;
+		return $result['sha'];
 	}
-
-
-
-
-
 
 
 	public function return_git_archive_url() {
@@ -393,9 +327,71 @@ class Github_2_WP {
 	}
 
 
+	public function addResourceDirectoryToZip( &$zip, $dir, $base = 0, $version ) {
+		foreach ( glob( $dir . '/*' ) as $file ) {
+		  if ( is_dir( $file ) ) {
+				$this->addResourceDirectoryToZip($zip, $file, $base, $version);
+				continue;
+			}
+
+			$file_name = substr( $file, $base );
+			$repo_file_name = $this->config['repo'] . '.php';
+
+			if ( 'theme' == $this->config['repo_type'] )
+				$repo_file_name = 'style.css';
+
+
+			if ( basename( $file_name ) != $repo_file_name ) {
+				$zip->addFile( $file, $file_name );
+				continue;
+			}
+
+
+			//Add a version tag + SHA in the first block comment of the main plugin/theme file
+			$tag_version = 'Version';
+
+			$f = fopen($file, 'rw+');
+			$header_chunk = fread( $f, 8192 );
+
+			//If the header is present simply replace its value
+			$header_chunk = str_replace( "\r", "\n", $header_chunk );
+			$new_header_chunk = preg_replace( '/^[ \t\/*#@]*'
+					. preg_quote( $tag_version, '/' )
+					. ':(.*)$/mi',
+				' *Version: ' . $version,
+				$header_chunk
+			);
+
+
+			//If the header was not present add it by force
+			if ( $header_chunk !== $new_header_chunk ) {
+				$new_file_content = $new_header_chunk;
+			} else {
+				$new_header_chunk = preg_replace(
+					'/\/\*(.*?)\*\//s',
+					"/*\n *Version: " . $version . '$1*/', $header_chunk,
+					1
+				);
+
+				//file pointer is at 8193 or at the end of the file
+				$new_file_content = $new_header_chunk . stream_get_contents($f);
+			}
+
+			$zip->addFromString( $file_name, $new_file_content );
+
+			fclose($f);
+		}
+	}
+
+
 	public function store_git_archive() {
 		set_time_limit (300);
-		$url = $this->config['zip_url'];
+
+		$url = $this->getApiUrl('zip_url');
+		$response = $this->makeRequest( $url );
+
+		if ( !$response )
+			return false;
 
 		$upload_dir = GITHUB2WP_ZIPBALL_DIR_PATH;
 		$upload_url = GITHUB2WP_ZIPBALL_URL;
@@ -403,185 +399,128 @@ class Github_2_WP {
 		$upload_dir_zip .= $upload_dir . wp_hash( $this->config['repo'] ) . '.zip';	
 		$upload_url_zip .= $upload_url . '/' . wp_hash( $this->config['repo'] ) . '.zip';
 
-		$args = array(
-			'method'      => 'GET',
-			'timeout'     => 150,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			'blocking'    => true,
-			'headers'     => array(),
-			'body'        => null,
-			'cookies'     => array()
-		);
+		$bit_count = file_put_contents( $upload_dir_zip, wp_remote_retrieve_body( $response ) );
+		
+		if ( !$bit_count ) {
+			github2wp_cleanup($uploade_dir_zip);
 
-		$response = wp_remote_get( $url, $args );
-
-		if ( is_wp_error( $response ) ) {
-			$error_message = $response->get_error_message();
 			add_settings_error( 'github2wp_settings_errors', 
-						'repo_archive_error', 
-						__( 'An error has occured:', GITHUB2WP ) . $error_message, 
-						'error' );
+				'repo_archive_error', 
+				__( 'Empty archive. ', GITHUB2WP ), 
+				'error' );
 
 			return false;
 		}
 
-		$code = wp_remote_retrieve_response_code( $response );
+		//Extract git archive and take info from it
+		$zip = new ZipArchive;
+		$zip->open( $upload_dir_zip ); 
 
-		if ( 200 == $code ) {
-			$bit_count = file_put_contents( $upload_dir_zip, wp_remote_retrieve_body( $response ) );
+		$folder_name = $this->config['user'] . '-' . $this->config['repo'] . '-' ;
+		for ( $i = 0; $i < $zip->numFiles; $i++ ) {   
+			$name = $zip->getNameIndex( $i );
 
-			if ( $bit_count ) {
-				$zip = new ZipArchive;
-				$res = $zip->open( $upload_dir_zip );
+			if ( 0 == strpos( $folder_name, $name ) ) {
+				$name = substr( $name, 0, -1 );
+				break;
+			}
+		}
 
-				$folder_name = $this->config['user'] . '-' . $this->config['repo'] . '-' ;
+		$zip->extractTo( $upload_dir );
+		$zip->close();
+		unlink( $upload_dir_zip );
 
-				if ( true === $res ) {
-					for ( $i = 0; $i < $zip->numFiles; $i++ ) {   
-						$name = $zip->getNameIndex( $i );
 
-						if ( 0 == strpos( $folder_name, $name ) ) {
-							$name = substr( $name, 0, -1 );
+		if( is_dir( $upload_dir . $name ) )
+			rename( $upload_dir . $name, $upload_dir . $this->config['repo'] );
+
+		$created = $zip->open( $upload_dir_zip, ZIPARCHIVE::CREATE );
+
+		if ( $created ) {
+
+			$error_free = true;
+
+			//PROCESS first level submodules
+			if ( file_exists( $upload_dir . $this->config['repo'] . '/.gitmodules' ) ) {
+				$submodules = Github_2_WP::parse_git_submodule_file( $upload_dir.$this->config['repo'] . '/.gitmodules' );
+
+				if ( is_array( $submodules ) && ! empty( $submodules ) )
+					foreach ( $submodules as $module ) {
+						if ( ! $error_free )
 							break;
-						}
-					}
 
-					$zip->extractTo( $upload_dir );
-					$zip->close();
-					unlink( $upload_dir_zip );
+						$data = Github_2_WP::get_data_from_git_clone_link( $module['url'] );
 
-					if( is_dir( $upload_dir . $name ) )
-						rename( $upload_dir . $name, $upload_dir . $this->config['repo'] );
-
-					$created = $zip->open( $upload_dir_zip, ZIPARCHIVE::CREATE );
-
-					if ( $created ) {
-						$error_free = true;
-						if ( file_exists( $upload_dir . $this->config['repo'] . '/.gitmodules' ) ) {
-							$submodules = Github_2_WP::parse_git_submodule_file( $upload_dir.$this->config['repo'] . '/.gitmodules' );
-
-							if ( is_array( $submodules ) && ! empty( $submodules ) )
-								foreach ( $submodules as $module ) {
-									if ( ! $error_free )
-										break;
-								}
-
-							$data = Github_2_WP::get_data_from_git_clone_link( $module['url'] );
-
-							if ( $data ) {
-								$sub_repo = $data['repo'];
-								$sub_user = $data['user'];
-								$sub_commit = $this->get_submodule_active_commit( $sub_user, $module['path'], $this->config['source'] ); 
+						if ( $data ) {
+							$sub_repo = $data['repo'];
+							$sub_user = $data['user'];
+							$sub_commit = $this->get_submodule_active_commit(
+								$sub_user,
+								$module['path'],
+								$this->config['source']
+							);
+							
+							if ( !$sub_commit ) {
+								$error_free = false;
+								add_settings_error( 'github2wp_settings_errors', 
+									'repo_archive_submodule_error', 
+									__( "At least one of the submodules included in the resource failed"
+									. " to be retrieved! No permissions or repo does not exist. ", GITHUB2WP ), 
+									'error' );
+							}	else {
+								$args = array(
+									'user'   => $sub_user,
+									'repo'   => $sub_repo,
+									'source' => $sub_commit,
+								);
 								
-								if ( ! $sub_commit ) {
+								$sub_url = $this->getApiUrl( 'zip_url', $args );
+								$sw = $this->get_submodule_data(
+									$sub_url,
+									$upload_dir . $this->config['repo'] . '/'.$module['path'],
+									$module['path']
+								);
+
+								if ( ! $sw ) {
 									$error_free = false;
 									add_settings_error( 'github2wp_settings_errors', 
 										'repo_archive_submodule_error', 
-										__( "At least one of the submodules included in the resource failed to be retrieved! No permissions or repo does not exist. ", GITHUB2WP ), 
+										__( "At least one of the submodules included in the resource failed"
+										. " to be retrieved! No data retrieved. ", GITHUB2WP ), 
 										'error' );
-								}	else {
-									$sub_url = static::$api_base_
-										. sprintf( 'repos/%s/%s/zipball/%s?access_token=%s', $sub_user, $sub_repo, $sub_commit, $this->config['access_token'] );
-									
-									$sw = $this->get_submodule_data( $sub_url, $upload_dir . $this->config['repo'] . '/'.$module['path'], $module['path'] );
-
-									if ( ! $sw ) {
-										$error_free = false;
-										add_settings_error( 'github2wp_settings_errors', 
-											'repo_archive_submodule_error', 
-											__( "At least one of the submodules included in the resource failed to be retrieved! No data retrieved. ", GITHUB2WP ), 
-											'error' );
-									}
 								}
-							} else {
-										$error_free = false;
-							}	
+							}
+						} else {
+							$error_free = false;
 						}
 					}
-
-					if ( $error_free )
-						$this->addDirectoryToZip( $zip, $upload_dir . $this->config['repo'], strlen( $upload_dir ), substr( strrchr( $upload_dir . $name, '-' ), 1, 7 ) );
-					$zip->close();
-				}
-				
-				github2wp_rmdir( $upload_dir . $this->config['repo'] );
-			
-				if ( $error_free )  {
-					return $upload_url_zip;
-				} else {
-					if( file_exists( $upload_dir_zip ) )
-						unlink( $upload_dir_zip );
-
-					return false;
-				}
-			} else {
-				if( file_exists( $upload_dir_zip ) )
-					unlink( $upload_dir_zip );	
-
-				add_settings_error( 'github2wp_settings_errors', 
-					'repo_archive_error', 
-					__( 'Empty archive. ', GITHUB2WP ), 
-					'error' );
-
-				return false;
 			}
+
+			if ( $error_free )
+				$this->addResourceDirectoryToZip(
+					$zip, $upload_dir . $this->config['repo'],
+					strlen( $upload_dir ),
+					substr(
+						strrchr( $upload_dir . $name, '-' ),
+						1,
+						7
+					)
+				);
+				
+			$zip->close();
+		}
+
+		github2wp_rmdir( $upload_dir . $this->config['repo'] );
+
+		if ( $error_free )  {
+			return $upload_url_zip;
 		} else {
-		$error_message = wp_remote_retrieve_response_message( $response );
-		add_settings_error( 'github2wp_settings_errors', 
-			'repo_archive_error', 
-			__('An error has occured:', GITHUB2WP) . "$code-$error_message", 
-			'error' );
+			github2wp_cleanup($uploade_dir_zip);
+
+			return false;
+		}
 
 		return false;
 	}
-	return false;
-}
-
-
-
-
-
-
-	public function addDirectoryToZip( &$zip, $dir, $base = 0, $version ) {
-		foreach ( glob( $dir . '/*' ) as $file ) {
-		  if ( is_dir( $file ) ) {
-				$this->addDirectoryToZip($zip, $file, $base, $version);
-			} else {
-				$file_name = substr( $file, $base );
-				$repo_file_name = $this->config['repo'] . '.php';
-
-				if ( 'theme' == $this->config['repo_type'] )
-					$repo_file_name = 'style.css';
-
-				if ( basename( $file_name ) == $repo_file_name ) {
-					$tag_version = 'Version';
-
-					$f = fopen($file, 'rw+');
-					$header_chunk = fread( $f, 8192 );
-
-					$header_chunk = str_replace( "\r", "\n", $header_chunk );
-					$new_header_chunk = preg_replace( '/^[ \t\/*#@]*' . preg_quote( $tag_version, '/' )	. ':(.*)$/mi', ' *Version: ' . $version, $header_chunk );
-
-					if ( $header_chunk !== $new_header_chunk ) {
-						$new_file_content = $new_header_chunk;
-					} else {
-						$new_header_chunk = preg_replace( '/\/\*(.*?)\*\//s', "/*\n *Version: " . $version . '$1*/', $header_chunk, 1 );
-
-						//file pointer is at 8193 or at the end of the file
-						$new_file_content = $new_header_chunk . stream_get_contents($f);
-					}
-	
-					$zip->addFromString( $file_name, $new_file_content );
-
-					fclose($f);
-				} else {
-					$zip->addFile( $file, $file_name );
-				}
-			}
-		}
-	}
-
-
 }
 endif;

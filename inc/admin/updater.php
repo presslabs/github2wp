@@ -47,17 +47,8 @@ function github2wp_admin_head() {
 		if ( !in_array( $resource['repo_name'], $res, true ) )
 			continue;
 
-		$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
-
-		$args = array(
-			'user'         => $resource['username'],
-			'repo'         => $resource['repo_name'],
-			'repo_type'    => $repo_type,
-			'access_token' => $default['access_token'],
-			'source'       => $resource['head_commit']
-		);
 	
-		github2wp_fetch_archive($args);
+		github2wp_fetch_archive($resource, $resource['head_commit']);
 	}
 }
 
