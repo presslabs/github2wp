@@ -4,27 +4,29 @@ if ( ! class_exists( 'Github_2_WP' ) ):
 class Github_2_WP {
 	private static $api_base = 'https://api.github.com/';
 	private static $endpoints = array(
-		'zip_url'    => 'repos/:user/:repo/zipball/:source',
-		'branches'   => 'repos/:user/:repo/branches',
-		'user_check' => 'user',
-		'contents'   => 'repos/:user/:repo/contents/:path',
-		'commits'    => 'repos/:user/:repo/commits?sha=:source&per_page=:limit&access_token=:acces_token'
+		'zip_url'    => 'repos/:user/:repo/zipball/:source?access_token=:access_token',
+		'branches'   => 'repos/:user/:repo/branches?access_token=:access_token',
+		'user_check' => 'user?access_token=:access_token',
+		'contents'   => 'repos/:user/:repo/contents/:path?access_token=:access_token',
+		'commits'    => 'repos/:user/:repo/commits?sha=:source&per_page=:limit&access_token=:access_token'
 	);
 
 	private $config = array();
 
 
-	function __construct( $resource, $version='HEAD' ) {
+	function __construct( array $resource=array(), $version='HEAD' ) {
 		$access_token = get_option( 'github2wp_options' )['default']['access_token'];
 
-		$this->config = array(
-			'user'         => $resource['username'],
-			'repo'         => $resource['repo_name'],
-			'repo_type'    => github2wp_get_repo_type( $resource['resource_link'] ),
-			'access_token' => $access_token,
-			'source'       => ( $version === 'HEAD' ) ? $resource['repo_branch'] : $version
-		);
+		if( !empty($resource) ) {
+			$this->config() = array(
+				'user'         => $resource['username'],
+				'repo'         => $resource['repo_name'],
+				'repo_type'    => github2wp_get_repo_type( $resource['resource_link'] ),
+				'source'       => ( $version === 'HEAD' ) ? $resource['repo_branch'] : $version
+			)
+		}
 
+		$this->config = wp_parse_args( array( 'access_token' => $access_token ), $this->config );
 		$this->create_zip_url();
 	}
 
@@ -38,6 +40,170 @@ class Github_2_WP {
 					$this->config['access_token']
 				);
 	}
+
+	public function getApiUrl( $endpoint, array $extra_segments=array() ) {
+		$endpoint = static::$endpoints[ $endpoint ];
+
+		$segments = wp_parse_args( $segments, $this->config );
+		foreach( $segments as $seg => $value ) {
+			$endpoint = str_replace( ':'.$seg, $value, $endpoint );
+		}
+
+		return static::$api_base . $endpoint;
+	}
+
+
+	public static function makeRequest( $url='' ) {
+		if ( FALSE === filter_var($url, FILTER_VALIDATE_URL ) )
+			throw new \InvalidArgumentException( "$url is not a valid url!" );
+
+		set_time_limit(200);
+		
+		$args = array(
+			'method'      => 'GET',
+			'timeout'     => 150,
+			'httpversion' => '1.0',
+			'blocking'    => true,
+			'headers'     => array(),
+			'body'        => null,
+			'cookies'     => array()
+		);
+
+		$response = wp_remote_request( $url, $args );
+		if ( is_wp_error( $response ) )
+			throw new \Exception( "Request at $url returned an error: " . $response->get_error_message() );
+
+		$code = wp_remote_retrieve_response_code( $response );
+
+		if ( '200' !== $code )
+			throw new \Exception( "Error code $code received at $url." );
+
+		$body = wp_remote_retrieve_body( $response );
+
+		return $body;
+	}
+
+
+	private function validate_api_response( $url ) {
+		try {
+			$response = static::makeRequest( $url );
+		} catch(\Exception $e) {
+			add_settings_error( 'github2wp_settings_errors', 
+				'repo_api_error', 
+				__( 'An error has occured:', GITHUB2WP ) . $e->getMessage(), 
+				'error'
+			);
+
+			return false;
+		}
+
+		return $response;
+	}
+
+
+	public function check_repo_availability() {
+		$url = $this->getApiUrl( 'branches' );
+		$response = $this->validate_api_response( $url );
+
+		if ( !$response )
+			return false;
+
+
+		$result = wp_remote_retrieve_body( $response );
+		$result = json_decode($result, true);
+
+		if ( 'Not Found' == $result['message'] ) {
+			add_settings_error( 'github2wp_settings_errors', 
+				'repo_no_perm', 
+				__( 'You have insufficient permissions or repo does not exist!', GITHUB2WP ), 
+				'error' );
+
+			return false;
+		}
+
+		return true;
+	}
+
+
+	public function fetch_branches() {
+		$url = $this->getApiUrl( 'branches' );
+		$response = $this->validate_api_response( $url );
+
+		if ( !$response )
+			return null;
+
+		$result = wp_remote_retrieve_body( $response );
+		$result = json_decode( $result, true );
+
+		if ( !empty( $result['message'] ) )
+			return null; 
+
+		$branches = null;
+		foreach ( $result as $branch ) {
+			$branches[] = $branch['name'];
+		}
+
+		return $branches;
+	}
+
+
+	public function check_user( $access_token ) {
+		$url = $this->getApiUrl( 'user' );
+		$response = $this->validate_api_response( $url );
+
+		if ( !$response )
+			return false;
+
+		$result = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( empty( $result['message'] ) ) 
+			return true;
+
+		return false;
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 	public function return_git_archive_url() {
@@ -192,87 +358,7 @@ class Github_2_WP {
 
 
 
-	public function check_repo_availability() {
-		$url = static::$api_base . "repos/{$this->config['user']}/{$this->config['repo']}/branches?access_token={$this->config['access_token']}";
 
-		$args = array(
-			'method'      => 'GET',
-			'timeout'     => 50,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			'blocking'    => true,
-			'headers'     => array(),
-			'body'        => null,
-			'cookies'     => array()
-		);
-
-		$response = wp_remote_get( $url, $args );
-
-		if ( is_wp_error( $response ) ) {
-			$error_message = $response->get_error_message();
-			add_settings_error( 'github2wp_settings_errors', 
-				'repo_archive_error', 
-				__( 'An error has occured:', GITHUB2WP ) . $error_message, 
-				'error' );
-
-			return false;
-		}
-
-		$result = wp_remote_retrieve_body( $response );
-
-		$result = json_decode($result, true);
-
-		if ( 'Not Found' == $result['message'] ) {
-			add_settings_error( 'github2wp_settings_errors', 
-				'repo_no_perm', 
-				__( 'You have insufficient permissions or repo does not exist!', GITHUB2WP ), 
-				'error' );
-
-			return false;
-		}
-
-		return true;
-	}
-
-	public function fetch_branches() {
-		$url = static::$api_base."repos/{$this->config['user']}/{$this->config['repo']}/branches?access_token={$this->config['access_token']}";
-
-		$branches = null;
-		$args = array(
-			'method'      => 'GET',
-			'timeout'     => 50,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			'blocking'    => true,
-			'headers'     => array(),
-			'body'        => null,
-			'cookies'     => array()
-		);
-
-
-		$response = wp_remote_get( $url, $args );
-
-		if ( is_wp_error( $response ) ) {
-			$error_message = $response->get_error_message();
-			add_settings_error( 'github2wp_settings_errors', 
-				'repo_archive_error', 
-				__( 'An error has occured:', GITHUB2WP ) . $error_message, 
-				'error' );
-
-			return null;
-		}
-
-		$result = wp_remote_retrieve_body( $response );
-		$result = json_decode( $result, true );
-
-		if ( empty( $result['message'] ) ) {
-			foreach ( $result as $branch ) {
-				$branches[] = $branch['name'];
-			}
-		}
-
-		return $branches;
-	}
 
 
 	public function addDirectoryToZip( &$zip, $dir, $base = 0, $version ) {
@@ -314,33 +400,6 @@ class Github_2_WP {
 		}
 	}
 
-	public static function check_user( $access_token ) {
-		$url = static::$api_base . "user?access_token=$access_token";
-
-		$args = array(
-			'method'      => 'GET',
-			'timeout'     => 50,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			'blocking'    => true,
-			'headers'     => array(),
-			'body'        => null,
-			'cookies'     => array()
-		);
-
-		$response = wp_remote_get( $url, $args );
-
-		if ( is_wp_error( $response ) )
-			return false;
-
-		$result = json_decode( wp_remote_retrieve_body( $response ), true );
-
-		if ( '200' == wp_remote_retrieve_response_code( $response ) )
-			if ( empty( $result['message'] ) ) 
-				return true;
-
-		return false;
-	}
 
 	public static function check_svn_avail( $resource_name, $type ) {
 			$url = "http://{$type}s.svn.wordpress.org/{$resource_name}/";

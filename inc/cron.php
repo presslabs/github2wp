@@ -41,7 +41,8 @@ function github2wp_token_cron() {
 	$default = &$options['default'];
 
 	if ( isset( $default['access_token'] ) ) {
-		if ( ! Github_2_WP::check_user( $default['access_token'] ) ) {
+		$git = new Github_2_WP();
+		if ( ! $git->check_user( $default['access_token'] ) ) {
 			$default['access_token'] = null;
 			$default['client_id'] = null;
 			$default['client_secret'] = null;
