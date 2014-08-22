@@ -7,7 +7,7 @@ class Github_2_WP {
 		'zip_url'    => 'repos/:user/:repo/zipball/:source?access_token=:access_token',
 		'branches'   => 'repos/:user/:repo/branches?access_token=:access_token',
 		'user_check' => 'user?access_token=:access_token',
-		'contents'   => 'repos/:user/:repo/contents/:path?access_token=:access_token',
+		'contents'   => 'repos/:user/:repo/contents/:path?ref=:source&access_token=:access_token',
 		'commits'    => 'repos/:user/:repo/commits?sha=:source&per_page=:limit&access_token=:access_token'
 	);
 
@@ -163,6 +163,80 @@ class Github_2_WP {
 	}
 
 
+	public static function check_svn_avail( $resource_name, $type ) {
+		$url = "http://{$type}s.svn.wordpress.org/{$resource_name}/";
+    $response = $this->makeRequest( $url );
+
+		if ( $response )
+			return true;
+
+		return false;
+	}
+
+
+	public static function parse_git_submodule_file( $file_path ) {
+		$submodules = parse_ini_file( $file_path, true );
+
+		return $submodules;
+	}
+
+
+	public function get_submodule_data( $url, $target, $path ) {
+		$response = $this->makeRequest( $url );
+		
+		if ( !$response )	
+			return false;
+
+		$bit_count = file_put_contents( GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule.zip',
+			wp_remote_retrieve_body( $response ) );
+
+		if ( ! $bit_count )
+			return false;
+
+		$zip = new ZipArchive();
+
+		if ( true !== $zip->open(GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule.zip') ) {
+			unlink( GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule.zip' );
+			return false;
+		}
+
+		if ( is_dir( $target ) )
+			rmdir( $target );
+
+		$zip->extractTo( dirname( $target ) );
+		$folder_name = $zip->getNameIndex(0);
+
+		rename( dirname($target)."/$folder_name", dirname($target).'/'.basename($path) );
+		unlink( GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule.zip' );
+		$zip->close();
+
+		return true;
+	}
+
+
+	public function get_submodule_active_commit( $sub_user, $path, $ref ) {
+		$args = array(
+			'user' => $sub_user,
+			'path' => $path,
+		);
+	
+		$url = $this->getApiUrl( 'contents', $args );	
+		$response = $this->makeRequest( $url );
+
+		if ( !$response )
+			return null;
+
+		$result = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( $result['message'] )
+			return null;
+
+		if ( 'submodule' != $result['type'] )
+			return null;
+
+
+		return $result['sha'];
+	}
 
 
 
@@ -199,6 +273,114 @@ class Github_2_WP {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+	public static function get_data_from_git_clone_link( $url ) {
+		if ( 0 === strpos( $url, 'https://github.com/' ) ) {
+			$data = array(
+				'repo' => basename( $url, '.git' ),
+				'user' => basename( dirname( $url ) )
+			);
+
+			return $data;
+		}
+
+		if ( 0 === strpos( $url, 'git@github.com:' ) ) {
+			$data = array(
+				'repo' => basename( $url, '.git' ),
+				'user'  =>  github2wp_str_between( 'git@github.com:', '/', $url )
+			);
+			
+			return $data;
+		}
+		return null;
+	}
+
+	public function get_commits() {
+		$commits = null;
+
+		$url = sprintf( static::$api_base.'repos/%s/%s/commits?sha=%s&access_token=%s&per_page=%s',
+			$this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token'],
+			GITHUB2WP_MAX_COMMIT_HIST_COUNT );
+
+		$args = array(
+			'method'      => 'GET',
+			'timeout'     => 50,
+			'redirection' => 5,
+			'httpversion' => '1.0',
+			'blocking'    => true,
+			'headers'     => array(),
+			'body'        => null,
+			'cookies'     => array()
+		);
+
+		$response = wp_remote_get( $url, $args );
+
+		if ( is_wp_error( $response ) || 200 != wp_remote_retrieve_response_code( $response ) )
+			return null;
+
+		$result = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( is_array( $result ) )
+			foreach($result as $commit) {
+				$commits[] = array(
+					'sha'       => $commit['sha'],
+					'message'   => $commit['commit']['message'],
+					'git_url'   => $commit['html_url'],
+					'timestamp' => $commit['commit']['author']['date']
+				);
+			}
+
+		return $commits;
+	}
+
+	public function get_head_commit() {
+		$url = sprintf( static::$api_base . 'repos/%s/%s/commits/%s?access_token=%s',
+					   $this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token'] );
+
+		$args = array(
+			'method'      => 'GET',
+			'timeout'     => 50,
+			'redirection' => 5,
+			'httpversion' => '1.0',
+			'blocking'    => true,
+			'headers'     => array(),
+			'body'        => null,
+			'cookies'     => array()
+		);	
+		$response = wp_remote_get( $url, $args );
+
+		if ( is_wp_error( $response ) || 200 != wp_remote_retrieve_response_code( $response ) )
+			return null;
+
+		$result = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( $result )
+			return $result['sha'];
+
+		return null;
+	}
 
 
 
@@ -302,7 +484,7 @@ class Github_2_WP {
 									$sub_url = static::$api_base_
 										. sprintf( 'repos/%s/%s/zipball/%s?access_token=%s', $sub_user, $sub_repo, $sub_commit, $this->config['access_token'] );
 									
-									$sw = Github_2_WP::get_submodule_data( $sub_url, $upload_dir . $this->config['repo'] . '/'.$module['path'], $module['path'] );
+									$sw = $this->get_submodule_data( $sub_url, $upload_dir . $this->config['repo'] . '/'.$module['path'], $module['path'] );
 
 									if ( ! $sw ) {
 										$error_free = false;
@@ -401,194 +583,5 @@ class Github_2_WP {
 	}
 
 
-	public static function check_svn_avail( $resource_name, $type ) {
-			$url = "http://{$type}s.svn.wordpress.org/{$resource_name}/";
-
-			$args = array(
-				'method'      => 'GET',
-				'timeout'     => 50,
-				'redirection' => 5,
-				'httpversion' => '1.0',
-				'blocking'    => true,
-				'headers'     => array(),
-				'body'        => null,
-				'cookies'     => array()
-			);
-
-			$response = wp_remote_get( $url, $args );
-
-			if ( '200' == wp_remote_retrieve_response_code( $response ) )
-				return true;
-			return false;
-	}
-
-	public static function parse_git_submodule_file( $file_path ) {
-		$submodules = parse_ini_file( $file_path, true );
-
-		return $submodules;
-	}
-
-	public static function get_submodule_data( $url, $target, $path ) {
-		$args = array(
-			'method'      => 'GET',
-			'timeout'     => 50,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			'blocking'    => true,
-			'headers'     => array(),
-			'body'        => null,
-			'cookies'     => array()
-		);
-		
-		$response = wp_remote_get( $url, $args );
-
-		if ( is_wp_error( $response ) || 200 != wp_remote_retrieve_response_code( $response ) )
-			return false;
-
-		$bit_count = file_put_contents( GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule.zip', wp_remote_retrieve_body( $response ) );
-
-		if ( ! $bit_count ) {
-			return false;
-		} else {
-			$zip = new ZipArchive();
-
-			if ( true === $zip->open(GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule.zip') ) {
-				if ( is_dir( $target ) )
-					rmdir( $target );
-
-				$zip->extractTo( dirname( $target ) );
-				$folder_name = $zip->getNameIndex(0);
-
-				rename( dirname( $target ) . "/$folder_name", dirname( $target ) . '/' . basename( $path ) );
-				unlink( GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule.zip' );
-				$zip->close();
-
-				return true;
-			} else {
-				unlink( GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule.zip' );
-
-				return false;
-			}
-		}
-	}
-	
-	public function get_submodule_active_commit( $sub_user, $path, $ref ) {
-		$url = sprintf( static::$api_base. 'repos/%s/%s/contents/%s?access_token=%s&ref=%s', $sub_user, $this->config['repo'], $path, $this->config['access_token'], $ref );
-		$commit = null;
-
-		$args = array(
-			'method'      => 'GET',
-			'timeout'     => 50,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			'blocking'    => true,
-			'headers'     => array(),
-			'body'        => null,
-			'cookies'     => array()
-		);
-	
-		$response = wp_remote_get( $url, $args );
-
-		if ( is_wp_error( $response ) || 200 != wp_remote_retrieve_response_code( $response ) )
-			return null;
-
-		$result = json_decode( wp_remote_retrieve_body( $response ), true );
-
-		if ( $result['message'] )
-			return null;
-
-		if ( 'submodule' == $result['type'] )
-			$commit = $result['sha'];
-		else
-			return null;
-
-		return $commit;
-	}
-
-	public static function get_data_from_git_clone_link( $url ) {
-		if ( 0 === strpos( $url, 'https://github.com/' ) ) {
-			$data = array(
-				'repo' => basename( $url, '.git' ),
-				'user' => basename( dirname( $url ) )
-			);
-
-			return $data;
-		}
-
-		if ( 0 === strpos( $url, 'git@github.com:' ) ) {
-			$data = array(
-				'repo' => basename( $url, '.git' ),
-				'user'  =>  github2wp_str_between( 'git@github.com:', '/', $url )
-			);
-			
-			return $data;
-		}
-		return null;
-	}
-
-	public function get_commits() {
-		$commits = null;
-
-		$url = sprintf( static::$api_base.'repos/%s/%s/commits?sha=%s&access_token=%s&per_page=%s',
-			$this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token'],
-			GITHUB2WP_MAX_COMMIT_HIST_COUNT );
-
-		$args = array(
-			'method'      => 'GET',
-			'timeout'     => 50,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			'blocking'    => true,
-			'headers'     => array(),
-			'body'        => null,
-			'cookies'     => array()
-		);
-
-		$response = wp_remote_get( $url, $args );
-
-		if ( is_wp_error( $response ) || 200 != wp_remote_retrieve_response_code( $response ) )
-			return null;
-
-		$result = json_decode( wp_remote_retrieve_body( $response ), true );
-
-		if ( is_array( $result ) )
-			foreach($result as $commit) {
-				$commits[] = array(
-					'sha'       => $commit['sha'],
-					'message'   => $commit['commit']['message'],
-					'git_url'   => $commit['html_url'],
-					'timestamp' => $commit['commit']['author']['date']
-				);
-			}
-
-		return $commits;
-	}
-
-	public function get_head_commit() {
-		$url = sprintf( static::$api_base . 'repos/%s/%s/commits/%s?access_token=%s',
-					   $this->config['user'], $this->config['repo'], $this->config['source'], $this->config['access_token'] );
-
-		$args = array(
-			'method'      => 'GET',
-			'timeout'     => 50,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			'blocking'    => true,
-			'headers'     => array(),
-			'body'        => null,
-			'cookies'     => array()
-		);	
-		$response = wp_remote_get( $url, $args );
-
-		if ( is_wp_error( $response ) || 200 != wp_remote_retrieve_response_code( $response ) )
-			return null;
-
-		$result = json_decode( wp_remote_retrieve_body( $response ), true );
-
-		if ( $result )
-			return $result['sha'];
-
-		return null;
-	}
 }
 endif;
