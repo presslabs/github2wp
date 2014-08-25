@@ -12,7 +12,6 @@ define( 'GITHUB2WP', GITHUB2WP_MAIN_FILE_NAME );
 
 
 
-require_once( 'inc/constants.php' );
 require_once( GITHUB2WP_INC_PATH . 'helpers.php' );
 require_once( GITHUB2WP_INC_PATH . 'notices.php' );
 
