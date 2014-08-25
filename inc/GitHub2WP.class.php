@@ -27,24 +27,14 @@ class Github_2_WP {
 		}
 
 		$this->config = wp_parse_args( array( 'access_token' => $access_token ), $this->config );
-		$this->create_zip_url();
 	}
 
-
-	private function create_zip_url() {
-		$this->config['zip_url'] = static::$api_base
-			. sprintf( 'repos/%s/%s/zipball/%s?access_token=%s',
-					$this->config['user'],
-					$this->config['repo'],
-					$this->config['source'],
-					$this->config['access_token']
-				);
-	}
 
 	public function getApiUrl( $endpoint, array $extra_segments=array() ) {
 		$endpoint = static::$endpoints[ $endpoint ];
+		
 
-		$segments = wp_parse_args( $segments, $this->config );
+		$segments = wp_parse_args( $extra_segments, $this->config );
 		foreach( $segments as $seg => $value ) {
 			$endpoint = str_replace( ':'.$seg, $value, $endpoint );
 		}
@@ -230,7 +220,7 @@ class Github_2_WP {
 			'path' => $path,
 		);
 	
-		$url = $this->getApiUrl( 'contents', $args );	
+		$url = $this->getApiUrl( 'contents',	$args );
 		$response = $this->makeRequest( $url );
 
 		if ( !$response )
@@ -450,7 +440,6 @@ class Github_2_WP {
 							break;
 
 						$data = Github_2_WP::get_data_from_git_clone_link( $module['url'] );
-
 						if ( $data ) {
 							$sub_repo = $data['repo'];
 							$sub_user = $data['user'];
@@ -473,7 +462,7 @@ class Github_2_WP {
 									'repo'   => $sub_repo,
 									'source' => $sub_commit,
 								);
-								
+
 								$sub_url = $this->getApiUrl( 'zip_url', $args );
 								$sw = $this->get_submodule_data(
 									$sub_url,
