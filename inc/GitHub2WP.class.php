@@ -197,16 +197,16 @@ class Github_2_WP {
 		if ( !$response )	
 			return false;
 
-		$bit_count = file_put_contents( GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule.zip',
-			wp_remote_retrieve_body( $response ) );
+		$submodule_zip_path =  GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule_' . basename($target) . '.zip';
+		$bit_count = file_put_contents( $submodule_zip_path, wp_remote_retrieve_body( $response ) );
 
 		if ( ! $bit_count )
 			return false;
 
 		$zip = new ZipArchive();
 
-		if ( true !== $zip->open(GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule.zip') ) {
-			unlink( GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule.zip' );
+		if ( true !== $zip->open($submodule_zip_path) ) {
+			unlink( $submodule_zip_path );
 			return false;
 		}
 
@@ -217,7 +217,7 @@ class Github_2_WP {
 		$folder_name = $zip->getNameIndex(0);
 
 		rename( dirname($target)."/$folder_name", dirname($target).'/'.basename($path) );
-		unlink( GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule.zip' );
+		unlink( $submodule_zip_path );
 		$zip->close();
 
 		return true;
