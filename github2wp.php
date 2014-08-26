@@ -23,28 +23,25 @@ function github2wp_init() {
 
 	$default = &$options['default'];
 
-	// get token from GitHub
-	// Use a code for security purposes
 	if ( isset( $_GET['code'] ) &&  isset( $_GET['github2wp_auth'] ) && 'true' == $_GET['github2wp_auth'] ) {
-		$code = $_GET['code'];
-		$options = get_option( 'github2wp_options' );
-		$default = &$options['default'];
-		$client_id = $default['client_id'];
-		$client_secret = $default['client_secret'];
-		$data = array(
-			'code' => $code,
-			'client_id' => $client_id,
-			'client_secret' => $client_secret
-		);
+		if ( isset($_GET['state']) && $_GET['state' == $default['oauth_state'] ) {
 
-		$response = wp_remote_post( 'https://github.com/login/oauth/access_token', array( 'body' => $data ) );
+			$code = $_GET['code'];
+			$data = array(
+				'code' => $code,
+				'client_id' => $default['client_id'],
+				'client_secret' => $default['client_secret']
+			);
 
-		parse_str( $response['body'], $parsed_response_body );
+			$response = wp_remote_post( 'https://github.com/login/oauth/access_token', array( 'body' => $data ) );
 
-		if ( null != $parsed_response_body['access_token'] ) {
-			$default['access_token'] = $parsed_response_body['access_token'];
-			$default['changed'] = 0;
-			update_option( 'github2wp_options', $options );
+			parse_str( $response['body'], $parsed_response_body );
+
+			if ( null != $parsed_response_body['access_token'] ) {
+				$default['access_token'] = $parsed_response_body['access_token'];
+				$default['changed'] = 0;
+				update_option( 'github2wp_options', $options );
+			}
 		}
 	}
 }

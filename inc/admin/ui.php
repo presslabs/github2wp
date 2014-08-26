@@ -432,7 +432,7 @@ function github2wp_render_settings_form( & $default ) {
 						</th>
 						<td>
 							<a onclick='setTimeout(function(){location.reload(true);}, 60*1000)' target='_blank' style='text-decoration: none; color: red; font-weight: bold;'
-								href='https://github.com/login/oauth/authorize?client_id=<?php echo $default['client_id']. '&client_secret=' . $default['client_secret'] . '&scope=repo'; ?>'>
+								href='https://github.com/login/oauth/authorize?client_id=<?php echo $default['client_id']. '&client_secret=' . $default['client_secret'] . '&scope=repo&state=' . $default['oauth_state']; ?>'>
 								<?php _e( 'Generate!', GITHUB2WP ); ?>
 							</a>
 						</td>
