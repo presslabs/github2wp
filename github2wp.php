@@ -24,7 +24,7 @@ function github2wp_init() {
 	$default = &$options['default'];
 
 	if ( isset( $_GET['code'] ) &&  isset( $_GET['github2wp_auth'] ) && 'true' == $_GET['github2wp_auth'] ) {
-		if ( isset($_GET['state']) && $_GET['state' == $default['oauth_state'] ) {
+		if ( isset($_GET['state']) && $_GET['state'] == $default['oauth_state'] ) {
 
 			$code = $_GET['code'];
 			$data = array(
