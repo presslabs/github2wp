@@ -77,9 +77,10 @@ function github2wp_setting_resources_list() {
 		);
 
 
-		$alternate = '';
 		if ( 0 == ($k % 2) )
-			$alternate = 'class="inactive"';
+			$alternate = ' inactive ';
+		else
+			$alternate = ' active ';
 
 		$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
 		$resource_path = github2wp_get_content_dir_by_type($repo_type);
@@ -100,12 +101,12 @@ function github2wp_setting_resources_list() {
 		$new_version = substr( $resource['head_commit'], 0, 7 );
 	
 		if ( $new_version && $resource_current_version && $new_version != $resource_current_version ) {
-			$my_data .= '<strong>' . __( 'New Version: ', GITHUB2WP ) . "</strong>$new_version<br /></div>";
+			$my_data .= '<strong>' . __( 'New Version: ', GITHUB2WP ) . "</strong>$new_version</div>";
 			$action .= github2wp_return_resource_update( $resource, $k-1 );
 		}
 		
-		$body .= "<tr $alternate>"
-			. "<td>$k</td>"
+		$body .= "<tr class='$alternate' >"
+			. "<th scope='row' align='center'>$k</th>"
 			. "<td>$my_data<br />"
 			. github2wp_return_resource_git_link( $resource )
 			. "<br />"
@@ -127,10 +128,10 @@ function github2wp_setting_resources_list() {
 	$table_head .= '<th>'. __( 'Options', GITHUB2WP ) .'</th>';
 	$table_head .= '</tr></thead>';
 
-	$table_body = "<tbody>$body</tbody>";
+	$table_body = "<tbody id='the-list'>$body</tbody>";
 
 	$table = "<br />
-		<table id='the-list' class='wp-list-table widefat plugins' cellpadding='5' border='1' cellspacing='0'>
+		<table class='wp-list-table widefat plugins github2wp-resources'>
 		$table_head
 		$table_body	
 		</table>";
@@ -145,10 +146,10 @@ function github2wp_render_resource_history( $resource , $resource_id, $commit_hi
 		echo '<div class="half centered">'. __( 'Nope no history yet :D', GITHUB2WP ) . '</div>';
 	?>
 	
-	<table class='wp-list-table widefat plugins' >
+	<table class='wp-list-table widefat plugins github2wp-history' >
 	<thead>
 		<tr>
-			<th scope='col' width='10%;'><b>SHA</b></th>
+			<th scope='col' width='10%;' align='center'><b>SHA</b></th>
 			<th scope='col' width='70%;'><b><?php _e( 'Message', GITHUB2WP ); ?></b></th>
 			<th scope='col' width='10%;'><b><?php _e( 'Date', GITHUB2WP ); ?></b></th>
 			<th scope='col' width='10%;'><b><?php _e( 'Select', GITHUB2WP ); ?></b></th>
@@ -165,7 +166,7 @@ function github2wp_render_resource_history( $resource , $resource_id, $commit_hi
 
 		?>
 
-		<tr class='<?php echo ( $k % 2 ) ? 's-inactive' : ''; ?>'>
+		<tr class='<?php echo ( $k % 2 ) ? 'active' : 'inactive'; ?>'>
 			<td width='10%;'><a href='<?php echo $commit['git_url']; ?>' target='_blank'><?php echo substr( $commit['sha'], 0, 7 ); ?></a></td>
 			<td width='70%;'><?php echo ucfirst( nl2br( $commit['message'] ) ); ?></td>
 			<td width='10%;'><?php echo $date_time; ?></td>
@@ -503,7 +504,7 @@ function github2wp_render_history_page() {
 															<label><strong>{$resource['repo_name']}</strong></label>
 														</th>
 														<td>
-															<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>" . __( 'Expand', GITHUB2WP ) . "</center></span>
+															<div class='half centered history-slider clicker button-primary' alt='history-expand-$key'>" . __( 'Expand', GITHUB2WP ) . "</div>
 																<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
 																</div>
 															</span>
@@ -515,7 +516,7 @@ function github2wp_render_history_page() {
 															<label><strong>{$resource['repo_name']}</strong></label>
 														</th>
 														<td>
-															<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>" . __( 'Expand', GITHUB2WP ) . "</center></span>
+															<div class='half centered history-slider clicker button-primary' alt='history-expand-$key'>" . __( 'Expand', GITHUB2WP ) . "</div>
 																<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
 																</div>
 															</span>

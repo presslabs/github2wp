@@ -33,7 +33,7 @@
 
 
 	function branch_set() {
-		var ajax_loader = '<div class="ajax-loader"></div>';
+		var ajax_loader = '<div class="ajax ajax-loader"></div>';
 
 		$( '.resource_set_branch' ).change( function() {
 			var id = $( this ).attr( 'resource_id' );
@@ -71,8 +71,8 @@
 
 
 	function history_processor() {
-		var ajax_fail = '<div class="ajax-fail"></div>';
-		var ajax_loader = '<div class="ajax-loader"></div>';
+		var ajax_fail = '<div class="ajax ajax-fail"></div>';
+		var ajax_loader = '<div class="ajax ajax-loader"></div>';
 
 		$( '.history-slider' ).click( function( e ) {
 			var self = $(this);
@@ -95,6 +95,7 @@
 						}
 
 						downgrader( container, response );
+						self.remove();
 					},
 					error: function( data, error ) {
 						fresh_append( container, ajax_fail );
