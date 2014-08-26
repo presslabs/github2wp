@@ -229,7 +229,7 @@ function github2wp_return_resource_dismiss( $resource, $index ) {
 	return "<p><input name='submit_delete_resource_$index' type='submit'
 		class='button button-red btn-medium' value='" . __( 'Dismiss', GITHUB2WP )
 			. "' onclick='return confirm("
-			. __( 'Do you really want to disconect from Github:', GITHUB2WP ) . "$github_resource_url?" . ");'/></p>";
+			. '"' .  __( 'Are you sure?', GITHUB2WP ) . '"' . ");'/></p>";
 }
 
 
