@@ -1,20 +1,9 @@
-#github2wp_history_messages {
-	text-align: center;
-	width: 50em;
-	position: fixed;
-	left: 33em;
-}
-
 .btn-medium {
 	width: 75px;
 }
 
 .half {
-	width: 50em;
-}
-
-.widefat .s-inactive {
-	background-color:  #f4f4f4;
+	width: 50%;
 }
 
 .centered {
@@ -23,10 +12,26 @@
 	text-align: center;
 }
 
+#github2wp_history_messages {
+	text-align: center;
+	width: 50em;
+	position: fixed;
+	left: 33em;
+}
+
+.github2wp-resources tbody th {
+	text-align: center;
+}
+
+.github2wp-history thead th {
+	padding-left: 10px;
+}
+
+
+
 .history-slider {
 	cursor: pointer;
 	padding: 2px 0;
-	width: 50em;
 	display: inline-block;
 	border-color: #DFDFDF;
 	-webkit-border-radius: 3px;
@@ -34,10 +39,10 @@
 	border-radius: 3px;
 }
 
-.slider > .ajax-loader:first-child {
-	min-width: 50em;
+
+.slider .ajax {
+	min-width: 100%;
 	min-height: 64px;
-	background-image: url('./resources/ajax-loader.gif');
 	background-repeat: no-repeat;
 	background-position: center;
 	margin: 0px;
@@ -47,54 +52,39 @@
 	vertical-align: middle;
 }
 
+.slider > .ajax-loader:first-child {
+	background-image: url('../resources/ajax-loader.gif');
+}
+
 .slider > .ajax-fail:first-child {
-	min-width: 50em;
-	min-height: 64px;
-	background-image: url('./resources/ajax-fail.png');
+	background-image: url('../resources/ajax-fail.png');
+}
+
+
+.ajax {
 	background-repeat: no-repeat;
-	background-position: center;
-	margin: 0px;
-	padding: 0px;
-	background-size: 32px 32px;
+	background-size: 14px 14px;
+	height: 14px;
+	width: 14px;
 	display: inline-block;
+	margin-left: 10px;
 	vertical-align: middle;
 }
 
 .ajax-loader {
-	background-image: url('./resources/ajax-loader.gif');
-	background-repeat: no-repeat;
-	background-size: 14px 14px;
-	height: 14px;
-	width: 14px;
-	display: inline-block;
-	margin-left: 10px;
-	vertical-align: middle;
+	background-image: url('../resources/ajax-loader.gif');
 }
 
 .ajax-success {
-	background-image: url('./resources/ajax-success.jpg');
-	background-repeat: no-repeat;
-	background-size: 14px 14px;
-	height: 14px;
-	width: 14px;
-	display: inline-block;
-	margin-left: 10px;
-	vertical-align: middle;
+	background-image: url('../resources/ajax-success.jpg');
 }
 
 .ajax-fail {
-	background-image: url('./resources/ajax-fail.png');
-	background-repeat: no-repeat;
-	background-size: 14px 14px;
-	height: 14px;
-	width: 14px;
-	display: inline-block;
-	margin-left: 10px;
-	vertical-align: middle;
+	background-image: url('../resources/ajax-fail.png');
 }
 
 .notification-warning {
-	background-image: url('./resources/notification_warning.png');
+	background-image: url('../resources/notification_warning.png');
 	background-repeat: no-repeat;
 	background-size: 14px 14px;
 	height: 14px;

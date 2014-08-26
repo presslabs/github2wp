@@ -1,45 +1,193 @@
 <?php
+
+
+
+function github2wp_options_page() {
+	if ( ! current_user_can('manage_options') )
+		wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
+	
+	$nav_bar_tabs = array(
+		'resources',
+		'settings',
+		'history',
+		'faq'
+	);
+
+	isset( $_GET['tab'] ) ? $tab = $_GET['tab'] : $tab = 'resources';
+
+	if ( ! in_array( $tab, $nav_bar_tabs ) )
+		$tab = 'resources';
+
+	echo '<div class="wrap">';
+	github2wp_render_plugin_icon();
+	github2wp_render_tab_menu( $tab );
+
+	if ( 'resources' == $tab ) {
+		github2wp_head_commit_cron();
+
+		wp_clean_plugins_cache(true);
+		wp_clean_themes_cache(true);
+
+		$options = get_option( 'github2wp_options' );
+		github2wp_render_resource_form();
+	}
+
+	if ( 'settings' == $tab ) {
+		github2wp_token_cron();
+
+		$options = get_option( 'github2wp_options' );
+		$default = &$options['default'];
+
+		github2wp_render_settings_app_reset_message( $default );
+		github2wp_render_settings_form( $default );
+	}
+
+	if ( 'history' == $tab )
+		github2wp_render_history_page();
+
+	if ( 'faq' == $tab )
+		github2wp_render_faq_page();
+
+	echo '</div><!-- .wrap -->';
+}
+
+
+
+function github2wp_setting_resources_list() {
+	$options = get_option( 'github2wp_options' );
+	$resource_list = $options['resource_list'];
+
+	if( !is_array( $resource_list ) || empty( $resource_list ) )
+		return;
+
+	$new_transient = array();
+	$transient = get_transient( 'github2wp_branches' );
+	$default = $options['default'];
+
+	foreach ( $resource_list as $index => $resource ) {
+		$k++;
+
+		$my_data = '';
+		$action = github2wp_return_resource_dismiss( $resource, $k-1 );
+
+		$branches = github2wp_get_res_branches( $resource, $transient, $options );
+		$new_transient[] = array(
+			'repo_name' => $resource['repo_name'],
+			'branches'  => $branches
+		);
+
+
+		if ( 0 == ($k % 2) )
+			$alternate = ' inactive ';
+		else
+			$alternate = ' active ';
+
+		$repo_type = github2wp_get_repo_type( $resource['resource_link'] );
+		$resource_path = github2wp_get_content_dir_by_type($repo_type);
+		$resource_path .= basename($resource['resource_link']);
+
+		if ( ! is_dir( $resource_path ) ) {
+			$my_data .= '<p><strong>' . __( 'The resource does not exist on your site!', GITHUB2WP ) . '</strong></p>';
+			$action .= github2wp_return_resource_install( $resource, $k-1 );
+		}
+
+		$resource_file = $resource['repo_name'] . (('plugin' == $repo_type) ? '/'.$resource['repo_name'].'.php' : '');
+		$resource_current_version = github2wp_get_header($resource_file, 'Version');
+
+		if ( $resource_current_version )
+			$my_data .= github2wp_get_resource_render_details( $k, $resource_file, $resource['is_on_wp_svn'] );
+
+
+		$new_version = substr( $resource['head_commit'], 0, 7 );
+	
+		if ( $new_version && $resource_current_version && $new_version != $resource_current_version ) {
+			$my_data .= '<strong>' . __( 'New Version: ', GITHUB2WP ) . "</strong>$new_version</div>";
+			$action .= github2wp_return_resource_update( $resource, $k-1 );
+		}
+		
+		$body .= "<tr class='$alternate' >"
+			. "<th scope='row' align='center'>$k</th>"
+			. "<td>$my_data<br />"
+			. github2wp_return_resource_git_link( $resource )
+			. "<br />"
+			. github2wp_return_wordpress_resource( $repo_type, $resource['repo_name'] )
+			. "<br />"
+			. github2wp_return_branch_dropdown( $index, $branches )
+			. "</td>"
+			. "<td>$action</td>"
+			. "</tr>";				
+	}
+
+	if ( false === $transient)
+		set_transient( 'github2wp_branches', $new_transient, 5*60 );
+
+
+	$table_head  = '<thead><tr>';
+	$table_head .= '<th></th>';
+	$table_head .= '<th>'. __( 'Resource', GITHUB2WP ) .'</th>';
+	$table_head .= '<th>'. __( 'Options', GITHUB2WP ) .'</th>';
+	$table_head .= '</tr></thead>';
+
+	$table_body = "<tbody id='the-list'>$body</tbody>";
+
+	$table = "<br />
+		<table class='wp-list-table widefat plugins github2wp-resources'>
+		$table_head
+		$table_body	
+		</table>";
+
+	echo $table;
+}
+
+
+
 function github2wp_render_resource_history( $resource , $resource_id, $commit_history ) {
-	if ( 0 != count( $commit_history ) ):
-?>
-		<table class='wp-list-table widefat plugins' >
-			<thead>
-				<tr>
-					<th scope='col' width='10%;'><b>SHA</b></th>
-					<th scope='col' width='70%;'><b><?php _e( 'Message', GITHUB2WP ); ?></b></th>
-					<th scope='col' width='10%;'><b><?php _e( 'Date', GITHUB2WP ); ?></b></th>
-					<th scope='col' width='10%;'><b><?php _e( 'Select', GITHUB2WP ); ?></b></th>
-				</tr>
-			</thead>
-			<tbody>
-			<?php
-				foreach ( $commit_history as $commit ) {
-					$k++;
-					$date_time = new DateTime( $commit['timestamp'] );
-					$date_time =  $date_time->format( 'd.m.y H:i:s' );
-			?>
-				<tr class='<?php echo ( $k % 2 ) ? 's-inactive' : ''; ?>'>
-					<td width='10%;'><a href='<?php echo $commit['git_url']; ?>' target='_blank'><?php echo substr( $commit['sha'], 0, 7 ); ?></a></td>
-					<td width='70%;'><?php echo ucfirst( nl2br( $commit['message'] ) ); ?></td>
-					<td width='10%;'><?php echo $date_time; ?></td>
-					<td width='10%;'><input type='submit' value='<?php _e( 'Revert', GITHUB2WP ); ?>'
-						class='downgrade button-secondary' id='downgrade-resource-<?php echo $resource_id . '-' . $commit['sha']; ?>' /></td>
-				</tr>
-			<?php } ?>
-			</tbody>
-		</table>						
-	<?php else: ?>
-		<div class='half centered'><?php _e( 'Nope no history yet :D', GITHUB2WP ); ?></div>
-	<?php endif; ?>
+	if ( !count( $commit_history ) )
+		echo '<div class="half centered">'. __( 'Nope no history yet :D', GITHUB2WP ) . '</div>';
+	?>
+	
+	<table class='wp-list-table widefat plugins github2wp-history' >
+	<thead>
+		<tr>
+			<th scope='col' width='10%;' align='center'><b>SHA</b></th>
+			<th scope='col' width='70%;'><b><?php _e( 'Message', GITHUB2WP ); ?></b></th>
+			<th scope='col' width='10%;'><b><?php _e( 'Date', GITHUB2WP ); ?></b></th>
+			<th scope='col' width='10%;'><b><?php _e( 'Select', GITHUB2WP ); ?></b></th>
+		</tr>
+	</thead>
+	<tbody>
+
+
+	<?php
+	foreach ( $commit_history as $commit ) {
+		$k++;
+		$date_time = new DateTime( $commit['timestamp'] );
+		$date_time =  $date_time->format( 'd.m.y H:i:s' );
+
+		?>
+
+		<tr class='<?php echo ( $k % 2 ) ? 'active' : 'inactive'; ?>'>
+			<td width='10%;'><a href='<?php echo $commit['git_url']; ?>' target='_blank'><?php echo substr( $commit['sha'], 0, 7 ); ?></a></td>
+			<td width='70%;'><?php echo ucfirst( nl2br( $commit['message'] ) ); ?></td>
+			<td width='10%;'><?php echo $date_time; ?></td>
+			<td width='10%;'><input type='submit' value='<?php _e( 'Revert', GITHUB2WP ); ?>'
+				class='downgrade button-secondary' id='downgrade-resource-<?php echo $resource_id . '-' . $commit['sha']; ?>' /></td>
+		</tr>
+	<?php } ?>
+
+	</tbody>
+	</table>						
 <?php
 }
 
 
+
 function github2wp_return_branch_dropdown( $index, $branches ) {
 	$options = get_option('github2wp_options');
-	
-	$branch_dropdown = '<strong>' . __( 'Branch:', GITHUB2WP ) . "</strong><select style='width: 125px;' class='resource_set_branch' resource_id='$index'>";
-	
+
+	$branch_dropdown = '<strong>' . __( 'Branch:', GITHUB2WP )
+		. "</strong><select style='width: 125px;' class='resource_set_branch' resource_id='$index'>";
+
 	if( is_array( $branches ) && count( $branches ) > 0 ) {
 		foreach ( $branches as $branch ) {
 			if ( $options['resource_list'][ $index ]['repo_branch'] == $branch )
@@ -48,11 +196,11 @@ function github2wp_return_branch_dropdown( $index, $branches ) {
 				$branch_dropdown .= "<option value='$branch' >$branch</option>";
 		}
 	}
-
 	$branch_dropdown .= '</select>';
 
 	return $branch_dropdown;
-	}
+}
+
 
 
 function github2wp_return_resource_url( $resource_username, $resource_repo ) {
@@ -60,11 +208,14 @@ function github2wp_return_resource_url( $resource_username, $resource_repo ) {
 }
 
 
+
 function github2wp_return_resource_git_link( $resource ) {
 	$github_resource_url = github2wp_return_resource_url( $resource['username'], $resource['repo_name'] );	
 
-	return '<strong>' . __( 'Github:', GITHUB2WP ) . "</strong><a target='_blank' href='$github_resource_url' >$github_resource_url</a>";
+	return '<strong>' . __( 'Github:', GITHUB2WP )
+		. "</strong><a target='_blank' href='$github_resource_url' >$github_resource_url</a>";
 }
+
 
 
 function github2wp_return_wordpress_resource( $repo_type, $repo_name ) {
@@ -72,13 +223,16 @@ function github2wp_return_wordpress_resource( $repo_type, $repo_name ) {
 }
 
 
+
 function github2wp_return_resource_dismiss( $resource, $index ) {
 	$github_resource_url = github2wp_return_resource_url( $resource['username'], $resource['repo_name'] );
 
 	return "<p><input name='submit_delete_resource_$index' type='submit'
 		class='button button-red btn-medium' value='" . __( 'Dismiss', GITHUB2WP )
-		. "' onclick='return confirm(" . __( 'Do you really want to disconect from Github:', GITHUB2WP ) . "$github_resource_url?" . ");'/></p>";
+			. "' onclick='return confirm("
+			. '"' .  __( 'Are you sure?', GITHUB2WP ) . '"' . ");'/></p>";
 }
+
 
 
 function github2wp_return_resource_install( $resource, $index ) {
@@ -87,15 +241,21 @@ function github2wp_return_resource_install( $resource, $index ) {
 		. __( 'Install' ) . "' /></p>";
 }
 
+
+
 function github2wp_return_resource_update( $resource, $index ) {
 	return  "<p><input name='submit_update_resource_$index' type='submit'
 		class='button btn-medium' value='"
 		. __( 'Update' ) . "'/></p>";
 }
 
+
+
 function github2wp_render_plugin_icon() {
 	echo '<div id="icon-plugins" class="icon32">&nbsp;</div>';
 }
+
+
 
 function github2wp_render_tab_menu( $tab ) {
 ?>
@@ -111,6 +271,8 @@ function github2wp_render_tab_menu( $tab ) {
 	</h2>
 <?php
 }
+
+
 
 function github2wp_render_resource_form() {
 ?>
@@ -178,6 +340,8 @@ function github2wp_render_resource_form() {
 <?php
 }
 
+
+
 function github2wp_render_settings_helper() {
 ?>
 	<a class='button-primary clicker' alt='#' ><?php _e( 'Need help?', GITHUB2WP ); ?></a>		
@@ -213,12 +377,8 @@ function github2wp_render_settings_helper() {
 <?php
 }
 
-function github2wp_render_settings_app_reset_message( & $default ) {
-	if( $default['app_reset'] )
-		if(github2wp_needs_configuration())
-			echo '<div class="updated"><p>' . __("You've reset/deleted you're GitHub application settings reconfigure them here.", GITHUB2WP ) . '</p></div>';	
-}
-	
+
+
 function github2wp_render_settings_form( & $default ) {
 ?>
 
@@ -273,7 +433,7 @@ function github2wp_render_settings_form( & $default ) {
 						</th>
 						<td>
 							<a onclick='setTimeout(function(){location.reload(true);}, 60*1000)' target='_blank' style='text-decoration: none; color: red; font-weight: bold;'
-								href='https://github.com/login/oauth/authorize?client_id=<?php echo $default['client_id']. '&client_secret=' . $default['client_secret'] . '&scope=repo'; ?>'>
+								href='https://github.com/login/oauth/authorize?client_id=<?php echo $default['client_id']. '&client_secret=' . $default['client_secret'] . '&scope=repo&state=' . $default['oauth_state']; ?>'>
 								<?php _e( 'Generate!', GITHUB2WP ); ?>
 							</a>
 						</td>
@@ -296,6 +456,7 @@ function github2wp_render_settings_form( & $default ) {
 }
 
 
+
 function github2wp_render_faq_page() {
 	do_settings_sections( 'github2wp_faq' );
 
@@ -316,6 +477,7 @@ function github2wp_render_faq_page() {
 	}
 	echo '</dl>';
 }
+
 
 
 function github2wp_render_history_page() {
@@ -342,7 +504,7 @@ function github2wp_render_history_page() {
 															<label><strong>{$resource['repo_name']}</strong></label>
 														</th>
 														<td>
-															<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>" . __( 'Expand', GITHUB2WP ) . "</center></span>
+															<div class='half centered history-slider clicker button-primary' alt='history-expand-$key'>" . __( 'Expand', GITHUB2WP ) . "</div>
 																<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
 																</div>
 															</span>
@@ -354,7 +516,7 @@ function github2wp_render_history_page() {
 															<label><strong>{$resource['repo_name']}</strong></label>
 														</th>
 														<td>
-															<span class='history-slider clicker button-primary' alt='history-expand-$key'><center>" . __( 'Expand', GITHUB2WP ) . "</center></span>
+															<div class='half centered history-slider clicker button-primary' alt='history-expand-$key'>" . __( 'Expand', GITHUB2WP ) . "</div>
 																<div class='slider home-border-center half' id='history-expand-$key' style='padding-top: 5px;'>
 																</div>
 															</span>
@@ -380,4 +542,55 @@ function github2wp_render_history_page() {
 	</form>
 <?php
 }
-?>
+
+
+
+function github2wp_get_resource_render_details( $index, $resource_file, $on_svn ) {
+	$output = '';
+
+	$output .= '<strong>' . github2wp_get_header( $resource_file, 'Name' ) . '</strong>&nbsp;(';
+
+	if ( $on_svn )
+		$output .= '<div class="notification-warning" title="'
+					. __( 'Wordpress has a resource with the same name.\nWe will override its update notifications!', GITHUB2WP) . '"></div>';
+	$author = github2wp_get_header( $resource_file, 'Author' );
+	$author_uri = github2wp_get_header( $resource_file, 'AuthorURI' );
+	$description = github2wp_get_header( $resource_file, 'Description' );
+	$version = github2wp_get_header($resource_file, 'Version');
+	
+	if ( $author_uri )
+		$author = "<a href='$author_uri' target='_blank'>$author</a>";
+
+	$output .= __( 'Version ', GITHUB2WP ) . $version . '&nbsp;|&nbsp;';
+	$output .= __( 'By ', GITHUB2WP ) . $author . ')&nbsp;';
+	$output .= "<a id='need_help_$index' class='clicker' alt='res_details_$index'><strong>"
+		. __( 'Details', GITHUB2WP ) . '</strong></a><br />';
+	$output .= "<div id='res_details_$index' class='slider home-border-center'>";
+
+	if ( $plugin_description )
+		$output .= $description . '<br />';
+
+	return $output;
+}
+
+
+
+function github2wp_second_section_description() {
+	echo '<p>' . __( 'Enter here the default settings for the Github connexion.', GITHUB2WP ) . '</p>';
+}
+
+function github2wp_main_history_section_description() {
+	echo '<p>' . __( 'You can revert to an older version of a resource at any time.', GITHUB2WP ) . '</p>';
+}
+
+function github2wp_resource_display_section_description() {
+	echo '<p>' . __( 'Here you can manage your Github resources.', GITHUB2WP ) . '</p>';
+}
+
+function github2wp_main_section_description() {
+	echo '<p>' . __( 'Enter here the required data to set up a new GitHub endpoint.', GITHUB2WP ) . '</p>';
+}
+
+function github2wp_main_faq_section_description() {
+	echo '<p>' . __( 'If you can\'t find an answer to your problem contact us.', GITHUB2WP ) . '</p>';
+}
