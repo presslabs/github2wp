@@ -182,12 +182,12 @@ class Github_2_WP {
 
 
 	public function get_submodule_data( $url, $target, $path ) {
-		$response = $this->makeRequest( $url );
+		$response = $this->validate_api_response( $url );
 		
 		if ( !$response )	
 			return false;
 
-		$submodule_zip_path =  GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule_' . basename($target) . '.zip';
+		$submodule_zip_path =  GITHUB2WP_ZIPBALL_DIR_PATH . 'submodule_' . wp_hash(basename($target)) . '.zip';
 		$bit_count = file_put_contents( $submodule_zip_path, wp_remote_retrieve_body( $response ) );
 
 		if ( ! $bit_count )
@@ -221,7 +221,7 @@ class Github_2_WP {
 		);
 	
 		$url = $this->getApiUrl( 'contents',	$args );
-		$response = $this->makeRequest( $url );
+		$response = $this->validate_api_response( $url );
 
 		if ( !$response )
 			return null;
@@ -269,7 +269,7 @@ class Github_2_WP {
 		);
 
 		$url = $this->getApiUrl( 'commits' );
-		$response = $this->makeRequest( $url );
+		$response = $this->validate_api_response( $url );
 
 		if ( !$response )
 			return null;
@@ -378,7 +378,7 @@ class Github_2_WP {
 		set_time_limit (300);
 
 		$url = $this->getApiUrl('zip_url');
-		$response = $this->makeRequest( $url );
+		$response = $this->validate_api_response( $url );
 
 		if ( !$response )
 			return false;
