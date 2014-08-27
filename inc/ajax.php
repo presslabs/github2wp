@@ -53,39 +53,46 @@ function github2wp_ajax_downgrade() {
 	$resource_list = &$options['resource_list'];
 	$response = array(
 		'success'         => false,
+		'notice_message'          => '',
 		'error_messge'    => '',
 		'success_message' => ''
 	);
 
 	if ( isset( $_POST['commit_id'] ) && isset( $_POST['res_id'] ) ) {
 		$resource = $resource_list[ $_POST['res_id'] ];
-		$type = github2wp_get_repo_type( $resource['resource_link'] );
 		$version = $_POST['commit_id'];
-
+		$type = github2wp_get_repo_type( $resource['resource_link'] );
+		$res_slug = $resource['repo_name'] . (( 'plugin' === $type ) ? "/{$resource['repo_name']}.php" : '');
 
 		$reverts = get_option('github2wp_reverts', array());
 
-		$res_slug = $resource['repo_name'] . (( 'plugin' === $type ) ? "/{$resource['repo_name']}.php" : '');
-		$sub_version = substr( $version, 0, 7 );
-		$reverts[ $res_slug ]	= $sub_version;
+		//Limit a resource to one downgrade at a time!
+		if( isset($reverts[ $res_slug ]) ) {
+			$response['success'] = true;
+			$response['notice_message'] =  sprintf( __( '<b>%s<b> is already being downgraded to %s!', GITHUB2WP ),
+				$resource['repo_name'], $reverts[ $res_slug ] );
+
+			github2wp_ajax_end( $response, 'json' );
+		}
+
+		$reverts[ $res_slug ]	= $version;
 		update_option('github2wp_reverts', $reverts);
 
 
+		$was_updated = false;
 		if ( github2wp_fetch_archive( $resource, $version ) ) {
 			$zipball_path = github2wp_generate_zipball_endpoint( $resource['repo_name'] );
 			$was_updated = github2wp_update_resource( $zipball_path, $resource, 'update' );
-
-			if ( $was_updated	) {
-				unset($reverts[ $res_slug ]);
-				update_option('github2wp_reverts', $reverts );
-
-				$response['success'] = true;
-				$response['success_message'] = sprintf( __( 'The resource <b>%s<b> has been updated to %s .', GITHUB2WP ),
-					$resource['repo_name'], $version );
-			}
 		}
 
-		if ( !$was_updated ) {
+		if ( $was_updated	) {
+			unset($reverts[ $res_slug ]);
+			update_option('github2wp_reverts', $reverts );
+
+			$response['success'] = true;
+			$response['success_message'] = sprintf( __( 'The resource <b>%s<b> has been updated to %s .', GITHUB2WP ),
+				$resource['repo_name'], $version );
+		}	else {
 			$response['error_message'] = sprintf( __( 'The resource <b>%s<b> has FAILED to update to %s .', GITHUB2WP ),
 				$resource['repo_name'], $version );
 		}
