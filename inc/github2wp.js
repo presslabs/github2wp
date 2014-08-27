@@ -130,7 +130,10 @@
 					},
 					success: function( response ) {
 						if ( response['success'] ) {
-							response_message( response['success_message'] );
+							if( response['notice_message'] )
+								response_message( response['notice_message'], 'notice' );
+							else
+								response_message( response['success_message'] );
 							self.removeAttr( 'disabled' );
 						} else {
 							response_message( response['error_message'], 'error' );
@@ -149,6 +152,8 @@
 
 				if( message_type === 'error' )
 					color = 'red';
+				else if (message_type === 'notice' )
+					color = 'orange';
 
 				var elem = $( '<div style="color:' + color
 					+ ';" class="updated">' + message + '</div>' ).appendTo('#github2wp_history_messages');
