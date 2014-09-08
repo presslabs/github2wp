@@ -120,7 +120,7 @@ function github2wp_ajax_fetch_history() {
 		$commit_history = $git->get_commits();
 
 		ob_start();
-		github2wp_render_resource_history( $resource['repo_name'], $_POST['res_id'], $commit_history );
+		github2wp_render_resource_history( $_POST['res_id'], $commit_history );
 		$response = ob_get_clean();
 
 		github2wp_ajax_end( $response, 'html' );
