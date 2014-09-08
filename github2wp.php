@@ -26,11 +26,10 @@ function github2wp_init() {
 	if ( isset( $_GET['code'] ) &&  isset( $_GET['github2wp_auth'] ) && 'true' == $_GET['github2wp_auth'] ) {
 		if ( isset($_GET['state']) && $_GET['state'] == $default['oauth_state'] ) {
 
-			$code = $_GET['code'];
 			$data = array(
-				'code' => $code,
-				'client_id' => $default['client_id'],
-				'client_secret' => $default['client_secret']
+				'code'          => $_GET['code'],
+				'client_id'     => $default['client_id'],
+				'client_secret' => $default['client_secret'],
 			);
 
 			$response = wp_remote_post( 'https://github.com/login/oauth/access_token', array( 'body' => $data ) );
